@@ -1,0 +1,16 @@
+detect-secrets
+lightning
+matplotlib
+numpy
+optuna
+optuna-integration
+pandas
+pqdm
+pre-commit
+scikit-learn
+seaborn
+tensorboard
+torch==2.6.0
+torchaudio
+torchvision
+wfdb==4.2.0
