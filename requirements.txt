@@ -1,4 +1,6 @@
 detect-secrets
+ipywidgets
+jupyterlab
 lightning
 matplotlib
 numpy
