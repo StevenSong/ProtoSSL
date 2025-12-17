@@ -5,27 +5,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 from sklearn.metrics import average_precision_score, roc_auc_score
-
-TARGET_NAMES = {
-    "lvef_lte_45_flag": "LVEF Lo",
-    "lvwt_gte_13_flag": "LVWT Hi",
-    "aortic_stenosis_moderate_or_greater_flag": "AS",
-    "aortic_regurgitation_moderate_or_greater_flag": "AR",
-    "mitral_regurgitation_moderate_or_greater_flag": "MR",
-    "tricuspid_regurgitation_moderate_or_greater_flag": "TR",
-    "pulmonary_regurgitation_moderate_or_greater_flag": "PR",
-    "rv_systolic_dysfunction_moderate_or_greater_flag": "RVD",
-    "pericardial_effusion_moderate_large_flag": "PEff",
-    "pasp_gte_45_flag": "PASP Hi",
-    "tr_max_gte_32_flag": "TRV Hi",
-    "shd_moderate_or_greater_flag": "SHD",
-}
-COMPOSITE_TARGET = "SHD"
 
 
 def parse_args():
     parser = ArgumentParser()
+    parser.add_argument("--target-config", required=True)
     parser.add_argument("--echonext-data", required=True)
     parser.add_argument("--probs-npy", required=True)
     parser.add_argument("--output-path", required=True)
@@ -35,21 +21,27 @@ def parse_args():
 
 def main(
     *,  # enforce kwargs
+    target_config: str,
     echonext_data: str,
     probs_npy: str,
     output_path: str,
 ):
+    with open(target_config, "r") as f:
+        config = yaml.safe_load(f)
+        mapping = config["target_columns"]  # name --> col
+        mapping = {v: k for k, v in mapping.items()}  # col --> name
+
     echonext_path = Path(echonext_data)
 
     df = pd.read_csv(echonext_path / "EchoNext_metadata_100k.csv")
-    df = df.rename(columns=TARGET_NAMES)
+    df = df.rename(columns=mapping)
 
     target_probs = np.load(probs_npy, allow_pickle=True)
 
     os.makedirs(output_path, exist_ok=True)
     assert not os.path.exists(os.path.join(output_path, "metrics.csv"))
 
-    target_cols = list(TARGET_NAMES.values())
+    target_cols = list(mapping.values())
 
     test_mask = df["split"] == "test"
 
@@ -64,7 +56,7 @@ def main(
         y_test = test_targets[target_col].to_numpy()
         y_prob = target_probs[:, i]
 
-        if target_col != COMPOSITE_TARGET:
+        if target_col != config["composite_target"]:
             metrics[target_col]["AUROC"] = roc_auc_score(y_test, y_prob)
             metrics[target_col]["AUPRC"] = average_precision_score(y_test, y_prob)
             multilabel_true.append(y_test)
@@ -83,8 +75,10 @@ def main(
     metrics["Multilabel Averaged"]["AUPRC"] = auprc
 
     assert composite_true is not None and composite_prob is not None
-    metrics[COMPOSITE_TARGET]["AUROC"] = roc_auc_score(composite_true, composite_prob)
-    metrics[COMPOSITE_TARGET]["AUPRC"] = average_precision_score(
+    metrics[config["composite_target"]]["AUROC"] = roc_auc_score(
+        composite_true, composite_prob
+    )
+    metrics[config["composite_target"]]["AUPRC"] = average_precision_score(
         composite_true, composite_prob
     )
 
@@ -97,6 +91,7 @@ def main(
 if __name__ == "__main__":
     args = parse_args()
     main(
+        target_config=args.target_config,
         echonext_data=args.echonext_data,
         probs_npy=args.probs_npy,
         output_path=args.output_path,

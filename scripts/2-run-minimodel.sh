@@ -6,7 +6,7 @@ ECHONEXT_DATA=/opt/gpudata/ecg/echonext
 RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/runs
 REPO_ROOT=/opt/gpudata/steven/ecg-prototype-transfer
 IMAGE_TAG=echonext-minimodel
-GPU_IDX=3
+GPU_IDX=1
 
 # docker will create directories under root so premake any
 # directories we need to write into outside of docker container
@@ -24,6 +24,7 @@ $IMAGE_TAG
 cd "$REPO_ROOT/scripts"
 
 python _eval_probs.py \
+--target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/echonext-minimodel/prediction_loop/probs.npy \
 --output-path $RUN_DIR/echonext-minimodel

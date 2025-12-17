@@ -5,31 +5,17 @@ from warnings import simplefilter
 
 import numpy as np
 import pandas as pd
+import yaml
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegressionCV
 from tqdm import tqdm
 
 simplefilter("ignore", category=ConvergenceWarning)
 
-TARGET_NAMES = {
-    "lvef_lte_45_flag": "LVEF Lo",
-    "lvwt_gte_13_flag": "LVWT Hi",
-    "aortic_stenosis_moderate_or_greater_flag": "AS",
-    "aortic_regurgitation_moderate_or_greater_flag": "AR",
-    "mitral_regurgitation_moderate_or_greater_flag": "MR",
-    "tricuspid_regurgitation_moderate_or_greater_flag": "TR",
-    "pulmonary_regurgitation_moderate_or_greater_flag": "PR",
-    "rv_systolic_dysfunction_moderate_or_greater_flag": "RVD",
-    "pericardial_effusion_moderate_large_flag": "PEff",
-    "pasp_gte_45_flag": "PASP Hi",
-    "tr_max_gte_32_flag": "TRV Hi",
-    "shd_moderate_or_greater_flag": "SHD",
-}
-COMPOSITE_TARGET = "SHD"
-
 
 def parse_args():
     parser = ArgumentParser()
+    parser.add_argument("--target-config", required=True)
     parser.add_argument("--echonext-data", required=True)
     parser.add_argument("--balance-class-weight", action="store_true")
     parser.add_argument("--output-path", required=True)
@@ -39,21 +25,27 @@ def parse_args():
 
 def main(
     *,  # enforce kwargs
+    target_config: str,
     echonext_data: str,
     balance_class_weight: bool,
     output_path: str,
 ):
+    with open(target_config, "r") as f:
+        config = yaml.safe_load(f)
+        mapping = config["target_columns"]  # name --> col
+        mapping = {v: k for k, v in mapping.items()}  # col --> name
+
     echonext_path = Path(echonext_data)
 
     df = pd.read_csv(echonext_path / "EchoNext_metadata_100k.csv")
-    df = df.rename(columns=TARGET_NAMES)
+    df = df.rename(columns=mapping)
 
     X_test = np.load(echonext_path / "EchoNext_test_tabular_features.npy")
     X_train = np.load(echonext_path / "EchoNext_train_tabular_features.npy")
 
     os.makedirs(output_path, exist_ok=False)
 
-    target_cols = list(TARGET_NAMES.values())
+    target_cols = list(mapping.values())
 
     train_mask = df["split"] == "train"
 
@@ -85,6 +77,7 @@ def main(
 if __name__ == "__main__":
     args = parse_args()
     main(
+        target_config=args.target_config,
         echonext_data=args.echonext_data,
         balance_class_weight=args.balance_class_weight,
         output_path=args.output_path,
