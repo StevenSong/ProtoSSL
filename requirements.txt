@@ -1,5 +1,6 @@
 detect-secrets
 ipywidgets
+jsonargparse[signatures]
 jupyterlab
 lightning
 matplotlib
@@ -15,4 +16,5 @@ tensorboard
 torch==2.6.0
 torchaudio
 torchvision
+wandb
 wfdb==4.2.0

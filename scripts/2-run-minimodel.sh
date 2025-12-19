@@ -28,3 +28,6 @@ python _eval_probs.py \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/echonext-minimodel/prediction_loop/probs.npy \
 --output-path $RUN_DIR/echonext-minimodel
+
+ln -s ./prediction_loop/probs.npy \
+$RUN_DIR/echonext-minimodel/probs.npy 
