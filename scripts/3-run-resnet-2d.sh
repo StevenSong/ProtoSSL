@@ -3,7 +3,7 @@
 set -e
 
 ECHONEXT_DATA=/opt/gpudata/ecg/echonext
-RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/runs-2 # somehow, if running a parallel job with the same run dir results in a low-level filesystem lock so this is just a quick, trivial hack circumvent it
+RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/runs-2 # running a parallel job with the same run dir seems to result in a low-level filesystem lock so this is just a quick, trivial hack to circumvent it
 REPO_ROOT=/opt/gpudata/steven/ecg-prototype-transfer
 RESNET=resnet50
 CONV=2D
