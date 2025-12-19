@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Custom ignores
+temp.*
+temp-*
+temp_*
+temp/
+
+runs/
