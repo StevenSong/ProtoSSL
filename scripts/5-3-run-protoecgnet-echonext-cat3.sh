@@ -6,6 +6,17 @@ ECHONEXT_DATA=/opt/gpudata/ecg/echonext
 RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/runs
 REPO_ROOT=/opt/gpudata/steven/ecg-prototype-transfer
 PROTOECGNET_REPO=/opt/gpudata/steven/ecg-prototype-transfer/external/bbj-lab-protoecgnet
+N_TRIALS=100
+# N_TRIALS=1
+BATCH_SIZE=2048
+
+# Experiment parameters
+ARCH=resnet18
+PROTO_DIM=512
+PROTO_TIME_LEN=3
+LABEL_SET=3
+CONV_DIM=2D
+EXP_DIR=$RUN_DIR/protoecgnet-echonext-cat3
 
 echo
 echo "========================================================================="
@@ -15,28 +26,98 @@ echo
 
 cd $PROTOECGNET_REPO/src
 python tune.py \
-    --job_name tune_cat3 \
-    --epochs 200 \
-    --n_trials 200 \
-    --checkpoint_dir $RUN_DIR/protoecgnet-echonext-cat3/checkpoints \
-    --log_dir $RUN_DIR/protoecgnet-echonext-cat3/logs \
-    --test_dir $RUN_DIR/protoecgnet-echonext-cat3/test_results \
-    --study_dir $RUN_DIR/protoecgnet-echonext-cat3/optuna_studies \
-    --sampling_rate 100 \
-    --label_set "3" \
-    --num_workers 4 \
-    --dimension "2D" \
-    --seed 42 \
     --training_stage "joint" \
-    --custom_groups True \
-    --proto_dim 2048 \
-    --proto_time_len 3 \
-    --backbone resnet50 \
     --standardize False \
-    --remove_baseline False
+    --remove_baseline False \
+    --job_name joint_cat"$LABEL_SET" \
+    --epochs 200 \
+    --batch_size $BATCH_SIZE \
+    --n_trials $N_TRIALS \
+    --checkpoint_dir $EXP_DIR/checkpoints \
+    --log_dir $EXP_DIR/logs \
+    --test_dir $EXP_DIR/test_results \
+    --study_dir $EXP_DIR/optuna_studies \
+    --sampling_rate 100 \
+    --label_set $LABEL_SET \
+    --num_workers 4 \
+    --dimension $CONV_DIM \
+    --seed 42 \
+    --custom_groups True \
+    --proto_dim $PROTO_DIM \
+    --proto_time_len $PROTO_TIME_LEN \
+    --backbone $ARCH \
 
 echo
 echo "========================================================================="
-echo "MUST NOW DO PROJECTION OF PROTOTYPES TO GROUND IN REAL DATA SAMPLES"
+echo "PROJECTING PROTOTYPES TO GROUND IN REAL DATA SAMPLES"
 echo "========================================================================="
 echo
+
+cd $REPO_ROOT/scripts
+python _protoecgnet_postprocess_results.py \
+--target-config $REPO_ROOT/configs/targets.yaml \
+--output-path $EXP_DIR/checkpoints/joint_cat"$LABEL_SET" \
+--study-pkl $EXP_DIR/optuna_studies/joint_cat"$LABEL_SET"_optuna_study.pkl \
+--trial-checkpoints $EXP_DIR/checkpoints/joint_cat"$LABEL_SET"
+
+cd $PROTOECGNET_REPO/src
+python3 main.py \
+    --training_stage projection \
+    --custom_groups True \
+    --sampling_rate 100 \
+    --standardize False \
+    --remove_baseline False \
+    --batch_size $BATCH_SIZE \
+    --num_workers 4 \
+    --proto_dim $PROTO_DIM \
+    --proto_time_len $PROTO_TIME_LEN \
+    --seed 42 \
+    --job_name proj_cat"$LABEL_SET" \
+    --checkpoint_dir $EXP_DIR/checkpoints \
+    --log_dir $EXP_DIR/logs \
+    --pretrained_weights $EXP_DIR/checkpoints/joint_cat"$LABEL_SET"/best.ckpt \
+    --dimension $CONV_DIM \
+    --backbone $ARCH \
+    --label_set $LABEL_SET
+
+echo
+echo "========================================================================="
+echo "TUNING CLASSIFIER USING FROZEN FEATURE EXTRACTOR AND PROTOTYPES"
+echo "========================================================================="
+echo
+
+cd $PROTOECGNET_REPO/src
+python tune.py \
+    --training_stage "classifier" \
+    --job_name cls_cat"$LABEL_SET" \
+    --epochs 200 \
+    --batch_size $BATCH_SIZE \
+    --n_trials $N_TRIALS \
+    --checkpoint_dir $EXP_DIR/checkpoints \
+    --log_dir $EXP_DIR/logs \
+    --test_dir $EXP_DIR/test_results \
+    --study_dir $EXP_DIR/optuna_studies \
+    --sampling_rate 100 \
+    --label_set $LABEL_SET \
+    --num_workers 4 \
+    --dimension $CONV_DIM \
+    --seed 42 \
+    --custom_groups True \
+    --proto_dim $PROTO_DIM \
+    --proto_time_len $PROTO_TIME_LEN \
+    --backbone $ARCH \
+    --standardize False \
+    --remove_baseline False \
+    --pretrained_weights $EXP_DIR/checkpoints/proj_cat"$LABEL_SET"/proj_cat"$LABEL_SET"_projection.pth
+
+cd $REPO_ROOT/scripts
+python _protoecgnet_postprocess_results.py \
+--target-config $REPO_ROOT/configs/targets.yaml \
+--output-path $EXP_DIR \
+--study-pkl $EXP_DIR/optuna_studies/cls_cat"$LABEL_SET"_optuna_study.pkl \
+--trial-predictions $EXP_DIR/test_results/cls_cat"$LABEL_SET"
+python _eval_probs.py \
+--target-config $REPO_ROOT/configs/targets.yaml \
+--echonext-data $ECHONEXT_DATA \
+--probs-npy $EXP_DIR/probs.npy \
+--output-path $EXP_DIR
