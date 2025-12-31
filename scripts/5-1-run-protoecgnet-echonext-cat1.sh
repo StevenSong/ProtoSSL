@@ -7,8 +7,8 @@ RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/runs
 REPO_ROOT=/opt/gpudata/steven/ecg-prototype-transfer
 PROTOECGNET_REPO=/opt/gpudata/steven/ecg-prototype-transfer/external/bbj-lab-protoecgnet
 N_TRIALS=100
-# N_TRIALS=1
 BATCH_SIZE=2048
+NUM_WORKERS=4
 
 # Experiment parameters
 ARCH=resnet1d18
@@ -38,7 +38,7 @@ python tune.py \
     --study_dir $EXP_DIR/optuna_studies \
     --sampling_rate 100 \
     --label_set $LABEL_SET \
-    --num_workers 4 \
+    --num_workers $NUM_WORKERS \
     --dimension $CONV_DIM \
     --seed 42 \
     --custom_groups True \
@@ -66,7 +66,7 @@ python3 main.py \
     --standardize False \
     --remove_baseline False \
     --batch_size $BATCH_SIZE \
-    --num_workers 4 \
+    --num_workers $NUM_WORKERS \
     --proto_dim $PROTO_DIM \
     --seed 42 \
     --job_name proj_cat"$LABEL_SET" \
@@ -96,7 +96,7 @@ python tune.py \
     --study_dir $EXP_DIR/optuna_studies \
     --sampling_rate 100 \
     --label_set $LABEL_SET \
-    --num_workers 4 \
+    --num_workers $NUM_WORKERS \
     --dimension $CONV_DIM \
     --seed 42 \
     --custom_groups True \
