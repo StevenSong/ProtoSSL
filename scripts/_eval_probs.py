@@ -85,7 +85,9 @@ def main(
     metrics = pd.DataFrame.from_dict(metrics, orient="index")
     metrics.index.name = "Label"
 
-    metrics.to_csv(os.path.join(output_path, "metrics.csv"))
+    metrics_path = os.path.join(output_path, "metrics.csv")
+    metrics.to_csv(metrics_path)
+    print(f"Saved metrics to {metrics_path}")
 
 
 if __name__ == "__main__":

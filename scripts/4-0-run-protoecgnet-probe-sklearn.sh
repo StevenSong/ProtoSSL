@@ -12,6 +12,12 @@ PROTOECGNET_CKPT=/opt/gpudata/steven/ecg-prototype-transfer/external/bbj-lab-pro
 # Embed Prototypes
 ################################################################################
 
+echo
+echo "========================================================================="
+echo "CAN SAFELY IGNORE WARNING ABOUT MISSING COOCCURRENCE MATRIX FOR INFERENCE"
+echo "========================================================================="
+echo
+
 python _protoecgnet_embed.py \
 --echonext-data $ECHONEXT_DATA \
 --protoecgnet-repo $PROTOECGNET_REPO \
