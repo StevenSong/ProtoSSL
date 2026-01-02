@@ -11,7 +11,7 @@ function submit_job() {
     # $3 - dependent job id [optional]
 
     if [[ -n "$3" ]]; then
-        dependency="--dependency=afterok:$3"
+        local dependency="--dependency=afterok:$3"
     fi
 
     fname="${2%.sh}"
@@ -19,7 +19,7 @@ function submit_job() {
     job_id=$(sbatch -p gpu --gpus=1  --nodelist kl35-gpu-5 \
     --time=0 --cpus-per-task=12 --mem=200g --ntasks=1 \
     --export=ALL,ECHONEXT_DATA=/opt/gpudata/ecg/echonext$1,RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/runs$1 \
-    --output slurm-logs/$fname$1-%j.out $dependency --parsable $2)
+    --output slurm-logs/$fname$1-%j.out $dependency --parsable _slurm_wrapper.sh $2)
 
     echo $job_id
 }
