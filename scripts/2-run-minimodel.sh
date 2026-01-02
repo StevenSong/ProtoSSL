@@ -17,7 +17,7 @@ GPU_IDX=$CUDA_VISIBLE_DEVICES
 
 # docker will create directories under root so premake any
 # directories we need to write into outside of docker container
-mkdir $RUN_DIR/echonext-minimodel
+mkdir -p $RUN_DIR/echonext-minimodel
 
 cd "$REPO_ROOT/external/PierreElias-IntroECG/7-EchoNext Minimodel"
 
