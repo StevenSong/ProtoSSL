@@ -51,6 +51,6 @@ data:
   class_path: LitData
   init_args:
     target_config: "/opt/gpudata/steven/ecg-prototype-transfer/configs/targets.yaml"
-    echonext_data: "/opt/gpudata/ecg/echonext"
+    # echonext_data: "/opt/gpudata/ecg/echonext"
     batch_size: 512 # check grad accumulation
     num_workers: 4

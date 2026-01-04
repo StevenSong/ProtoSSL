@@ -213,4 +213,7 @@ temp_*
 temp/
 
 runs/
+runs.phase1.BAK/
+runs-*/
+scripts/slurm-logs/
 protoecgnet-cache/
