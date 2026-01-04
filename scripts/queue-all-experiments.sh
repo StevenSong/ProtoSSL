@@ -2,7 +2,8 @@
 
 set -e
 
-SUFFIXES=("" "-32k" "-16k" "-8k" "-4k" "-2k")
+# SUFFIXES=("" "-32k" "-16k" "-8k" "-4k" "-2k")
+SUFFIXES=("-1k" "-512" "-256")
 
 function submit_job() {
     # $1 - suffix
