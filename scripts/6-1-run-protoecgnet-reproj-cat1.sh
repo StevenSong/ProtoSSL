@@ -23,6 +23,8 @@ LABEL_SET=1
 CONV_DIM=1D
 EXP_DIR=$RUN_DIR/protoecgnet-reproj-cat1
 
+export IGNORE_LABELS=1
+
 echo
 echo "========================================================================="
 echo "PROJECTING PROTOTYPES TO GROUND IN REAL DATA SAMPLES"
