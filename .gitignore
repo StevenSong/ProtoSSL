@@ -212,6 +212,8 @@ temp-*
 temp_*
 temp/
 
+*.BAK
+
 outputs/
 scripts/slurm-logs/
 protoecgnet-cache/
