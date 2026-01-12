@@ -37,16 +37,17 @@ class EchoNextECGDataset(BaseECGDataset):
             X = X.squeeze(1)  # (N, 2500, 12)
 
             # downsample to target frequency
-            resample_frac = Fraction(
-                numerator=sampling_rate,
-                denominator=250,  # EchoNext preprocessed data is 250 Hz
-            ).limit_denominator(100)
-            X = resample_poly(
-                X,
-                up=resample_frac.numerator,
-                down=resample_frac.denominator,
-                axis=1,
-            )  # (N, 10 * sampling_rate, 12)
+            if sampling_rate != 250:
+                resample_frac = Fraction(
+                    numerator=sampling_rate,
+                    denominator=250,  # EchoNext preprocessed data is 250 Hz
+                ).limit_denominator(100)
+                X = resample_poly(
+                    X,
+                    up=resample_frac.numerator,
+                    down=resample_frac.denominator,
+                    axis=1,
+                )  # (N, 10 * sampling_rate, 12)
             X = torch.as_tensor(X).mT  # (N, 12, 10 * sampling_rate)
             return X
 
