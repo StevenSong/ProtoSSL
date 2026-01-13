@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from pass_pclr.defines import RESNET_T
-from pass_pclr.models.encoders import BaseEncoder, ResNet1D
+from ...defines import RESNET_T
+from ._base_encoder import BaseEncoder
+from ._resnet import ResNet1D
 
 
 class PrototypeEncoder(BaseEncoder):
@@ -13,6 +14,7 @@ class PrototypeEncoder(BaseEncoder):
         resnet_type: RESNET_T,
         n_prototypes: int,
     ):
+        super().__init__()
         self.resnet = ResNet1D(resnet_type=resnet_type)
         self.prototypes = nn.Parameter(
             torch.ones(n_prototypes, self.resnet.emb_dim),

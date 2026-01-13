@@ -1,6 +1,6 @@
-from pass_pclr.defines import RESNET_T
-from pass_pclr.models import BaseClassifier
-from pass_pclr.models.encoders import PrototypeEncoder
+from ..defines import RESNET_T
+from ._base_classifier import BaseClassifier
+from .encoders import PrototypeEncoder
 
 
 class PrototypeClassifier(BaseClassifier):

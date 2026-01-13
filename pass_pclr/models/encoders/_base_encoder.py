@@ -7,6 +7,9 @@ import torch.nn as nn
 class BaseEncoder(nn.Module, ABC):
     emb_dim: int
 
+    def __init__(self):
+        super().__init__()
+
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """

@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from pass_pclr.defines import RESNET_T
-from pass_pclr.models.encoders import PrototypeEncoder
+from ..defines import RESNET_T
+from .encoders import PrototypeEncoder
 
 
 class PrototypeContraster(nn.Module):
@@ -17,6 +17,7 @@ class PrototypeContraster(nn.Module):
         init_log_temp: float = 0.07,
         learnable_temp: bool = True,
     ):
+        super().__init__()
         self.prototype_encoder = PrototypeEncoder(
             resnet_type=resnet_type,
             n_prototypes=n_prototypes,

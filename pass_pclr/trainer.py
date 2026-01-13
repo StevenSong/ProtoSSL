@@ -1,12 +1,11 @@
 import os
 import re
 from pathlib import Path
-from typing import get_args
+from typing import Literal, Type, get_args
 
 import numpy as np
 import torch
 import torch.nn.functional as F
-import yaml
 from lightning import LightningDataModule, LightningModule
 from lightning.pytorch.callbacks import BasePredictionWriter
 from lightning.pytorch.cli import LightningCLI
@@ -15,42 +14,89 @@ from lightning.pytorch.utilities import rank_zero_only
 from torch.utils.data import DataLoader
 from wandb.util import generate_id
 
-from pass_pclr.defines import RESNET_T, STAGE_T
-from pass_pclr.models import PrototypeClassifier, PrototypeContraster, ResNetClassifier
+from .datasets import (
+    BaseECGDataset,
+    EchoNextECGDataset,
+    PCLRWrapperDataset,
+    PtbxlECGDataset,
+)
+from .defines import ECHONEXT_TARGETS, RESNET_T, STAGE_T
+from .models import PrototypeClassifier, PrototypeContraster, ResNetClassifier
+
+MODEL_T = Literal[
+    "PrototypeContraster",
+    "PrototypeClassifier",
+    "ResNetClassifier",
+]
 
 torch.set_float32_matmul_precision("medium")
+
+
+def infer_dataset_class_from_path(
+    dataset_path: str,
+) -> tuple[
+    Type[BaseECGDataset],
+    list[str] | None,  # label names
+]:
+    echonext_indicators = ["echonext", "echo-next", "echo_next"]
+    ptbxl_indicators = ["ptbxl", "ptb-xl", "ptb_xl"]
+
+    if any(x in dataset_path for x in echonext_indicators):
+        return EchoNextECGDataset, list(ECHONEXT_TARGETS.keys())
+    elif any(x in dataset_path for x in ptbxl_indicators):
+        return PtbxlECGDataset, None
+    raise ValueError(
+        f"Could not infer BaseECGDataset subclass from dataset_path: {dataset_path}"
+    )
 
 
 class LitData(LightningDataModule):
     def __init__(
         self,
-        target_config: str,
-        echonext_data: str,
+        dataset_path: str,
+        pipeline_stage: STAGE_T,
         batch_size: int,
         num_workers: int,
+        sampling_rate: int = 100,
     ):
         super().__init__()
         self.save_hyperparameters()
 
     def setup(self, stage: str):
+        dataset_path: str = self.hparams.dataset_path  # type: ignore
+        sampling_rate: int = self.hparams.sampling_rate  # type: ignore
+        pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
+        wrap_pclr = pipeline_stage == "learn-prototypes"
+
+        ECGDataset, self.label_names = infer_dataset_class_from_path(dataset_path)
+
         if stage == "fit":
-            self.train_ds = EchoNextECGDataset(
-                target_config=self.hparams.target_config,  # type: ignore
-                echonext_data=self.hparams.echonext_data,  # type: ignore
+            train_ds = ECGDataset(
+                dataset_path=dataset_path,
                 split="train",
+                sampling_rate=sampling_rate,
             )
+            if wrap_pclr:
+                train_ds = PCLRWrapperDataset(train_ds)
+            self.train_ds = train_ds
         if stage in ["fit", "validate"]:
-            self.val_ds = EchoNextECGDataset(
-                target_config=self.hparams.target_config,  # type: ignore
-                echonext_data=self.hparams.echonext_data,  # type: ignore
+            val_ds = ECGDataset(
+                dataset_path=dataset_path,
                 split="val",
+                sampling_rate=sampling_rate,
             )
+            if wrap_pclr:
+                val_ds = PCLRWrapperDataset(val_ds)
+            self.val_ds = val_ds
         if stage in ["test", "predict"]:
-            self.test_ds = EchoNextECGDataset(
-                target_config=self.hparams.target_config,  # type: ignore
-                echonext_data=self.hparams.echonext_data,  # type: ignore
+            test_ds = ECGDataset(
+                dataset_path=dataset_path,
                 split="test",
+                sampling_rate=sampling_rate,
             )
+            if wrap_pclr:
+                raise ValueError("Should not use PCLR dataset with test/predict stage")
+            self.test_ds = test_ds
 
     def train_dataloader(self):
         return DataLoader(
@@ -89,83 +135,133 @@ class LitData(LightningDataModule):
 class LitModel(LightningModule):
     def __init__(
         self,
-        target_config: str,
         resnet_type: RESNET_T,
-        conv_type: CONV_T,
+        pipeline_stage: STAGE_T,
+        model_type: MODEL_T,
+        n_prototypes: int | None = None,
+        proj_dim: int | None = None,
+        label_names: list[str] | None = None,
     ):
         super().__init__()
         self.lr = None
         self.save_hyperparameters()
 
-        with open(self.hparams.target_config, "r") as f:  # type: ignore
-            target_names = list(yaml.safe_load(f)["target_columns"].keys())
-            self.target_names = [x.replace(" ", "_") for x in target_names]
-            self.num_classes = len(self.target_names)
+        # fmt: off
+        if model_type == "ResNetClassifier" and pipeline_stage != "train-classifier":
+            raise ValueError("Can only use model_type=ResNetClassifier with pipeline_stage=train-classifier")
 
-        if self.hparams.conv_type == "1D":  # type: ignore
-            resnet_fn = make_resnet1d
-        elif self.hparams.conv_type == "2D":  # type: ignore
-            resnet_fn = make_resnet2d
-        else:
-            raise ValueError(f"Unknown conv_type: {self.hparams.conv_type}")  # type: ignore
+        if model_type == "PrototypeContraster" and pipeline_stage not in {"learn-prototypes", "project-prototypes"}:
+            raise ValueError("Can only use model_type=PrototypeContraster with pipeline_stage=learn-prototypes,project-prototypes")
+        # fmt: on
 
-        self.model = resnet_fn(
-            resnet_type=self.hparams.resnet_type,  # type: ignore
-            num_classes=self.num_classes * 2,  # binary multilabel
-        )
-
-    def _common_step(self, batch) -> tuple[
-        dict[str, torch.Tensor],  # scalar loss values
-        dict[str, torch.Tensor],  # 1D array of predicted probabilities
-        int,  # batch size
-    ]:
-        x = batch["waveform"]  # (B, 1, 2500, 12)
-        y = batch["label"]  # (B, num_classes, 2)
-        if self.hparams.conv_type == "1D":  # type: ignore
-            x = x.squeeze(1)
-        logits = self.model(x)  # (B, 2 * num_classes)
-        losses = dict()
-        probs = dict()
-        for i, target_name in enumerate(self.target_names):
-            per_label_logits = logits[:, i * 2 : (i + 1) * 2]  # neg/pos per label
-            per_label_loss = F.cross_entropy(
-                input=per_label_logits,  # (B, 2)
-                target=y[:, i],  # (B, 2)
+        if model_type == "PrototypeContraster":
+            assert n_prototypes is not None
+            assert proj_dim is not None
+            self.model = PrototypeContraster(
+                resnet_type=resnet_type,
+                n_prototypes=n_prototypes,
+                proj_dim=proj_dim,
             )
-            losses[target_name] = per_label_loss
-            probs[target_name] = F.softmax(per_label_logits, dim=1)[:, 1]  # (B,)
-        return losses, probs, len(x)
+        elif model_type == "PrototypeClassifier":
+            assert n_prototypes is not None
+            assert label_names is not None
+            self.model = PrototypeClassifier(
+                resnet_type=resnet_type,
+                n_prototypes=n_prototypes,
+                n_binary_labels=len(label_names),
+            )
+        elif model_type == "ResNetClassifier":
+            assert label_names is not None
+            self.model = ResNetClassifier(
+                resnet_type=resnet_type,
+                n_binary_labels=len(label_names),
+            )
+        else:
+            raise ValueError(f"Unknown model_type {model_type}")
+
+    def _common_step(
+        self,
+        *,  # enforce kwargs
+        batch: dict[str, torch.Tensor],
+        stage: str,
+        log: bool = True,
+        sync_dist: bool = False,
+    ) -> tuple[
+        torch.Tensor,  # scalar (composite) loss value
+        dict[str, torch.Tensor] | None,  # 1D array of predicted probabilities
+    ]:
+        batch_size = batch["patient_id"].shape[0]
+
+        pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
+        if pipeline_stage == "learn-prototypes":
+            # x1/x2 keys
+            probs = None
+            loss = self.model(
+                batch["x1"],
+                batch["x2"],
+            )
+            if log:
+                self.log(
+                    f"{stage}_loss", loss, batch_size=batch_size, sync_dist=sync_dist
+                )
+        elif pipeline_stage == "train-classifier":
+            # waveform/label keys
+            (
+                _losses,  # (n_labels,)
+                _probs,  # (n_labels, B)
+            ) = self.model(
+                batch["waveform"],  # (B, 12, 10 * freq)
+                batch["label"],  # (B, n_labels)
+            )
+            losses = dict()
+            probs = dict()
+            label_names: list[str] = self.hparams.label_names  # type: ignore
+            assert label_names is not None
+            for i, target_name in enumerate(label_names):
+                losses[target_name] = _losses[i]
+                probs[target_name] = _probs[i]
+            loss = self._log_and_composite_losses(
+                stage=stage,
+                losses=losses,
+                batch_size=batch_size,
+                log=log,
+                sync_dist=sync_dist,
+            )
+        else:
+            raise ValueError(f"Unknown forward step fr pipeline_stage {pipeline_stage}")
+        return loss, probs
 
     def _log_and_composite_losses(
         self,
+        *,  # enforce kwargs
         stage: str,
         losses: dict[str, torch.Tensor],
         batch_size: int,
+        log: bool = True,
         sync_dist: bool = False,
     ) -> torch.Tensor:
         for k, v in losses.items():
-            self.log(f"{stage}_{k}_loss", v, batch_size=batch_size)
+            if log:
+                self.log(f"{stage}_{k}_loss", v, batch_size=batch_size)
         loss = torch.stack(list(losses.values())).mean()
-        self.log(f"{stage}_loss", loss, batch_size=batch_size, sync_dist=sync_dist)
+        if log:
+            self.log(f"{stage}_loss", loss, batch_size=batch_size, sync_dist=sync_dist)
         return loss
 
     def training_step(self, batch, batch_idx):
-        losses, _, n_batch = self._common_step(batch)
-        loss = self._log_and_composite_losses("train", losses, n_batch)
+        loss, _ = self._common_step(batch=batch, stage="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
-        losses, _, n_batch = self._common_step(batch)
-        loss = self._log_and_composite_losses("val", losses, n_batch, sync_dist=True)
+        loss, _ = self._common_step(batch=batch, stage="val", sync_dist=True)
         return loss
 
     def test_step(self, batch, batch_idx):
-        losses, _, n_batch = self._common_step(batch)
-        loss = self._log_and_composite_losses("test", losses, n_batch, sync_dist=True)
+        loss, _ = self._common_step(batch=batch, stage="test", sync_dist=True)
         return loss
 
     def predict_step(self, batch, batch_idx):
-        _, probs, _ = self._common_step(batch)
+        _, probs = self._common_step(batch=batch, stage="predict", log=False)
         return probs
 
 
@@ -257,7 +353,18 @@ class PredictionWriter(BasePredictionWriter):
 
 class LitCLI(LightningCLI):
     def add_arguments_to_parser(self, parser):
-        parser.add_argument("--pipeline-stage", choices=get_args(STAGE_T), require=True)
+        parser.add_argument(
+            "--pipeline-stage",
+            choices=get_args(STAGE_T),
+            required=True,
+        )
+        parser.link_arguments("pipeline_stage", "data.init_args.pipeline_stage")
+        parser.link_arguments("pipeline_stage", "model.init_args.pipeline_stage")
+        parser.link_arguments(
+            "data.label_names",
+            "model.init_args.label_names",
+            apply_on="instantiate",
+        )
 
 
 def run():

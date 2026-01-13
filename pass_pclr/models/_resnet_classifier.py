@@ -1,10 +1,6 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-from pass_pclr.defines import RESNET_T
-from pass_pclr.models import BaseClassifier
-from pass_pclr.models.encoders import ResNet1D
+from ..defines import RESNET_T
+from ._base_classifier import BaseClassifier
+from .encoders import ResNet1D
 
 
 class ResNetClassifier(BaseClassifier):

@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from pass_pclr.defines import RESNET_T
-from pass_pclr.models.encoders import BaseEncoder
+from ...defines import RESNET_T
+from ._base_encoder import BaseEncoder
 
 
 class BasicBlock1D(nn.Module):
@@ -91,6 +91,7 @@ class ResNet1D(BaseEncoder):
         resnet_type: RESNET_T,
         input_channels: int = 12,
     ):
+        super().__init__()
         match resnet_type:
             case "resnet18":
                 self._make_layers(BasicBlock1D, [2, 2, 2, 2], input_channels)

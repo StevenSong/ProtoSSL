@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from pass_pclr.models.encoders import BaseEncoder
+from .encoders import BaseEncoder
 
 
 class BaseClassifier(nn.Module):
@@ -16,6 +16,7 @@ class BaseClassifier(nn.Module):
         encoder: BaseEncoder,
         n_binary_labels: int,
     ):
+        super().__init__()
         self.encoder = encoder
         self.cls = nn.Linear(
             in_features=self.encoder.emb_dim,
