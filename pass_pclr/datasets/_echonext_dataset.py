@@ -27,6 +27,7 @@ class EchoNextECGDataset(BaseECGDataset):
         df = df.loc[df["split"] == split, target_cols].reset_index(drop=True)
 
         self.patient_ids = torch.as_tensor(df["patient_key"].to_numpy())
+        self.ecg_ids = torch.as_tensor(df["ecg_key"].to_numpy())
         self.labels = torch.as_tensor(
             df.to_numpy(),
             dtype=torch.float32,
@@ -59,4 +60,5 @@ class EchoNextECGDataset(BaseECGDataset):
         )
 
         assert self.patient_ids.shape[0] == self.waveforms.shape[0]
+        assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
         assert self.patient_ids.shape[0] == self.labels.shape[0]

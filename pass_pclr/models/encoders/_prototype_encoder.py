@@ -1,6 +1,8 @@
+from typing import Callable
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import cosine_similarity as cos_sim
 
 from ...defines import RESNET_T
 from ._base_encoder import BaseEncoder
@@ -13,6 +15,7 @@ class PrototypeEncoder(BaseEncoder):
         *,  # enforce kwargs
         resnet_type: RESNET_T,
         n_prototypes: int,
+        sim_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = cos_sim,
     ):
         super().__init__()
         self.resnet = ResNet1D(resnet_type=resnet_type)
@@ -21,8 +24,9 @@ class PrototypeEncoder(BaseEncoder):
             requires_grad=True,
         )
         self.emb_dim = n_prototypes
+        self.sim_fn = sim_fn
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.resnet(x)
-        x = F.cosine_similarity(x, self.prototypes)
+        x = self.resnet(x)  # (B, E)
+        x = self.sim_fn(x, self.prototypes.T)
         return x  # (B, P)

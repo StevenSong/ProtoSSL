@@ -2,12 +2,45 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ._pretrained_utils import PretrainedMixin
 from .encoders import BaseEncoder
 
 
-class BaseClassifier(nn.Module):
+class BaseClassifier(PretrainedMixin, nn.Module):
     """
-    Binary Multilabel BaseClassifier
+    Binary Multilabel BaseClassifier abstract class
+
+    Classifiers which inherit from this base class need only call
+    `super().__init__()` with a given BaseEncoder and the number of labels.
+    Additional logic in the subclass `__init__` method may result in incorrect
+    loading of pretrained weights.
+
+    Subclasses must also define the properties `allow_[extra|missing]_keys`
+    to enable utilities for loading pretrained weights.
+
+    For example:
+    ```
+    class Classifier(BaseClassifier):
+        @property
+        def allow_extra_keys(self) -> list[str]:
+            return []
+
+        @property
+        def allow_missing_keys(self) -> list[str]:
+            return []
+
+        def __init__(
+            self,
+            encoder_params: Any,
+            n_binary_labels: int,
+            pretrained_weights: str | None = None,
+        ):
+            super().__init__(
+                encoder=Encoder(encoder_params),
+                n_binary_labels=n_binary_labels,
+                pretrained_weights=pretrained_weights,
+            )
+    ```
     """
 
     def __init__(
@@ -15,6 +48,7 @@ class BaseClassifier(nn.Module):
         *,  # enforce kwargs
         encoder: BaseEncoder,
         n_binary_labels: int,
+        pretrained_weights: str | None = None,
     ):
         super().__init__()
         self.encoder = encoder
@@ -22,6 +56,10 @@ class BaseClassifier(nn.Module):
             in_features=self.encoder.emb_dim,
             out_features=n_binary_labels * 2,
         )
+
+        # assumes no other submodules are initialized in subclasses
+        if pretrained_weights is not None:
+            self.load_pretrained_weights(pretrained_weights)
 
     def forward(
         self,
@@ -51,3 +89,8 @@ class BaseClassifier(nn.Module):
     def freeze_encoder(self):
         for param in self.encoder.parameters():
             param.requires_grad = False
+
+    @property
+    def allow_size_mismatched_keys(self) -> list[str]:
+        # if doing transfer learning from one supervised task to another, shapes may differ
+        return ["cls.weight", "cls.bias"]

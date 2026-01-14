@@ -10,7 +10,8 @@ from pass_pclr.defines import CACHE_DIR, SPLIT_T
 
 
 class BaseECGDataset(Dataset, ABC):
-    patient_ids: torch.Tensor  # (N,), N = n_patients
+    patient_ids: torch.Tensor  # (N,), N = n_samples
+    ecg_ids: torch.Tensor  # (N,), N = n_samples
     waveforms: torch.Tensor  # (N, L, T), L = n_leads, T = n_timesteps
     labels: torch.Tensor | None  # (N, C), C = n_binary_labels
 
@@ -36,6 +37,7 @@ class BaseECGDataset(Dataset, ABC):
         ret = {
             "waveform": self.waveforms[i],  # (L, T)
             "patient_id": self.patient_ids[i],  # (,)
+            "ecg_id": self.ecg_ids[i],  # (,)
         }
         if self.labels is not None:
             ret["label"] = self.labels[i]  # (C,)

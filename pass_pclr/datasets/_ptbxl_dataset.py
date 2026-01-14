@@ -35,6 +35,7 @@ class PtbxlECGDataset(BaseECGDataset):
         df = df[mask]
 
         self.patient_ids = torch.as_tensor(df["patient_id"].astype(int).to_numpy())
+        self.ecg_ids = torch.as_tensor(df.index.to_numpy())
         self.labels = None
 
         def load_transform_data_fn() -> torch.Tensor:
@@ -69,4 +70,5 @@ class PtbxlECGDataset(BaseECGDataset):
         )
 
         assert self.patient_ids.shape[0] == self.waveforms.shape[0]
+        assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
         assert self.labels is None or self.patient_ids.shape[0] == self.labels.shape[0]

@@ -4,43 +4,50 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..defines import RESNET_T
+from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
 
 
-class PrototypeContraster(nn.Module):
+class PrototypeContraster(PretrainedMixin, nn.Module):
     def __init__(
         self,
         *,  # enforce kwargs
         resnet_type: RESNET_T,
         n_prototypes: int,
-        proj_dim: int,
+        proj_dim: int | None = None,
         init_log_temp: float = 0.07,
         learnable_temp: bool = True,
+        pretrained_weights: str | None = None,
     ):
         super().__init__()
-        self.prototype_encoder = PrototypeEncoder(
+        self.encoder = PrototypeEncoder(
             resnet_type=resnet_type,
             n_prototypes=n_prototypes,
         )
+        emb_dim = self.encoder.prototypes.shape[1]
+        if proj_dim is None:
+            proj_dim = emb_dim // 2
         self.proj = nn.Linear(
-            in_features=self.prototype_encoder.prototypes.shape[1],
+            in_features=emb_dim,
             out_features=proj_dim,
         )
         self.log_temperature = nn.Parameter(
             torch.ones([]) * np.log(1 / init_log_temp),
             requires_grad=learnable_temp,
         )
+        if pretrained_weights is not None:
+            self.load_pretrained_weights(pretrained_weights)
 
     def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
         assert x1.shape == x2.shape
 
         # compute prototype similarities
-        x1 = self.prototype_encoder(x1)  # (B, P), P = n_prototypes
-        x2 = self.prototype_encoder(x2)  # (B, P)
+        x1 = self.encoder(x1)  # (B, P), P = n_prototypes
+        x2 = self.encoder(x2)  # (B, P)
 
         # compute weighted prototypes
-        x1 = x1 @ self.prototype_encoder.prototypes  # (B, E), E = emb_dim
-        x2 = x2 @ self.prototype_encoder.prototypes  # (B, E)
+        x1 = x1 @ self.encoder.prototypes  # (B, E), E = emb_dim
+        x2 = x2 @ self.encoder.prototypes  # (B, E)
 
         # projection
         x1 = self.proj(x1)  # (B, H), H = proj_dim
@@ -91,3 +98,11 @@ class PrototypeContraster(nn.Module):
         )
 
         return loss_12 + loss_21
+
+    @property
+    def allow_extra_keys(self) -> list[str]:
+        return []
+
+    @property
+    def allow_missing_keys(self) -> list[str]:
+        return []
