@@ -28,12 +28,6 @@ from .models import (
     ResNetClassifier,
 )
 
-MODEL_T = Literal[
-    "PrototypeContraster",
-    "PrototypeClassifier",
-    "ResNetClassifier",
-]
-
 torch.set_float32_matmul_precision("medium")
 
 
@@ -139,20 +133,11 @@ class LitData(LightningDataModule):
         return self.test_dataloader()
 
 
-def warn_unused(**kwargs):
-    for k, v in kwargs.items():
-        if v is not None:
-            print(
-                f"WARNING: {k} is set but is unused for given pipeline_stage and model_type"
-            )
-
-
 class LitModel(LightningModule):
     def __init__(
         self,
         resnet_type: RESNET_T,
         pipeline_stage: STAGE_T,
-        model_type: MODEL_T,
         n_prototypes: int | None = None,
         label_names: list[str] | None = None,
         pretrained_weights: str | None = None,
@@ -161,41 +146,39 @@ class LitModel(LightningModule):
         self.lr = None
         self.save_hyperparameters()
 
-        # fmt: off
-        if model_type in ["ResNetClassifier", "PrototypeClassifier"] and pipeline_stage != "train-classifier":
-            raise ValueError("Can only use model_type=ResNetClassifier,PrototypeClassifier with pipeline_stage=train-classifier")
-
-        if model_type == "PrototypeContraster" and pipeline_stage not in {"learn-prototypes", "project-prototypes"}:
-            raise ValueError("Can only use model_type=PrototypeContraster with pipeline_stage=learn-prototypes,project-prototypes")
-        # fmt: on
-
-        if model_type == "PrototypeContraster":
-            assert n_prototypes is not None
-            warn_unused(label_names=label_names)
+        if n_prototypes is not None and label_names is None:
+            if pipeline_stage not in ["learn-prototypes", "project-prototypes"]:
+                raise ValueError(
+                    "Can only use model_type=PrototypeContraster (implied by setting n_prototypes and not setting label_names) with pipeline_stage=learn-prototypes,project-prototypes"
+                )
             self.model = PrototypeContraster(
                 resnet_type=resnet_type,
                 n_prototypes=n_prototypes,
                 pretrained_weights=pretrained_weights,
             )
-        elif model_type == "PrototypeClassifier":
-            assert n_prototypes is not None
-            assert label_names is not None
+        elif n_prototypes is not None and label_names is not None:
+            if pipeline_stage != "train-classifier":
+                raise ValueError(
+                    "Can only use model_type=PrototypeClassifier (implied by setting both n_prototypes and label_names) with pipeline_stage=train-classifier"
+                )
             self.model = PrototypeClassifier(
                 resnet_type=resnet_type,
                 n_prototypes=n_prototypes,
                 n_binary_labels=len(label_names),
                 pretrained_weights=pretrained_weights,
             )
-        elif model_type == "ResNetClassifier":
-            assert label_names is not None
-            warn_unused(n_prototypes=n_prototypes)
+        elif n_prototypes is None and label_names is not None:
+            if pipeline_stage != "train-classifier":
+                raise ValueError(
+                    "Can only use model_type=ResNetClassifier (implied by setting label_names and not setting n_prototypes) with pipeline_stage=train-classifier"
+                )
             self.model = ResNetClassifier(
                 resnet_type=resnet_type,
                 n_binary_labels=len(label_names),
                 pretrained_weights=pretrained_weights,
             )
         else:
-            raise ValueError(f"Unknown model_type {model_type}")
+            raise ValueError(f"Cannot infer model type from given parameters")
 
         if pretrained_weights is not None and isinstance(self.model, BaseClassifier):
             self.model.freeze_encoder()
