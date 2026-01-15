@@ -18,7 +18,7 @@ PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-transfer/outputs/runs/pass-pretr
 N_PROTOTYPES=128
 
 # this version relies on samples projected in the pretraining dataset
-python -m pass_pclr.trainer main.py \
+python -m pass_pclr.trainer \
     --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \

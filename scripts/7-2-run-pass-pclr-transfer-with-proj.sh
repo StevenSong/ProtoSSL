@@ -19,7 +19,7 @@ N_PROTOTYPES=128
 
 # this version relies on samples projected in the transfer dataset
 # first project
-python -m pass_pclr.trainer main.py \
+python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \
@@ -29,7 +29,7 @@ python -m pass_pclr.trainer main.py \
     --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt
 
 # then train classifier
-python -m pass_pclr.trainer main.py \
+python -m pass_pclr.trainer \
     --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \

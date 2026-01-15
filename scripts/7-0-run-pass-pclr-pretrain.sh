@@ -16,7 +16,8 @@ cd $REPO_ROOT/scripts
 EXP_NAME="pass-pretrain-ptbxl"
 N_PROTOTYPES=128
 
-python -m pass_pclr.trainer main.py \
+# pretrain via self supervised prototype learning
+python -m pass_pclr.trainer \
     --pipeline-stage learn-prototypes \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \
@@ -24,7 +25,8 @@ python -m pass_pclr.trainer main.py \
     --data.dataset_path $PRETRAIN_DATASET \
     --model.n_prototypes $N_PROTOTYPES \
 
-python -m pass_pclr.trainer main.py \
+# project in the pretraining dataset
+python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \
