@@ -93,6 +93,11 @@ class LitData(LightningDataModule):
             if stage == "predict" and pipeline_stage == "project-prototypes":
                 # hijack predict for prototype projection over training samples
                 split = "train"
+                print("======================LitData======================")
+                print(
+                    "Using training split for prediction data loader for prototype projection stage"
+                )
+                print("===================================================")
 
             test_ds = self.ds_cls(
                 dataset_path=dataset_path,
@@ -244,7 +249,7 @@ class LitModel(LightningModule):
             )
             for prot_idx, curr_sim in enumerate(self.prototype_sims):
                 prot_sims = sims[:, prot_idx]
-                candidates = (prot_sims > curr_sim).argwhere().squeeze()
+                candidates = (prot_sims > curr_sim).argwhere().squeeze(1)
                 if candidates.shape[0] == 0:
                     # none in batch are more similar to any of the prototypes
                     continue

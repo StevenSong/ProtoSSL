@@ -1,5 +1,3 @@
-from typing import Callable
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -23,7 +21,7 @@ class PrototypeEncoder(BaseEncoder):
         super().__init__()
         self.resnet = ResNet1D(resnet_type=resnet_type)
         self.prototypes = nn.Parameter(
-            torch.ones(n_prototypes, self.resnet.emb_dim),
+            torch.randn(n_prototypes, self.resnet.emb_dim),
             requires_grad=True,
         )
         self.emb_dim = n_prototypes

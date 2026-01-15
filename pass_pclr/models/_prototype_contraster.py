@@ -54,6 +54,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         x2 = self.proj(x2)  # (B, H)
 
         # simclr loss
+        # TODO maybe add prototype diversity loss, koleo?
         loss = self._simclr_loss(x1, x2)
         return loss
 
