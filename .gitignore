@@ -217,4 +217,5 @@ temp/
 outputs/
 scripts/slurm-logs/
 protoecgnet-cache/
+pass_pclr_cache/
 plot/figs/

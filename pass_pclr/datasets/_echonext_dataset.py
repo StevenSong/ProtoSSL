@@ -24,13 +24,15 @@ class EchoNextECGDataset(BaseECGDataset):
         _path = Path(dataset_path)
         df = pd.read_csv(_path / "EchoNext_metadata_100k.csv")
         df = df.rename(columns=mapping)
-        df = df.loc[df["split"] == split, target_cols].reset_index(drop=True)
+        split_mask = df["split"] == split
+        id_df = df.loc[split_mask, ["patient_key", "ecg_key"]].reset_index(drop=True)
+        label_df = df.loc[split_mask, target_cols].reset_index(drop=True)
 
-        self.patient_ids = torch.as_tensor(df["patient_key"].to_numpy())
-        self.ecg_ids = torch.as_tensor(df["ecg_key"].to_numpy())
+        self.patient_ids = torch.as_tensor(id_df["patient_key"].to_numpy())
+        self.ecg_ids = torch.as_tensor(id_df["ecg_key"].to_numpy())
         self.labels = torch.as_tensor(
-            df.to_numpy(),
-            dtype=torch.float32,
+            label_df.to_numpy(),
+            dtype=torch.long,
         )  # (N, num_classes)
 
         def load_transform_data_fn() -> torch.Tensor:

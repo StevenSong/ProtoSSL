@@ -73,7 +73,7 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         losses = []
         probs = []
         for i in range(0, logits.shape[1], 2):
-            per_label_logits = logits[:, i : i + 1]  # (B, 2)
+            per_label_logits = logits[:, i : i + 2]  # (B, 2)
             per_label_loss = F.cross_entropy(
                 input=per_label_logits,  # (B, 2)
                 target=y[:, i // 2],  # (B, 2)
@@ -81,14 +81,17 @@ class BaseClassifier(PretrainedMixin, nn.Module):
             losses.append(per_label_loss)
             probs.append(F.softmax(per_label_logits, dim=1)[:, 1])
 
-        losses = torch.as_tensor(losses)
-        probs = torch.as_tensor(probs)
+        losses = torch.stack(losses)  # (L,)
+        probs = torch.stack(probs)  # (L, B)
 
         return losses, probs
 
     def freeze_encoder(self):
         for param in self.encoder.parameters():
             param.requires_grad = False
+        print("==================freeze_encoder==================")
+        print("Froze classifier encoder, only training classification layer")
+        print("===================================================")
 
     @property
     def allow_size_mismatched_keys(self) -> list[str]:

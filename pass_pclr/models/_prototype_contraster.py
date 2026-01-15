@@ -76,7 +76,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         logits_22 = (x2 @ x2.T) * logit_scale
 
         # mask out autosimilarity diagonal
-        mask = torch.eye(B)
+        mask = torch.eye(B, dtype=x1.dtype, device=x1.device)
         logits_11 = (1 - mask) * logits_11 + mask * -100  # CE loss ignore_index
         logits_22 = (1 - mask) * logits_22 + mask * -100
 
@@ -87,7 +87,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         # CE loss over concatenated matrices [A B]
         # where A is the cross-batch similiarities whose diagonal should be maximized (given by target)
         # and B is the in-batch similarities which should be minimized
-        labels = torch.arange(B)
+        labels = torch.arange(B, dtype=torch.long, device=x1.device)
         loss_12 = F.cross_entropy(
             input=torch.concat((logits_12, logits_11), dim=1),
             target=labels,

@@ -21,6 +21,7 @@ class PretrainedMixin(ABC, nn.Module):
         return []
 
     def load_pretrained_weights(self, pretrained_weights: str):
+        print(f"==============load_pretrained_weights==============")
         sd = torch.load(
             pretrained_weights,
             weights_only=False,
@@ -52,6 +53,18 @@ class PretrainedMixin(ABC, nn.Module):
         bad_keys = self.load_state_dict(sd, strict=False)
         bad_extra = set(bad_keys.unexpected_keys) - set(self.allow_extra_keys)
         bad_missing = set(bad_keys.missing_keys) - set(self.allow_missing_keys)
+        skipped_extra = set(bad_keys.unexpected_keys) & set(self.allow_extra_keys)
+        skipped_missing = set(bad_keys.missing_keys) & set(self.allow_missing_keys)
+        if len(skipped_extra) != 0:
+            print(
+                f"These extra keys were in pretrained_weights but are allowed to be extra according to the current model configuration:\n"
+                f"Allowed extra keys: {sorted(list(skipped_extra))}"
+            )
+        if len(skipped_missing) != 0:
+            print(
+                f"These keys were missing from pretrained_weights but are allowed to be missing according to the current model configuration:\n"
+                f"Allowed missing keys: {sorted(list(skipped_missing))}"
+            )
         if len(bad_extra) != 0 or len(bad_missing) != 0:
             raise ValueError(
                 f"Tried to load weights from {pretrained_weights} but got unexpected mismatching keys:\n"
@@ -59,3 +72,4 @@ class PretrainedMixin(ABC, nn.Module):
                 f"Missing keys: {sorted(list(bad_extra))}"
             )
         print(f"Pretrained weights loaded from {pretrained_weights}")
+        print(f"===================================================")

@@ -1,12 +1,21 @@
 import hashlib
 import os
+import shutil
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 
 import torch
 from torch.utils.data import Dataset
 
-from pass_pclr.defines import CACHE_DIR, SPLIT_T
+from ..defines import CACHE_DIR, SPLIT_T
+
+INVALIDATE_CACHE = os.environ.get("INVALIDATE_CACHE") == "yes im sure"
+if INVALIDATE_CACHE:
+    print("==================INVALIDATE_CACHE=================")
+    print("INVALIDATE_CACHE env var set, deleting entire cache")
+    print("===================================================")
+    if os.path.exists(CACHE_DIR):
+        shutil.rmtree(CACHE_DIR)
 
 
 class BaseECGDataset(Dataset, ABC):
@@ -62,13 +71,21 @@ def load_cached_data(
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     cache_file = os.path.join(CACHE_DIR, f"{hashed}.pt")
 
+    print("=================load_cached_data==================")
+    print(f"Dataset parameters: ({dataset_path}, {split}, {sampling_rate}Hz)")
     if not os.path.exists(cache_file):
+        print("Cache file not found, loading/transforming from source")
+
         # all params and processing should be wrapped in this loader function
         X = load_transform_data_fn()
+        X = X.float()
 
         # cache data
         torch.save(X, cache_file)
+        print(f"Dataset cached to {cache_file}")
 
     # load cached data
     X = torch.load(cache_file)
+    print(f"Cached dataset loaded from {cache_file}")
+    print("===================================================")
     return X

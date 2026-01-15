@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import Literal, Type, get_args
+from typing import Type, get_args
 
 import numpy as np
 import pandas as pd
@@ -61,16 +61,17 @@ class LitData(LightningDataModule):
         super().__init__()
         self.save_hyperparameters()
 
+        # label names is linked to LitModel via LitCLI
+        self.ds_cls, self.label_names = infer_dataset_class_from_path(dataset_path)
+
     def setup(self, stage: str):
         dataset_path: str = self.hparams.dataset_path  # type: ignore
         sampling_rate: int = self.hparams.sampling_rate  # type: ignore
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
         wrap_pclr = pipeline_stage == "learn-prototypes"
 
-        ECGDataset, self.label_names = infer_dataset_class_from_path(dataset_path)
-
         if stage == "fit":
-            train_ds = ECGDataset(
+            train_ds = self.ds_cls(
                 dataset_path=dataset_path,
                 split="train",
                 sampling_rate=sampling_rate,
@@ -79,7 +80,7 @@ class LitData(LightningDataModule):
                 train_ds = PCLRWrapperDataset(train_ds)
             self.train_ds = train_ds
         if stage in ["fit", "validate"]:
-            val_ds = ECGDataset(
+            val_ds = self.ds_cls(
                 dataset_path=dataset_path,
                 split="val",
                 sampling_rate=sampling_rate,
@@ -88,9 +89,14 @@ class LitData(LightningDataModule):
                 val_ds = PCLRWrapperDataset(val_ds)
             self.val_ds = val_ds
         if stage in ["test", "predict"]:
-            test_ds = ECGDataset(
+            split = "test"
+            if stage == "predict" and pipeline_stage == "project-prototypes":
+                # hijack predict for prototype projection over training samples
+                split = "train"
+
+            test_ds = self.ds_cls(
                 dataset_path=dataset_path,
-                split="test",
+                split=split,
                 sampling_rate=sampling_rate,
             )
             if wrap_pclr:
@@ -185,6 +191,7 @@ class LitModel(LightningModule):
 
         if pipeline_stage == "project-prototypes":
             assert n_prototypes is not None
+            # dummy tensor values, mostly to help with type checking
             self.prototype_sims = [torch.as_tensor(-np.inf)] * n_prototypes
             self.prototype_embs = [torch.empty(0)] * n_prototypes
             self.prototype_ids = [
@@ -233,17 +240,18 @@ class LitModel(LightningModule):
             embs = self.model.encoder.resnet(batch["waveform"])  # (B, d_emb)
             sims = self.model.encoder.sim_fn(  # (B, n_prototypes)
                 embs,  # (B, d_emb)
-                self.model.encoder.prototypes.T,  # (d_emb, n_prototypes)
+                self.model.encoder.prototypes,  # (n_prototypes, d_emb)
             )
             for prot_idx, curr_sim in enumerate(self.prototype_sims):
-                candidates = (sims > curr_sim).argwhere().squeeze()
+                prot_sims = sims[:, prot_idx]
+                candidates = (prot_sims > curr_sim).argwhere().squeeze()
                 if candidates.shape[0] == 0:
                     # none in batch are more similar to any of the prototypes
                     continue
                 batch_idx = candidates[0]
                 _id = (batch["patient_id"][batch_idx], batch["ecg_id"][batch_idx])
                 _emb = embs[batch_idx]
-                _sim = sims[batch_idx]
+                _sim = prot_sims[batch_idx]
 
                 self.prototype_sims[prot_idx] = _sim
                 self.prototype_embs[prot_idx] = _emb
@@ -265,6 +273,7 @@ class LitModel(LightningModule):
             for i, target_name in enumerate(label_names):
                 losses[target_name] = _losses[i]
                 probs[target_name] = _probs[i]
+
             loss = self._log_and_composite_losses(
                 stage=stage,
                 losses=losses,
@@ -320,9 +329,7 @@ class LitModel(LightningModule):
             assert isinstance(self.model, PrototypeContraster)
             # save prototypes to model parameter
             with torch.no_grad():
-                self.model.encoder.prototypes.copy_(
-                    torch.as_tensor(self.prototype_embs)
-                )
+                self.model.encoder.prototypes.copy_(torch.stack(self.prototype_embs))
 
 
 @rank_zero_only
@@ -408,8 +415,8 @@ class PredictionWriter(BasePredictionWriter):
         # (hard to set pipeline_stage on prediction_writer with CLI link_arguments)
         # if we're doing prototype-projection, predictions are the prototype metadata after projection
         # otherwise, predictions are classification predictions from train-classifier
-        if pl_module.prototype_ids is None:
-            target_names: list[str] = pl_module.target_names  # type: ignore
+        if not hasattr(pl_module, "prototype_ids"):
+            target_names: list[str] = pl_module.hparams.label_names  # type: ignore
             probs = {k: [] for k in target_names}
             for batch_probs in predictions:
                 for k in target_names:
@@ -425,14 +432,14 @@ class PredictionWriter(BasePredictionWriter):
             # predictions are all None (see LitModel above)
             # pl_module has prototype metadata to save
             n_prototypes = len(pl_module.prototype_sims)  # type: ignore
-            pl_module.prototype_sims
-            pl_module.prototype_ids
+            pids = [pid for pid, eid in pl_module.prototype_ids]  # type: ignore
+            eids = [eid for pid, eid in pl_module.prototype_ids]  # type: ignore
             meta = pd.DataFrame.from_dict(
                 {
                     "prototype_id": np.arange(n_prototypes),
-                    "patient_id": [pid for pid, eid in pl_module.prototype_ids],  # type: ignore
-                    "ecg_id": [eid for pid, eid in pl_module.prototype_ids],  # type: ignore
-                    "emb_sim": pl_module.prototype_sims,
+                    "patient_id": torch.stack(pids).tolist(),
+                    "ecg_id": torch.stack(eids).tolist(),
+                    "emb_sim": torch.stack(pl_module.prototype_sims).tolist(),  # type: ignore
                 },
                 orient="columns",
             )
@@ -474,13 +481,13 @@ def run():
             datamodule=cli.datamodule,
         )
     elif pipeline_stage == "project-prototypes":
-        # hijack predict over train set for prototype projection
+        # hijack predict over train set for prototype projection (see LitData above)
         cli.trainer.predict(
             model=cli.model,
-            dataloaders=cli.datamodule.train_dataloader(),
+            datamodule=cli.datamodule,
         )
         ckpt_path = os.path.join(cli.trainer.log_dir, "proj.ckpt")  # type: ignore
-        cli.trainer.save_checkpoint(ckpt_path)
+        cli.trainer.save_checkpoint(ckpt_path, weights_only=False)
     elif pipeline_stage == "train-classifier":
         cli.trainer.fit(
             model=cli.model,

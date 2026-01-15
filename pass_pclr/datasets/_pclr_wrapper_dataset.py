@@ -24,6 +24,7 @@ class PCLRWrapperDataset(Dataset):
         assert x2["patient_id"] == pid
         assert x1["ecg_id"] != x2["ecg_id"]
         return {
+            "patient_id": pid,
             "x1": x1["waveform"],
             "x2": x2["waveform"],
         }
