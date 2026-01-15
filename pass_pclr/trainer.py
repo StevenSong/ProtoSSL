@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import Type, get_args
+from typing import get_args
 
 import numpy as np
 import pandas as pd
@@ -14,13 +14,8 @@ from lightning.pytorch.utilities import rank_zero_only
 from torch.utils.data import DataLoader
 from wandb.util import generate_id
 
-from .datasets import (
-    BaseECGDataset,
-    EchoNextECGDataset,
-    PCLRWrapperDataset,
-    PtbxlECGDataset,
-)
-from .defines import ECHONEXT_TARGETS, RESNET_T, STAGE_T
+from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
+from .defines import RESNET_T, STAGE_T
 from .models import (
     BaseClassifier,
     PrototypeClassifier,
@@ -29,24 +24,6 @@ from .models import (
 )
 
 torch.set_float32_matmul_precision("medium")
-
-
-def infer_dataset_class_from_path(
-    dataset_path: str,
-) -> tuple[
-    Type[BaseECGDataset],
-    list[str] | None,  # label names
-]:
-    echonext_indicators = ["echonext", "echo-next", "echo_next"]
-    ptbxl_indicators = ["ptbxl", "ptb-xl", "ptb_xl"]
-
-    if any(x in dataset_path for x in echonext_indicators):
-        return EchoNextECGDataset, list(ECHONEXT_TARGETS.keys())
-    elif any(x in dataset_path for x in ptbxl_indicators):
-        return PtbxlECGDataset, None
-    raise ValueError(
-        f"Could not infer BaseECGDataset subclass from dataset_path: {dataset_path}"
-    )
 
 
 class LitData(LightningDataModule):
@@ -144,6 +121,19 @@ class LitData(LightningDataModule):
         return self.test_dataloader()
 
 
+def warn_unused(**kwargs):
+    to_warn = []
+    for k, v in kwargs.items():
+        if v is not None:
+            to_warn.append(k)
+    if len(to_warn) != 0:
+        print("=================UNUSED_PARAMETERS=================")
+        print("WARNING: unused parameters detected")
+        for k in to_warn:
+            print(f"WARNING: {k} is set but unused")
+        print("===================================================")
+
+
 class LitModel(LightningModule):
     def __init__(
         self,
@@ -157,39 +147,48 @@ class LitModel(LightningModule):
         self.lr = None
         self.save_hyperparameters()
 
-        if n_prototypes is not None and label_names is None:
-            if pipeline_stage not in ["learn-prototypes", "project-prototypes"]:
+        if pipeline_stage == "learn-prototypes":
+            if n_prototypes is None:
                 raise ValueError(
-                    "Can only use model_type=PrototypeContraster (implied by setting n_prototypes and not setting label_names) with pipeline_stage=learn-prototypes,project-prototypes"
+                    "pipeline_stage=learn-prototypes must be used with model_type=PrototypeContraster and setting n_prototypes"
                 )
+            warn_unused(label_names=label_names)
             self.model = PrototypeContraster(
                 resnet_type=resnet_type,
                 n_prototypes=n_prototypes,
                 pretrained_weights=pretrained_weights,
             )
-        elif n_prototypes is not None and label_names is not None:
-            if pipeline_stage != "train-classifier":
+        elif pipeline_stage == "project-prototypes":
+            if n_prototypes is None or pretrained_weights is None:
                 raise ValueError(
-                    "Can only use model_type=PrototypeClassifier (implied by setting both n_prototypes and label_names) with pipeline_stage=train-classifier"
+                    "pipeline_stage=project-prototypes must be used with model_type=PrototypeContraster and setting n_prototypes AND pretrained_weights"
                 )
-            self.model = PrototypeClassifier(
+            warn_unused(label_names=label_names)
+            self.model = PrototypeContraster(
                 resnet_type=resnet_type,
                 n_prototypes=n_prototypes,
-                n_binary_labels=len(label_names),
                 pretrained_weights=pretrained_weights,
             )
-        elif n_prototypes is None and label_names is not None:
-            if pipeline_stage != "train-classifier":
-                raise ValueError(
-                    "Can only use model_type=ResNetClassifier (implied by setting label_names and not setting n_prototypes) with pipeline_stage=train-classifier"
+        elif pipeline_stage == "train-classifier":
+            if n_prototypes is not None and label_names is not None:
+                self.model = PrototypeClassifier(
+                    resnet_type=resnet_type,
+                    n_prototypes=n_prototypes,
+                    n_binary_labels=len(label_names),
+                    pretrained_weights=pretrained_weights,
                 )
-            self.model = ResNetClassifier(
-                resnet_type=resnet_type,
-                n_binary_labels=len(label_names),
-                pretrained_weights=pretrained_weights,
-            )
+            elif n_prototypes is None and label_names is not None:
+                self.model = ResNetClassifier(
+                    resnet_type=resnet_type,
+                    n_binary_labels=len(label_names),
+                    pretrained_weights=pretrained_weights,
+                )
+            else:
+                raise ValueError(
+                    f"Cannot infer classifier model type from given parameters for pipeline_stage=train-classifier"
+                )
         else:
-            raise ValueError(f"Cannot infer model type from given parameters")
+            raise ValueError(f"Unknown pipeline_stage {pipeline_stage}")
 
         if pretrained_weights is not None and isinstance(self.model, BaseClassifier):
             self.model.freeze_encoder()
