@@ -299,6 +299,7 @@ def plot_lift(
     baseline_model: str,
     palette: dict[str, str],
     title: str,
+    ylim: tuple[float, float] | None = None,
     save_path: str | None = None,
 ):
     palette = palette.copy()
@@ -334,7 +335,9 @@ def plot_lift(
     ax.set_xscale("log", base=2)
     ax.set_xlim((min_size, max_size))
     ax.set_title(title)
-    # ax.set_ylim((0.4, 0.9))
+    ax.legend(loc="lower right")
+    if ylim is not None:
+        ax.set_ylim(ylim)
     if save_path is not None:
         fig.tight_layout()
         fig.savefig(save_path)
