@@ -41,9 +41,13 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
     def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
         assert x1.shape == x2.shape
 
-        # compute prototype similarities
+        # compute prototype similarity scores
         x1 = self.encoder(x1)  # (B, P), P = n_prototypes
         x2 = self.encoder(x2)  # (B, P)
+
+        # convert scores to probabilities
+        x1 = F.softmax(x1, dim=1)
+        x2 = F.softmax(x2, dim=1)
 
         # compute weighted prototypes
         x1 = x1 @ self.encoder.prototypes  # (B, E), E = emb_dim
@@ -53,13 +57,13 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         x1 = self.proj(x1)  # (B, H), H = proj_dim
         x2 = self.proj(x2)  # (B, H)
 
-        # simclr loss
-        # TODO maybe add prototype diversity loss, koleo?
-        loss = self._simclr_loss(x1, x2)
-        return loss
+        # compute losses
+        simclr_loss = self._simclr_loss(x1, x2)
+        koleo_loss = self._koleo_loss(x1) + self._koleo_loss(x2)
+        return simclr_loss + koleo_loss
 
     def _simclr_loss(self, x1: torch.Tensor, x2: torch.Tensor):
-        # simclr training objective from SimCLR: https://arxiv.org/pdf/2002.05709
+        # simclr training objective from: https://arxiv.org/pdf/2002.05709
         # implementation adapted from: https://github.com/google-research/simclr/blob/master/objective.py
         # learnable logit_scale adapted from CLIP: https://arxiv.org/pdf/2103.00020
 
@@ -99,6 +103,31 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         )
 
         return loss_12 + loss_21
+
+    def _koleo_loss(self, x: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
+        # koleo loss implementation from dinov2
+        # https://github.com/facebookresearch/dinov2/blob/main/dinov2/loss/koleo_loss.py
+
+        x = F.normalize(x, eps=eps, p=2, dim=-1)  # (B, H)
+
+        # compute pairwise nearest neighbor given L2-normalized vectors
+        dots = x @ x.T  # (B, B)
+
+        # trick to fill diagonal with -1
+        dots.view(-1)[:: (x.shape[0] + 1)].fill_(-1)
+
+        # get indices of max inner prod -> min distance
+        _, I = torch.max(dots, dim=1)  # (B,)
+
+        # maximize distance between nearest neighbors
+        distances = F.pairwise_distance(
+            x,  # (B, H)
+            x[I],  # (B, H)
+            eps=eps,
+            p=2,
+        )  # (B,)
+        loss = -torch.log(distances + eps).mean()
+        return loss
 
     @property
     def allow_extra_keys(self) -> list[str]:
