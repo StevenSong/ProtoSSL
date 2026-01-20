@@ -3,7 +3,7 @@
 set -e
 
 HEEDB_DATA=/opt/gpudata/ecg/heedb
-RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/outputs
+RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/outputs/heedb_normalizations
 REPO_ROOT=/opt/gpudata/steven/ecg-prototype-transfer
 cd $REPO_ROOT/scripts
 

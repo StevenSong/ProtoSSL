@@ -119,9 +119,12 @@ def parallel_welford_update(
     return mean, var, n
 
 
-def run(dataset_path: str, output_path: str):
+def run(dataset_path: str, output_path: str, limit_n: int | None = None):
     os.makedirs(output_path, exist_ok=True)
     df = get_heedb_train_metadata(dataset_path)
+    if limit_n is not None:
+        print(f"!!! TRUNCATING TO {limit_n} SAMPLES, IS THIS A DEV RUN? !!!")
+        df = df.iloc[:limit_n]
     lowers, uppers = get_lowers_uppers(dataset_path, df)
     with open(os.path.join(output_path, "heedb_lowers_uppers.json"), "w") as f:
         json.dump(
@@ -148,10 +151,11 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--dataset_path", required=True)
     parser.add_argument("--output_path", required=True)
+    parser.add_argument("--limit_n", type=int)
     args = parser.parse_args()
     return args
 
 
 if __name__ == "__main__":
     args = parse_args()
-    run(args.dataset_path, args.output_path)
+    run(args.dataset_path, args.output_path, args.limit_n)
