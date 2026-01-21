@@ -74,6 +74,9 @@ class StreamingECGWaveforms:
         self.per_lead_upperbound = per_lead_upperbound
         self.per_lead_mean = per_lead_mean
         self.per_lead_std = per_lead_std
+        print("===============StreamingECGWaveforms===============")
+        print("Using streaming ECG waveforms")
+        print("===================================================")
 
     def __getitem__(self, i: int) -> torch.Tensor:
         fpath = self.wfdb_paths[i]
@@ -103,6 +106,7 @@ class StreamingECGWaveforms:
                 axis=0,
             )  # (10 * sampling_rate, 12)
 
+        x = x.astype(np.float32)
         return torch.as_tensor(x).mT  # (L, T) - shape expected by BaseECGDataset
 
     @property

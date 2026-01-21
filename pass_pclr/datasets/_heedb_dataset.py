@@ -53,6 +53,7 @@ class HeedbECGDataset(BaseECGDataset):
         df = df[mask].reset_index(drop=True)
         self.patient_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.ecg_ids = torch.as_tensor(df["ecg_id"].to_numpy())
+        self.labels = None
 
         wfdb_paths = [_path / "I0001/WFDB" / f for f in df["fpath"]]
         self.waveforms = StreamingECGWaveforms(
