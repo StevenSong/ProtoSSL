@@ -75,7 +75,7 @@ class StreamingECGWaveforms:
         self.per_lead_mean = per_lead_mean
         self.per_lead_std = per_lead_std
         print("===============StreamingECGWaveforms===============")
-        print("Using streaming ECG waveforms")
+        print("Using streaming ECG waveforms, will load and transform data on the fly")
         print("===================================================")
 
     def __getitem__(self, i: int) -> torch.Tensor:

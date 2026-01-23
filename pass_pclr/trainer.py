@@ -34,6 +34,7 @@ class LitData(LightningDataModule):
         batch_size: int,
         num_workers: int,
         sampling_rate: int = 100,
+        prefetch_factor: int | None = None,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -95,6 +96,7 @@ class LitData(LightningDataModule):
             drop_last=False,
             batch_size=self.hparams.batch_size,  # type: ignore
             num_workers=self.hparams.num_workers,  # type: ignore
+            prefetch_factor=self.hparams.prefetch_factor,  # type: ignore
         )
 
     def val_dataloader(self):
@@ -105,6 +107,7 @@ class LitData(LightningDataModule):
             drop_last=False,
             batch_size=self.hparams.batch_size,  # type: ignore
             num_workers=self.hparams.num_workers,  # type: ignore
+            prefetch_factor=self.hparams.prefetch_factor,  # type: ignore
         )
 
     def test_dataloader(self):
@@ -115,6 +118,7 @@ class LitData(LightningDataModule):
             drop_last=False,
             batch_size=self.hparams.batch_size,  # type: ignore
             num_workers=self.hparams.num_workers,  # type: ignore
+            prefetch_factor=self.hparams.prefetch_factor,  # type: ignore
         )
 
     def predict_dataloader(self):

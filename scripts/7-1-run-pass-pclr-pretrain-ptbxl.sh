@@ -23,7 +23,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET \
-    --model.n_prototypes $N_PROTOTYPES \
+    --model.n_prototypes $N_PROTOTYPES
 
 # project in the pretraining dataset
 python -m pass_pclr.trainer \
