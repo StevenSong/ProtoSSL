@@ -4,12 +4,12 @@ set -e
 
 # set these env vars prior to executing this script
 # ECHONEXT_DATA=/opt/gpudata/ecg/echonext
-# RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/runs
+# RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/runs
 : "${ECHONEXT_DATA:?Env var ECHONEXT_DATA must be set prior to script execution}"
 : "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
 echo "Using ECHONEXT_DATA=$ECHONEXT_DATA"
 echo "Using RUN_DIR=$RUN_DIR"
-REPO_ROOT=/opt/gpudata/steven/ecg-prototype-transfer
+REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 cd $REPO_ROOT/scripts
 RESNET=resnet50
 CONV=1D
