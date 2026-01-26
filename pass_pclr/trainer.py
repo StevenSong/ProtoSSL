@@ -162,10 +162,13 @@ class LitModel(LightningModule):
                 n_prototypes=n_prototypes,
                 pretrained_weights=pretrained_weights,
             )
-        elif pipeline_stage == "project-prototypes":
+        elif (
+            pipeline_stage == "project-prototypes"
+            or pipeline_stage == "compute-embeddings"
+        ):
             if n_prototypes is None or pretrained_weights is None:
                 raise ValueError(
-                    "pipeline_stage=project-prototypes must be used with model_type=PrototypeContraster and setting n_prototypes AND pretrained_weights"
+                    "pipeline_stage=[project-prototypes|compute-embeddings] must be used with model_type=PrototypeContraster and setting n_prototypes AND pretrained_weights"
                 )
             warn_unused(label_names=label_names)
             self.model = PrototypeContraster(
@@ -199,7 +202,7 @@ class LitModel(LightningModule):
 
         if pipeline_stage == "project-prototypes":
             assert n_prototypes is not None
-            # dummy tensor values, mostly to help with type checking
+            # placeholder tensor values for the prediction writer to access, mostly to help with type checking
             self.prototype_sims = [torch.as_tensor(-np.inf)] * n_prototypes
             self.prototype_embs = [torch.empty(0)] * n_prototypes
             self.prototype_ids = [
@@ -215,7 +218,9 @@ class LitModel(LightningModule):
         sync_dist: bool = False,
     ) -> tuple[
         torch.Tensor | None,  # scalar (composite) loss value
-        dict[str, torch.Tensor] | None,  # 1D arrays of predicted probabilities
+        dict[str, torch.Tensor]  # 1D arrays of predicted probabilities
+        | torch.Tensor  # embeddings
+        | None,
     ]:
         batch_size = batch["patient_id"].shape[0]
 
@@ -227,7 +232,7 @@ class LitModel(LightningModule):
                     f"Cannot use _common_step with pipeline_stage=learn-prototype and (lightning) stage={stage}"
                 )
             # x1/x2 keys
-            probs = None
+            preds = None
             loss = self.model(
                 batch["x1"],
                 batch["x2"],
@@ -243,8 +248,9 @@ class LitModel(LightningModule):
                     f"Cannot use pipeline_stage=project-prototypes with non-predict stage (got stage={stage}).\n"
                     f"We hijack lightning.Trainer.predict with the train set for prototype projection (model in eval mode and write projection metadata)."
                 )
-            loss, probs = None, None
+            loss, preds = None, None
             # waveform/label keys
+            # NOTE: we don't just use the PrototypeEncoder forward because we need the ResNet embeddings
             embs = self.model.encoder.resnet(batch["waveform"])  # (B, d_emb)
             sims = self.model.encoder.sim_fn(  # (B, n_prototypes)
                 embs,  # (B, d_emb)
@@ -264,23 +270,31 @@ class LitModel(LightningModule):
                 self.prototype_sims[prot_idx] = _sim
                 self.prototype_embs[prot_idx] = _emb
                 self.prototype_ids[prot_idx] = _id
+        elif pipeline_stage == "compute-embeddings":
+            assert isinstance(self.model, PrototypeContraster)
+            if stage != "predict":
+                raise ValueError(
+                    f"Cannot use pipeline_stage=compute-embeddings with non-predict stage (got stage={stage}).\n"
+                )
+            loss = None
+            preds = self.model.encoder(batch["waveform"])  # (B, n_prototypes)
         elif pipeline_stage == "train-classifier":
             assert isinstance(self.model, BaseClassifier)
             # waveform/label keys
             (
                 _losses,  # (n_labels,)
-                _probs,  # (n_labels, B)
+                _preds,  # (n_labels, B)
             ) = self.model(
                 batch["waveform"],  # (B, 12, 10 * freq)
                 batch["label"],  # (B, n_labels)
             )
             losses = dict()
-            probs = dict()
+            preds = dict()
             label_names: list[str] = self.hparams.label_names  # type: ignore
             assert label_names is not None
             for i, target_name in enumerate(label_names):
                 losses[target_name] = _losses[i]
-                probs[target_name] = _probs[i]
+                preds[target_name] = _preds[i]
 
             loss = self._log_and_composite_losses(
                 stage=stage,
@@ -293,7 +307,7 @@ class LitModel(LightningModule):
             raise ValueError(
                 f"Unknown forward step for pipeline_stage {pipeline_stage}"
             )
-        return loss, probs
+        return loss, preds
 
     def _log_and_composite_losses(
         self,
@@ -325,8 +339,8 @@ class LitModel(LightningModule):
         return loss
 
     def predict_step(self, batch, batch_idx):
-        _, probs = self._common_step(batch=batch, stage="predict", log=False)
-        return probs
+        _, preds = self._common_step(batch=batch, stage="predict", log=False)
+        return preds
 
     def on_predict_end(self):
         # if we've hijacked predict to do prototype projection, need to set
@@ -419,26 +433,12 @@ class PredictionWriter(BasePredictionWriter):
         predictions,
         batch_indices,
     ):
-        # hacky way to detect what kind of "predictions" we have
-        # (hard to set pipeline_stage on prediction_writer with CLI link_arguments)
-        # if we're doing prototype-projection, predictions are the prototype metadata after projection
-        # otherwise, predictions are classification predictions from train-classifier
-        if not hasattr(pl_module, "prototype_ids"):
-            target_names: list[str] = pl_module.hparams.label_names  # type: ignore
-            probs = {k: [] for k in target_names}
-            for batch_probs in predictions:
-                for k in target_names:
-                    batch_label_prob: torch.Tensor = batch_probs[k]
-                    probs[k].append(batch_label_prob.numpy())
-            to_save = np.stack([np.concat(v) for v in probs.values()]).T
-            log_dir: str = trainer.log_dir  # type: ignore
-            suffix = ""
-            if trainer.global_rank != 0:
-                suffix = f"_rank_{trainer.global_rank}"
-            np.save(os.path.join(log_dir, f"probs{suffix}.npy"), to_save)
-        else:
+        # hard to set pipeline_stage on prediction_writer with CLI link_arguments but we can borrow from lit module
+        pipeline_stage: STAGE_T = pl_module.hparams.pipeline_stage  # type: ignore
+        if pipeline_stage == "project-prototypes":
+            assert hasattr(pl_module, "prototype_ids")
             # predictions are all None (see LitModel above)
-            # pl_module has prototype metadata to save
+            # pl_module has prototype projection metadata to save
             n_prototypes = len(pl_module.prototype_sims)  # type: ignore
             pids = [pid for pid, eid in pl_module.prototype_ids]  # type: ignore
             eids = [eid for pid, eid in pl_module.prototype_ids]  # type: ignore
@@ -454,6 +454,34 @@ class PredictionWriter(BasePredictionWriter):
             meta.to_csv(
                 os.path.join(trainer.log_dir, "projection_metadata.csv"),  # type: ignore
                 index=False,
+            )
+        elif pipeline_stage == "train-classifier":
+            assert isinstance(predictions[0], dict)  # classifiction probabilities
+            target_names: list[str] = pl_module.hparams.label_names  # type: ignore
+            probs = {k: [] for k in target_names}
+            for batch_probs in predictions:
+                for k in target_names:
+                    batch_label_prob: torch.Tensor = batch_probs[k]
+                    probs[k].append(batch_label_prob.numpy())
+            to_save = np.stack([np.concat(v) for v in probs.values()]).T
+            log_dir: str = trainer.log_dir  # type: ignore
+            suffix = ""
+            if trainer.global_rank != 0:
+                suffix = f"_rank_{trainer.global_rank}"
+            np.save(os.path.join(log_dir, f"probs{suffix}.npy"), to_save)
+        elif pipeline_stage == "compute-embeddings":
+            assert (
+                hasattr(pl_module, "prediction_split")
+                and pl_module.prediction_split is not None
+            )
+            split = pl_module.prediction_split
+            assert isinstance(predictions[0], torch.Tensor)  # embeddings
+            embeds = torch.concat(predictions).numpy()  # type: ignore
+            log_dir: str = trainer.log_dir  # type: ignore
+            np.save(os.path.join(log_dir, f"{split}_embeds.npy"), embeds)
+        else:
+            raise ValueError(
+                f"Unknown how to handle predictions for pipeline_stage={pipeline_stage}"
             )
 
 
@@ -496,6 +524,20 @@ def run():
         )
         ckpt_path = os.path.join(cli.trainer.log_dir, "proj.ckpt")  # type: ignore
         cli.trainer.save_checkpoint(ckpt_path, weights_only=False)
+    elif pipeline_stage == "compute-embeddings":
+        # hack to pass split name to prediction writer, not used anywhere else
+        cli.model.prediction_split = "train"
+        cli.datamodule.setup("fit")
+        cli.trainer.predict(
+            model=cli.model,
+            dataloaders=cli.datamodule.train_dataloader(),
+        )
+        cli.model.prediction_split = "test"
+        cli.datamodule.setup("test")
+        cli.trainer.predict(
+            model=cli.model,
+            dataloaders=cli.datamodule.test_dataloader(),
+        )
     elif pipeline_stage == "train-classifier":
         cli.trainer.fit(
             model=cli.model,
