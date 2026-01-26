@@ -8,7 +8,13 @@ from scipy.signal import resample_poly
 from wfdb import rdsamp
 
 from pass_pclr.datasets import BaseECGDataset, load_cached_data
-from pass_pclr.defines import SPLIT_T
+from pass_pclr.defines import (
+    PTBXL_CLIPPED_MEANS,
+    PTBXL_CLIPPED_STDS,
+    PTBXL_LOWERS,
+    PTBXL_UPPERS,
+    SPLIT_T,
+)
 
 VAL_FOLD = 9
 TEST_FOLD = 10
@@ -46,6 +52,10 @@ class PtbxlECGDataset(BaseECGDataset):
                 source_freq = 500
                 data = [rdsamp(_path / f) for f in df["filename_hr"]]
             X = np.array([signal for signal, meta in data])  # (N, 10 * source_freq, 12)
+
+            # clip and normalize using stats derived over train set
+            X = np.clip(X, PTBXL_LOWERS, PTBXL_UPPERS)
+            X = (X - PTBXL_CLIPPED_MEANS) / PTBXL_CLIPPED_STDS
 
             # downsample to target frequency
             if sampling_rate != source_freq:

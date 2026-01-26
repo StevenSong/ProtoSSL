@@ -39,6 +39,9 @@ class EchoNextECGDataset(BaseECGDataset):
             X = np.load(_path / f"EchoNext_{split}_waveforms.npy")  # (N, 1, 2500, 12)
             X = X.squeeze(1)  # (N, 2500, 12)
 
+            # echonext comes prenormalized
+            # https://github.com/PierreElias/IntroECG/blob/2361433c4cbdd29c01229f4e7b3216a38eff87b5/7-EchoNext%20Minimodel/preprocess.py#L89
+
             # downsample to target frequency
             if sampling_rate != 250:
                 resample_frac = Fraction(

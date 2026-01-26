@@ -58,7 +58,7 @@ def main(
         ), f"Unexpected number of files ({n_ckpts}) in {checkpoint_dir}"
         ckpt_link = os.path.join(output_path, "best.ckpt")
         os.symlink(
-            src=os.path.join(checkpoint_dir, checkpoints[0]),
+            src=os.path.join(f"trial_{best_trial}", checkpoints[0]),
             dst=ckpt_link,
         )
         print(f"Linked checkpoint to {ckpt_link}")

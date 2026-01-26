@@ -21,7 +21,7 @@ function submit_job() {
 
 # first do pretraining
 # make sure that pretraining is not going to cache the same dataset as the transfer
-pretrain_id=$(submit_job "" 7-1-run-pass-pclr-pretrain.sh)
+pretrain_id=$(submit_job "" 7-1-run-pass-pclr-pretrain-ptbxl.sh)
 echo $pretrain_id
 
 # then do transfer
@@ -29,8 +29,8 @@ for suffix in "${SUFFIXES[@]}"; do
     echo "SUFFIX: $suffix"
 
     # cache the transformed data to prevent race conditions within the parallelized jobs
-    cache_id=$(submit_job "$suffix" 7-0-run-pass-pclr-cache-data.sh)
+    cache_id=$(submit_job "$suffix" 7-0-run-pass-pclr-cache-echonext-data.sh)
 
-    submit_job "$suffix" 7-2-run-pass-pclr-transfer.sh "--dependency=afterok:$pretrain_id,$cache_id"
-    submit_job "$suffix" 7-3-run-pass-pclr-transfer-with-proj.sh "--dependency=afterok:$pretrain_id,$cache_id"
+    submit_job "$suffix" 7-2-run-pass-pclr-transfer-ptbxl.sh "--dependency=afterok:$pretrain_id,$cache_id"
+    submit_job "$suffix" 7-3-run-pass-pclr-transfer-ptbxl-with-proj.sh "--dependency=afterok:$pretrain_id,$cache_id"
 done
