@@ -4,12 +4,12 @@ set -e
 
 # set these env vars prior to executing this script
 # ECHONEXT_DATA=/opt/gpudata/ecg/echonext
-# RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/runs-2 # running a parallel job with the same run dir seems to result in a low-level filesystem lock so this is just a quick, trivial hack to circumvent it
+# RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/runs-2 # running a parallel job with the same run dir seems to result in a low-level filesystem lock so this is just a quick, trivial hack to circumvent it
 : "${ECHONEXT_DATA:?Env var ECHONEXT_DATA must be set prior to script execution}"
 : "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
 echo "Using ECHONEXT_DATA=$ECHONEXT_DATA"
 echo "Using RUN_DIR=$RUN_DIR-2 (note that this uses a suffixed path to avoid a filesystem deadlock)"
-REPO_ROOT=/opt/gpudata/steven/ecg-prototype-transfer
+REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 cd $REPO_ROOT/scripts
 RESNET=resnet50
 CONV=2D

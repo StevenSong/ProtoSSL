@@ -18,8 +18,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Steven/ecg-prototype-transfer"
-Issues = "https://github.com/Steven/ecg-prototype-transfer/issues"
+Homepage = "https://github.com/Steven/ecg-prototype-fm"
+Issues = "https://github.com/Steven/ecg-prototype-fm/issues"
 
 [tool.hatch.version]
 path = "pass_pclr/__init__.py"

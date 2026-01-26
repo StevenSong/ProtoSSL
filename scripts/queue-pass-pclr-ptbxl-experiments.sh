@@ -13,7 +13,7 @@ function submit_job() {
 
     local job_id=$(sbatch -p a100 --gpus=1 \
     --time=0 --cpus-per-task=12 --mem=200g --ntasks=1 \
-    --export=ALL,ECHONEXT_DATA=/opt/gpudata/ecg/echonext$1,RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/outputs/runs$1 \
+    --export=ALL,ECHONEXT_DATA=/opt/gpudata/ecg/echonext$1,RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs/runs$1 \
     --output slurm-logs/$fname$1-%j.out $3 --parsable _slurm_wrapper.sh $2)
 
     echo $job_id

@@ -12,7 +12,7 @@ trainer:
     class_path: StrictWandbLogger
     init_args:
       project: "ECG-Prototype-Transfer"
-      # save_dir: "/opt/gpudata/steven/ecg-prototype-transfer/runs/"
+      # save_dir: "/opt/gpudata/steven/ecg-prototype-fm/runs/"
       # name: "resnet50-1d" # check model params
   callbacks:
     - class_path: lightning.pytorch.callbacks.EarlyStopping
@@ -44,13 +44,13 @@ lr_scheduler:
 model:
   class_path: LitModel
   init_args:
-    target_config: "/opt/gpudata/steven/ecg-prototype-transfer/configs/targets.yaml"
+    target_config: "/opt/gpudata/steven/ecg-prototype-fm/configs/targets.yaml"
     # resnet_type: "resnet50" # check logger params
     # conv_type: "1D" # check logger params
 data:
   class_path: LitData
   init_args:
-    target_config: "/opt/gpudata/steven/ecg-prototype-transfer/configs/targets.yaml"
+    target_config: "/opt/gpudata/steven/ecg-prototype-fm/configs/targets.yaml"
     # echonext_data: "/opt/gpudata/ecg/echonext"
     batch_size: 512 # check grad accumulation
     num_workers: 4

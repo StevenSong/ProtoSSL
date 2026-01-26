@@ -31,9 +31,9 @@ MULTITASK_LABELS = [
 ]
 
 
-PTBXL_GROUP_CSV_PATH = "/opt/gpudata/steven/ecg-prototype-transfer/external/bbj-lab-protoecgnet/scp_statementsRegrouped2.csv"
-ECHONEXT_GROUP_CSV_PATH = "/opt/gpudata/steven/ecg-prototype-transfer/external/bbj-lab-protoecgnet/echonext_label_groups.csv"
-ECHONEXT_ALIAS_PATH = "/opt/gpudata/steven/ecg-prototype-transfer/configs/targets.yaml"
+PTBXL_GROUP_CSV_PATH = "/opt/gpudata/steven/ecg-prototype-fm/external/bbj-lab-protoecgnet/scp_statementsRegrouped2.csv"
+ECHONEXT_GROUP_CSV_PATH = "/opt/gpudata/steven/ecg-prototype-fm/external/bbj-lab-protoecgnet/echonext_label_groups.csv"
+ECHONEXT_ALIAS_PATH = "/opt/gpudata/steven/ecg-prototype-fm/configs/targets.yaml"
 
 LABEL_SET_T = Literal["ptbxl", "echonext"]
 

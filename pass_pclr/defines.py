@@ -6,7 +6,7 @@ SPLIT_T = Literal["train", "val", "test"]
 RESNET_T = Literal["resnet18", "resnet34", "resnet50", "resnet101", "resnet152"]
 
 CACHE_DIR = os.environ.get(
-    "CACHE_DIR", "/opt/gpudata/steven/ecg-prototype-transfer/pass_pclr_cache"
+    "CACHE_DIR", "/opt/gpudata/steven/ecg-prototype-fm/pass_pclr_cache"
 )
 
 ECHONEXT_TARGETS = {

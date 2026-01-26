@@ -4,17 +4,17 @@ set -e
 
 # set these env vars prior to executing this script
 # ECHONEXT_DATA=/opt/gpudata/ecg/echonext
-# RUN_DIR=/opt/gpudata/steven/ecg-prototype-transfer/outputs/runs
+# RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs/runs
 : "${ECHONEXT_DATA:?Env var ECHONEXT_DATA must be set prior to script execution}"
 : "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
 echo "Using ECHONEXT_DATA=$ECHONEXT_DATA"
 echo "Using RUN_DIR=$RUN_DIR"
-REPO_ROOT=/opt/gpudata/steven/ecg-prototype-transfer
+REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 cd $REPO_ROOT/scripts
 
 # experiment parameters
 EXP_NAME="pass-ptbxl-to-echonext"
-PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-transfer/outputs/runs/pass-pretrain-ptbxl"
+PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-fm/outputs/runs/pass-pretrain-ptbxl"
 N_PROTOTYPES=128
 
 # this version relies on samples projected in the pretraining dataset
