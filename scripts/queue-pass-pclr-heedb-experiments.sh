@@ -20,7 +20,7 @@ function submit_job() {
 }
 
 # first do pretraining
-make sure that pretraining is not going to cache the same dataset as the transfer
+# make sure that pretraining is not going to cache the same dataset as the transfer
 pretrain_id=$(submit_job "" 8-1-run-pass-pclr-pretrain-heedb.sh)
 echo $pretrain_id
 
