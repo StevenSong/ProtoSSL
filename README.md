@@ -13,7 +13,7 @@ TODO: bibtex citation
 
 **Repo Organization:** The outline of this repo is centered around the package `pass_pclr`, defined in the subdirectory of the same name. While the package definition enables experimentation, the `scripts` folder defines all of the actual experiment run scripts. Most of the experimental comparisons we run have standalone implementations also contained within the `scripts` folder. The exceptions to this are the comparisons to literature models, whose forked/modified implementations are in submodules under the `external` folder, notably `ProtoECGNet` and the `Columbia Mini-Model`.
 
-**Environment Setup:** We use precommit hooks to maintain coding style and to enforce data stewardship. Source data should generally never be committed to this repo, including exploratory notebooks which may accidentally leak source data. To correctly set up your environment:
+**Environment Setup:** We use pre-commit hooks to maintain coding style and to enforce data stewardship. Source data should never be committed to this repo, including exploratory notebooks which may accidentally leak source data. The pre-commit hooks do not necessarily prevent this and can be circumvented, but may help prevent obvious cases. To correctly set up your environment:
 ```bash
 # 1) clone repo
 git clone git@github.com:StevenSong/ecg-prototype-fm.git

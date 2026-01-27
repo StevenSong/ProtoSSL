@@ -1,7 +1,12 @@
 import os
 from typing import Literal
 
-STAGE_T = Literal["learn-prototypes", "project-prototypes", "train-classifier"]
+STAGE_T = Literal[
+    "learn-prototypes",
+    "project-prototypes",
+    "compute-embeddings",
+    "train-classifier",
+]
 SPLIT_T = Literal["train", "val", "test"]
 RESNET_T = Literal["resnet18", "resnet34", "resnet50", "resnet101", "resnet152"]
 

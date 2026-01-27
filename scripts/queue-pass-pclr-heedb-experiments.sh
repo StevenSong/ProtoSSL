@@ -32,5 +32,9 @@ for suffix in "${SUFFIXES[@]}"; do
     cache_id=$(submit_job "$suffix" 7-0-run-pass-pclr-cache-echonext-data.sh)
 
     submit_job "$suffix" 8-2-run-pass-pclr-transfer-heedb.sh "--dependency=afterok:$pretrain_id,$cache_id"
-    submit_job "$suffix" 8-3-run-pass-pclr-transfer-heedb-with-proj.sh "--dependency=afterok:$pretrain_id,$cache_id"
+    with_proj_id=$(submit_job "$suffix" 8-3-run-pass-pclr-transfer-heedb-with-proj.sh "--dependency=afterok:$pretrain_id,$cache_id")
+    echo $with_proj_id
+
+    submit_job "$suffix" 8-4-run-pass-pclr-transfer-heedb-logreg.sh "--dependency=afterok:$pretrain_id,$cache_id"
+    submit_job "$suffix" 8-5-run-pass-pclr-transfer-heedb-with-proj-logreg.sh "--dependency=afterok:$pretrain_id,$cache_id,$with_proj_id"
 done
