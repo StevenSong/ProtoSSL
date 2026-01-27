@@ -91,7 +91,11 @@ class LitData(LightningDataModule):
 
         return DataLoader(
             self.train_ds,
-            shuffle=pipeline_stage != "project-prototypes",  # no shuffle if projecting
+            shuffle=pipeline_stage
+            not in {
+                "project-prototypes",
+                "compute-embeddings",
+            },  # no shuffle if projecting or embedding
             pin_memory=True,
             drop_last=False,
             batch_size=self.hparams.batch_size,  # type: ignore
