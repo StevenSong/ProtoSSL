@@ -14,7 +14,7 @@ cd $REPO_ROOT/scripts
 
 # experiment parameters
 EXP_NAME="pass-heedb-to-echonext-with-proj-logreg"
-PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-fm/outputs/runs/pass-heedb-to-echonext-w-proj"
+PRETRAIN_RUN="$RUN_DIR/pass-heedb-to-echonext-w-proj"
 N_PROTOTYPES=128
 
 # this version relies on samples projected in the transfer dataset
