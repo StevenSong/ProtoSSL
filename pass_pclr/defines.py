@@ -88,6 +88,25 @@ PTBXL_CLIPPED_STDS = [
     0.22582135786289945,
 ]
 
+PTBXL_CAT1_TARGETS = [
+    "1AVB",
+    "IVCD",
+    "3AVB",
+    "2AVB",
+    "SR",
+    "AFIB",
+    "STACH",
+    "SARRH",
+    "SBRAD",
+    "PACE",
+    "SVARR",
+    "BIGU",
+    "AFLT",
+    "SVTAC",
+    "PSVT",
+    "TRIGU",
+]
+
 
 # HEEDB per-lead stats derived over train set (data before 2021) at 250 or 500 Hz source freq
 # 250 Hz samples were weighted equally to 500 Hz samples (see scripts/_compute_heedb_normalizations.py)
