@@ -24,7 +24,7 @@ echo "CAN SAFELY IGNORE WARNING ABOUT MISSING COOCCURRENCE MATRIX FOR INFERENCE"
 echo "========================================================================="
 echo
 
-python _protoecgnet_embed.py \
+python _protoecgnet_embed_echonext.py \
 --echonext-data $ECHONEXT_DATA \
 --protoecgnet-repo $PROTOECGNET_REPO \
 --protoecgnet-checkpoints $PROTOECGNET_CKPT \
@@ -34,100 +34,98 @@ python _protoecgnet_embed.py \
 # Probe Cat 1, No PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim1d \
---output-path $RUN_DIR/proto-sim1d-logreg-unweighted
-python _eval_probs.py \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-unweighted
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---probs-npy $RUN_DIR/proto-sim1d-logreg-unweighted/probs.npy \
---output-path $RUN_DIR/proto-sim1d-logreg-unweighted
+--probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat1-unweighted/probs.npy \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-unweighted
 
 ################################################################################
 # Probe Cat 1, No PCA, With Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim1d \
 --balance-class-weight \
---output-path $RUN_DIR/proto-sim1d-logreg-weighted
-python _eval_probs.py \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-weighted
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---probs-npy $RUN_DIR/proto-sim1d-logreg-weighted/probs.npy \
---output-path $RUN_DIR/proto-sim1d-logreg-weighted
+--probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat1-weighted/probs.npy \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-weighted
 
 ################################################################################
 # Probe Cat 1, 32d PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim1d \
 --embedding-pca 32 \
---output-path $RUN_DIR/proto-sim1d-logreg-pca32
-python _eval_probs.py \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-pca32
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---probs-npy $RUN_DIR/proto-sim1d-logreg-pca32/probs.npy \
---output-path $RUN_DIR/proto-sim1d-logreg-pca32
+--probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat1-pca32/probs.npy \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-pca32
 
 ################################################################################
 # Probe Cat 3, 64d PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim2d_partial \
 --embedding-pca 64 \
---output-path $RUN_DIR/proto-sim2d_partial-logreg-pca64
-python _eval_probs.py \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat3-pca64
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---probs-npy $RUN_DIR/proto-sim2d_partial-logreg-pca64/probs.npy \
---output-path $RUN_DIR/proto-sim2d_partial-logreg-pca64
+--probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat3-pca64/probs.npy \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat3-pca64
 
 ################################################################################
 # Probe Cat 4, No PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim2d_global \
---output-path $RUN_DIR/proto-sim2d_global-logreg
-python _eval_probs.py \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat4
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---probs-npy $RUN_DIR/proto-sim2d_global-logreg/probs.npy \
---output-path $RUN_DIR/proto-sim2d_global-logreg
+--probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat4/probs.npy \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat4
 
 ################################################################################
 # Probe Fusion, 64d PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type all \
 --embedding-pca 64 \
---output-path $RUN_DIR/proto-all-logreg-pca64
-python _eval_probs.py \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-fusion-pca64
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---probs-npy $RUN_DIR/proto-all-logreg-pca64/probs.npy \
---output-path $RUN_DIR/proto-all-logreg-pca64
-
-
+--probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-fusion-pca64/probs.npy \
+--output-path $RUN_DIR/proto-ptbxl-pip-logreg-fusion-pca64

@@ -22,7 +22,7 @@ PROTO_DIM=512
 PROTO_TIME_LEN=32
 LABEL_SET=4
 CONV_DIM=2D
-EXP_DIR=$RUN_DIR/protoecgnet-reproj-cat4
+EXP_DIR=$RUN_DIR/proto-ptbxl-pit-cat4
 
 export IGNORE_LABELS=1
 
@@ -83,12 +83,12 @@ python tune.py \
     --pretrained_weights $EXP_DIR/checkpoints/proj_cat"$LABEL_SET"/proj_cat"$LABEL_SET"_projection.pth
 
 cd $REPO_ROOT/scripts
-python _protoecgnet_postprocess_results.py \
+python _protoecgnet_postprocess_echonext_results.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --output-path $EXP_DIR \
 --study-pkl $EXP_DIR/optuna_studies/cls_cat"$LABEL_SET"_optuna_study.pkl \
 --trial-predictions $EXP_DIR/test_results/cls_cat"$LABEL_SET"
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $EXP_DIR/probs.npy \

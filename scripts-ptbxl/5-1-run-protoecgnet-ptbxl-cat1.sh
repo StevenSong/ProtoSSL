@@ -21,7 +21,7 @@ ARCH=resnet1d18
 PROTO_DIM=512
 LABEL_SET=1
 CONV_DIM=1D
-EXP_DIR=$RUN_DIR/protoecgnet-ptbxl-cat1
+EXP_DIR=$RUN_DIR/proto-from-scratch-cat1
 
 
 cd $PROTOECGNET_REPO/src
@@ -53,7 +53,7 @@ echo "========================================================================="
 echo
 
 cd $REPO_ROOT/scripts-ptbxl
-python _protoecgnet_postprocess_results.py \
+python _protoecgnet_postprocess_ptbxl_results.py \
 --output-path $EXP_DIR/checkpoints/joint_cat"$LABEL_SET" \
 --study-pkl $EXP_DIR/optuna_studies/joint_cat"$LABEL_SET"_optuna_study.pkl \
 --trial-checkpoints $EXP_DIR/checkpoints/joint_cat"$LABEL_SET"
@@ -107,7 +107,7 @@ python tune.py \
     --pretrained_weights $EXP_DIR/checkpoints/proj_cat"$LABEL_SET"/proj_cat"$LABEL_SET"_projection.pth
 
 cd $REPO_ROOT/scripts-ptbxl
-python _protoecgnet_postprocess_results.py \
+python _protoecgnet_postprocess_ptbxl_results.py \
 --output-path $EXP_DIR \
 --study-pkl $EXP_DIR/optuna_studies/cls_cat"$LABEL_SET"_optuna_study.pkl \
 --trial-predictions $EXP_DIR/test_results/cls_cat"$LABEL_SET"

@@ -40,7 +40,7 @@ model:
   class_path: LitModel
   init_args:
     resnet_type: resnet18
-    # n_prototypes: 10
+    n_prototypes: 128
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
@@ -48,4 +48,4 @@ data:
     # dataset_path: /path/to/dataset
     batch_size: 512
     num_workers: 4
-# pipeline_stage: learn-prototypes|project-prototypes|train-classifier
+# pipeline_stage: learn-prototypes|project-prototypes|compute-embeddings|train-classifier

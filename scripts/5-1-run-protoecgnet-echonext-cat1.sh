@@ -21,7 +21,7 @@ ARCH=resnet1d18
 PROTO_DIM=512
 LABEL_SET=1
 CONV_DIM=1D
-EXP_DIR=$RUN_DIR/protoecgnet-echonext-cat1
+EXP_DIR=$RUN_DIR/proto-from-scratch-cat1
 
 echo
 echo "========================================================================="
@@ -58,7 +58,7 @@ echo "========================================================================="
 echo
 
 cd $REPO_ROOT/scripts
-python _protoecgnet_postprocess_results.py \
+python _protoecgnet_postprocess_echonext_results.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --output-path $EXP_DIR/checkpoints/joint_cat"$LABEL_SET" \
 --study-pkl $EXP_DIR/optuna_studies/joint_cat"$LABEL_SET"_optuna_study.pkl \
@@ -113,12 +113,12 @@ python tune.py \
     --pretrained_weights $EXP_DIR/checkpoints/proj_cat"$LABEL_SET"/proj_cat"$LABEL_SET"_projection.pth
 
 cd $REPO_ROOT/scripts
-python _protoecgnet_postprocess_results.py \
+python _protoecgnet_postprocess_echonext_results.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --output-path $EXP_DIR \
 --study-pkl $EXP_DIR/optuna_studies/cls_cat"$LABEL_SET"_optuna_study.pkl \
 --trial-predictions $EXP_DIR/test_results/cls_cat"$LABEL_SET"
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $EXP_DIR/probs.npy \

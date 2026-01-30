@@ -4,13 +4,13 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-import yaml
 from optuna import Study
+
+from pass_pclr.defines import ECHONEXT_TARGETS
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--target-config", required=True)
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--study-pkl", required=True)
     parser.add_argument("--trial-predictions")
@@ -21,7 +21,6 @@ def parse_args():
 
 def main(
     *,  # enforce kwargs
-    target_config: str,
     output_path: str,
     study_pkl: str,
     trial_predictions: str | None = None,
@@ -31,9 +30,7 @@ def main(
         trial_predictions is not None or trial_checkpoints is not None
     ), "Must provide at least one of trial_predictions or trial_checkpoints to postprocess"
 
-    with open(target_config, "r") as f:
-        targets = yaml.safe_load(f)
-    mapping = {k: f"Prob_{v}" for k, v in targets["target_columns"].items()}
+    mapping = {k: f"Prob_{v}" for k, v in ECHONEXT_TARGETS.items()}
     cols = list(mapping.values())
     optuna_study: Study = joblib.load(study_pkl)
     best_trial = optuna_study.best_trial.number
@@ -67,7 +64,6 @@ def main(
 if __name__ == "__main__":
     args = parse_args()
     main(
-        target_config=args.target_config,
         output_path=args.output_path,
         study_pkl=args.study_pkl,
         trial_predictions=args.trial_predictions,

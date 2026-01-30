@@ -16,21 +16,6 @@ from matplotlib.transforms import Affine2D
 from sklearn.metrics import auc, roc_curve
 from sklearn.metrics.pairwise import cosine_similarity
 
-MULTITASK_LABELS = [
-    "LVEF Lo",
-    "LVWT Hi",
-    "AS",
-    "AR",
-    "MR",
-    "TR",
-    "PR",
-    "RVD",
-    "PEff",
-    "PASP Hi",
-    "TRV Hi",
-]
-
-
 PTBXL_GROUP_CSV_PATH = "/opt/gpudata/steven/ecg-prototype-fm/external/bbj-lab-protoecgnet/scp_statementsRegrouped2.csv"
 ECHONEXT_GROUP_CSV_PATH = "/opt/gpudata/steven/ecg-prototype-fm/external/bbj-lab-protoecgnet/echonext_label_groups.csv"
 ECHONEXT_ALIAS_PATH = "/opt/gpudata/steven/ecg-prototype-fm/configs/targets.yaml"
@@ -141,68 +126,11 @@ def radar_factory(num_vars, frame="circle"):
     return theta
 
 
-def _get_task_row(df, task, metrics_file):
-    task_data = df[df["Label"] == task]
-    if len(task_data) == 0:
-        raise ValueError(f"Task {task} missing in {metrics_file}")
-    elif len(task_data) > 1:
-        raise ValueError(f"Task {task} has more than one entry in {metrics_file}")
-    return task_data.iloc[0]
-
-
-# Function to load all experiment data
-def load_experiment_data(runs_dir="runs/", composite_idx=-1):
-    """Load metrics from all experiment directories"""
-    experiments = {}
-
-    # Get all experiment directories
-    for exp_dir in sorted(os.listdir(runs_dir)):
-        exp_path = os.path.join(runs_dir, exp_dir)
-
-        # Check if it's a directory
-        if os.path.isdir(exp_path):
-            metrics_file = os.path.join(exp_path, "metrics.csv")
-            probs_file = os.path.join(exp_path, "probs.npy")
-
-            # Check if metrics.csv exists
-            if os.path.exists(metrics_file):
-                df = pd.read_csv(metrics_file)
-
-                # Get AUROC values for multilabel tasks
-                multilabel_aurocs = []
-                multilabel_auprcs = []
-                for task in MULTITASK_LABELS:
-                    task_data = _get_task_row(df, task, metrics_file)
-                    multilabel_aurocs.append(task_data["AUROC"])
-                    multilabel_auprcs.append(task_data["AUPRC"])
-
-                composite_data = _get_task_row(df, "SHD", metrics_file)
-                multilabel_avg_data = _get_task_row(
-                    df, "Multilabel Averaged", metrics_file
-                )
-
-                experiments[exp_dir] = {
-                    "multilabel_aurocs": multilabel_aurocs,
-                    "multilabel_avg_auroc": multilabel_avg_data["AUROC"],
-                    "composite_auroc": composite_data["AUROC"],
-                    "multilabel_avg_auprc": multilabel_avg_data["AUPRC"],
-                    "composite_auprc": composite_data["AUPRC"],
-                    "all_data": df,
-                }
-
-            # Check if probs.npy exists
-            if os.path.exists(probs_file):
-                probs = np.load(probs_file, allow_pickle=True)
-
-                experiments[exp_dir]["y_prob"] = probs[:, composite_idx]
-
-    return experiments
-
-
 # Create radar chart for multilabel tasks
 def plot_radar(
     experiments_styles: dict,
     *,  # enforce kwargs
+    labels: list[str],
     title: str = "Multilabel AUROCs",
     legend_title: str | None = None,
     save_path: str | None = None,
@@ -212,7 +140,7 @@ def plot_radar(
     line_styles = [l for k, (v, c, l, m) in experiments_styles.items()]
     marker_styles = [m for k, (v, c, l, m) in experiments_styles.items()]
 
-    theta = radar_factory(len(MULTITASK_LABELS), frame="polygon")
+    theta = radar_factory(len(labels), frame="polygon")
 
     # Prepare data for radar chart
     experiment_names = list(experiments.keys())
@@ -236,7 +164,7 @@ def plot_radar(
         )
         ax.fill(theta, data, facecolor=colors[i], alpha=0.25)
 
-    ax.set_varlabels(MULTITASK_LABELS)  # type: ignore
+    ax.set_varlabels(labels)  # type: ignore
     ax.set_title(
         title,
         # weight="bold",
