@@ -215,7 +215,7 @@ temp/
 *.BAK
 
 outputs/
-scripts/slurm-logs/
+slurm-logs/
 protoecgnet-cache/
 pass_pclr_cache/
 plot/figs/

@@ -1,3 +1,4 @@
+import ast
 from fractions import Fraction
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from wfdb import rdsamp
 
 from pass_pclr.datasets import BaseECGDataset, load_cached_data
 from pass_pclr.defines import (
+    PTBXL_CAT1_TARGETS,
     PTBXL_CLIPPED_MEANS,
     PTBXL_CLIPPED_STDS,
     PTBXL_LOWERS,
@@ -18,6 +20,17 @@ from pass_pclr.defines import (
 
 VAL_FOLD = 9
 TEST_FOLD = 10
+
+
+def get_ptbxl_labels(df: pd.DataFrame) -> np.ndarray:
+    label_idx = {l: i for i, l in enumerate(PTBXL_CAT1_TARGETS)}
+    temp = df["scp_codes"].apply(lambda x: ast.literal_eval(x))
+    labels = np.zeros((len(df), len(label_idx)))
+    for i, label_dict in enumerate(temp):
+        for k, v in label_dict.items():
+            if k in label_idx:
+                labels[i, label_idx[k]] = 1
+    return labels
 
 
 class PtbxlECGDataset(BaseECGDataset):
@@ -42,7 +55,7 @@ class PtbxlECGDataset(BaseECGDataset):
 
         self.patient_ids = torch.as_tensor(df["patient_id"].astype(int).to_numpy())
         self.ecg_ids = torch.as_tensor(df.index.to_numpy())
-        self.labels = None
+        self.labels = torch.as_tensor(get_ptbxl_labels(df), dtype=torch.long)
 
         def load_transform_data_fn() -> torch.Tensor:
             if sampling_rate <= 100:
