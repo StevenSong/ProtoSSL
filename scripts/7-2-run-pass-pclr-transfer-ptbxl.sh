@@ -13,7 +13,7 @@ REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="pass-ptbxl-to-echonext"
+EXP_NAME="pass-ptbxl-pip"
 PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-fm/outputs/runs/pass-pretrain-ptbxl"
 
 # this version relies on samples projected in the pretraining dataset

@@ -22,7 +22,7 @@ PROTO_DIM=512
 PROTO_TIME_LEN=32
 LABEL_SET=4
 CONV_DIM=2D
-EXP_DIR=$RUN_DIR/protoecgnet-reproj-cat4
+EXP_DIR=$RUN_DIR/proto-ptbxl-pit-cat4
 
 export IGNORE_LABELS=1
 

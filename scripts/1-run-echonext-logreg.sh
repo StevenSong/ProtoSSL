@@ -12,23 +12,25 @@ echo "Using RUN_DIR=$RUN_DIR"
 REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 cd $REPO_ROOT/scripts
 
+EXP_NAME=tabular-logreg
+
 python _logreg_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---output-path $RUN_DIR/logreg-unweighted
+--output-path $RUN_DIR/$EXP_NAME-unweighted
 python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---probs-npy $RUN_DIR/logreg-unweighted/probs.npy \
---output-path $RUN_DIR/logreg-unweighted
+--probs-npy $RUN_DIR/$EXP_NAME-unweighted/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME-unweighted
 
 python _logreg_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --balance-class-weight \
---output-path $RUN_DIR/logreg-weighted
+--output-path $RUN_DIR/$EXP_NAME-weighted
 python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---probs-npy $RUN_DIR/logreg-weighted/probs.npy \
---output-path $RUN_DIR/logreg-weighted
+--probs-npy $RUN_DIR/$EXP_NAME-weighted/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME-weighted

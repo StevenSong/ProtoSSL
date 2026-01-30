@@ -17,7 +17,7 @@ GPU_IDX=$CUDA_VISIBLE_DEVICES
 
 # docker will create directories under root so premake any
 # directories we need to write into outside of docker container
-mkdir -p $RUN_DIR/echonext-minimodel
+mkdir -p $RUN_DIR/columbia-minimodel
 
 cd "$REPO_ROOT/external/PierreElias-IntroECG/7-EchoNext Minimodel"
 
@@ -25,7 +25,7 @@ docker build -t $IMAGE_TAG .
 
 docker run --rm --gpus device=$GPU_IDX \
 -v $ECHONEXT_DATA:/processed_data \
--v $RUN_DIR/echonext-minimodel:/results \
+-v $RUN_DIR/columbia-minimodel:/results \
 $IMAGE_TAG
 
 cd "$REPO_ROOT/scripts"
@@ -33,8 +33,8 @@ cd "$REPO_ROOT/scripts"
 python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
---probs-npy $RUN_DIR/echonext-minimodel/prediction_loop/probs.npy \
---output-path $RUN_DIR/echonext-minimodel
+--probs-npy $RUN_DIR/columbia-minimodel/prediction_loop/probs.npy \
+--output-path $RUN_DIR/columbia-minimodel
 
 ln -s ./prediction_loop/probs.npy \
-$RUN_DIR/echonext-minimodel/probs.npy 
+$RUN_DIR/columbia-minimodel/probs.npy 

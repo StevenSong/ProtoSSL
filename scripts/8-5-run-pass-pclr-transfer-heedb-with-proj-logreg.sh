@@ -13,8 +13,8 @@ REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="pass-heedb-to-echonext-with-proj-logreg"
-PRETRAIN_RUN="$RUN_DIR/pass-heedb-to-echonext-w-proj"
+EXP_NAME="pass-heedb-pit-logreg"
+PRETRAIN_RUN="$RUN_DIR/pass-heedb-pit"
 
 # this version relies on samples projected in the transfer dataset
 python -m pass_pclr.trainer \

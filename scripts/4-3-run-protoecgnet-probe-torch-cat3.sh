@@ -22,7 +22,7 @@ PROTO_DIM=512
 PROTO_TIME_LEN=3
 LABEL_SET=3
 CONV_DIM=2D
-EXP_DIR=$RUN_DIR/protoecgnet-transfer-cat3
+EXP_DIR=$RUN_DIR/proto-ptbxl-pip-cat3
 
 echo
 echo "========================================================================="

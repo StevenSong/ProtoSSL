@@ -21,7 +21,7 @@ ARCH=resnet1d18
 PROTO_DIM=512
 LABEL_SET=1
 CONV_DIM=1D
-EXP_DIR=$RUN_DIR/protoecgnet-transfer-cat1
+EXP_DIR=$RUN_DIR/proto-ptbxl-pip-cat1
 
 echo
 echo "========================================================================="

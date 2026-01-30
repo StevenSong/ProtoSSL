@@ -13,7 +13,7 @@ REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="pass-heedb-to-echonext"
+EXP_NAME="pass-heedb-pip"
 PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-fm/outputs/runs/pass-pretrain-heedb"
 
 # this version relies on samples projected in the pretraining dataset

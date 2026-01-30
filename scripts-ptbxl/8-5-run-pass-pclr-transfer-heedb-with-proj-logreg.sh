@@ -11,8 +11,8 @@ REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 cd $REPO_ROOT/scripts-ptbxl
 
 # experiment parameters
-EXP_NAME="pass-heedb-to-ptbxl-with-proj-logreg"
-PRETRAIN_RUN="$RUN_DIR/pass-heedb-to-ptbxl-w-proj"
+EXP_NAME="pass-heedb-pit-logreg"
+PRETRAIN_RUN="$RUN_DIR/pass-heedb-pit"
 
 # this version relies on samples projected in the transfer dataset
 python -m pass_pclr.trainer \

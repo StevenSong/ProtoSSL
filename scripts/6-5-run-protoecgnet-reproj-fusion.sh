@@ -26,7 +26,7 @@ CAT3_PROTO_DIM=512
 CAT4_ARCH=resnet18
 CAT4_PROTO_DIM=512
 
-EXP_DIR=$RUN_DIR/protoecgnet-reproj-fusion
+EXP_DIR=$RUN_DIR/proto-ptbxl-pit-fusion
 
 echo
 echo "========================================================================="

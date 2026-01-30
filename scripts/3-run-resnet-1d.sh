@@ -13,7 +13,7 @@ REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="resnet18-1D"
+EXP_NAME="resnet50-1D"
 
 # this version relies on samples projected in the pretraining dataset
 python -m pass_pclr.trainer \
