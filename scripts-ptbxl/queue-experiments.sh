@@ -28,9 +28,9 @@ for suffix in "${SUFFIXES[@]}"; do
     echo $cache_id
 
     # submit all jobs
-    cooc_id=$(submit_job "$suffix" 5-0-run-protoecgnet-echonext-cooccurrence.sh "--dependency=afterok:$cache_id")
+    cooc_id=$(submit_job "$suffix" 5-0-run-protoecgnet-ptbxl-cooccurrence.sh "--dependency=afterok:$cache_id")
     echo $cooc_id
-    submit_job "$suffix" 5-1-run-protoecgnet-echonext-cat1.sh "--dependency=afterok:$cache_id,$cooc_id"
+    submit_job "$suffix" 5-1-run-protoecgnet-ptbxl-cat1.sh "--dependency=afterok:$cache_id,$cooc_id"
 
     submit_job "$suffix" 8-2-run-pass-pclr-transfer-heedb.sh "--dependency=afterok:$cache_id"
     with_proj_id=$(submit_job "$suffix" 8-3-run-pass-pclr-transfer-heedb-with-proj.sh "--dependency=afterok:$cache_id")

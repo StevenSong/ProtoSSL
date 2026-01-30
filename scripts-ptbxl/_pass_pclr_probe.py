@@ -38,7 +38,7 @@ def main(
 ):
     ptbxl_path = Path(ptbxl_data)
     df = pd.read_csv(ptbxl_path / "ptbxl_database.csv")
-    train_mask = ~df["split"].isin({9, 10})
+    train_mask = ~df["strat_fold"].isin({9, 10})
     train_df = df.loc[train_mask]
     train_targets = get_ptbxl_labels(train_df)
 
