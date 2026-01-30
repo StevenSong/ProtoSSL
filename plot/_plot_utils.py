@@ -296,7 +296,7 @@ def plot_lift(
     *,  # enforce kwargs
     data: pd.DataFrame,
     metric: str,
-    baseline_model: str,
+    baseline_model: str | None = None,
     palette: dict[str, str],
     title: str,
     ylim: tuple[float, float] | None = None,
@@ -307,21 +307,24 @@ def plot_lift(
     max_size = data["Train Size"].max()
     fig, ax = plt.subplots(figsize=(6, 6))
 
-    mask = data["Model"] == baseline_model
-    assert (
-        mask.sum() == 1
-    ), f"Should only have 1 entry for baseline model: {baseline_model}"
-    baseline_row = data[mask].iloc[0]
-    nonbaseline_data = data[~mask]
+    if baseline_model is not None:
+        mask = data["Model"] == baseline_model
+        assert (
+            mask.sum() == 1
+        ), f"Should only have 1 entry for baseline model: {baseline_model}"
+        baseline_row = data[mask].iloc[0]
+        ax.hlines(
+            baseline_row[metric],
+            min_size,
+            max_size,
+            colors=palette.pop(baseline_model),
+            linestyles=":",
+            label=baseline_model,
+        )
+        nonbaseline_data = data[~mask]
+    else:
+        nonbaseline_data = data
 
-    ax.hlines(
-        baseline_row[metric],
-        min_size,
-        max_size,
-        colors=palette.pop(baseline_model),
-        linestyles=":",
-        label=baseline_model,
-    )
     sns.lineplot(
         nonbaseline_data,
         x="Train Size",
