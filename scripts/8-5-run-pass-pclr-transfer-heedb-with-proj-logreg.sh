@@ -15,7 +15,6 @@ cd $REPO_ROOT/scripts
 # experiment parameters
 EXP_NAME="pass-heedb-to-echonext-with-proj-logreg"
 PRETRAIN_RUN="$RUN_DIR/pass-heedb-to-echonext-w-proj"
-N_PROTOTYPES=128
 
 # this version relies on samples projected in the transfer dataset
 python -m pass_pclr.trainer \
@@ -24,16 +23,15 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $ECHONEXT_DATA \
-    --model.n_prototypes $N_PROTOTYPES \
     --model.pretrained_weights $PRETRAIN_RUN/project-prototypes/latest/proj.ckpt
 
-python _pass_pclr_probe.py \
+python _pass_pclr_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
 --output-path $RUN_DIR/$EXP_NAME
 
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \

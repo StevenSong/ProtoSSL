@@ -42,7 +42,6 @@ for suffix in "${SUFFIXES[@]}"; do
         submit_job "$suffix" 2-run-minimodel.sh
     fi
     submit_job "$suffix" 3-run-resnet-1d.sh
-    submit_job "$suffix" 3-run-resnet-2d.sh
 
     submit_job "$suffix" 4-0-run-protoecgnet-probe-sklearn.sh
     submit_job "$suffix" 4-1-run-protoecgnet-probe-torch-cat1.sh

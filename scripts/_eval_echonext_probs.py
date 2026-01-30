@@ -5,13 +5,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import yaml
 from sklearn.metrics import average_precision_score, roc_auc_score
+
+from pass_pclr.defines import ECHONEXT_COMPOSITE_TARGET, ECHONEXT_TARGETS
 
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument("--target-config", required=True)
     parser.add_argument("--echonext-data", required=True)
     parser.add_argument("--probs-npy", required=True)
     parser.add_argument("--output-path", required=True)
@@ -21,15 +21,11 @@ def parse_args():
 
 def main(
     *,  # enforce kwargs
-    target_config: str,
     echonext_data: str,
     probs_npy: str,
     output_path: str,
 ):
-    with open(target_config, "r") as f:
-        config = yaml.safe_load(f)
-        mapping = config["target_columns"]  # name --> col
-        mapping = {v: k for k, v in mapping.items()}  # col --> name
+    mapping = {v: k for k, v in ECHONEXT_TARGETS.items()}
 
     echonext_path = Path(echonext_data)
 
@@ -56,7 +52,7 @@ def main(
         y_test = test_targets[target_col].to_numpy()
         y_prob = target_probs[:, i]
 
-        if target_col != config["composite_target"]:
+        if target_col != ECHONEXT_COMPOSITE_TARGET:
             metrics[target_col]["AUROC"] = roc_auc_score(y_test, y_prob)
             metrics[target_col]["AUPRC"] = average_precision_score(y_test, y_prob)
             multilabel_true.append(y_test)
@@ -75,10 +71,10 @@ def main(
     metrics["Multilabel Averaged"]["AUPRC"] = auprc
 
     assert composite_true is not None and composite_prob is not None
-    metrics[config["composite_target"]]["AUROC"] = roc_auc_score(
+    metrics[ECHONEXT_COMPOSITE_TARGET]["AUROC"] = roc_auc_score(
         composite_true, composite_prob
     )
-    metrics[config["composite_target"]]["AUPRC"] = average_precision_score(
+    metrics[ECHONEXT_COMPOSITE_TARGET]["AUPRC"] = average_precision_score(
         composite_true, composite_prob
     )
 
@@ -93,7 +89,6 @@ def main(
 if __name__ == "__main__":
     args = parse_args()
     main(
-        target_config=args.target_config,
         echonext_data=args.echonext_data,
         probs_npy=args.probs_npy,
         output_path=args.output_path,

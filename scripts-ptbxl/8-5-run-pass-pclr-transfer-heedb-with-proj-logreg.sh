@@ -13,7 +13,6 @@ cd $REPO_ROOT/scripts-ptbxl
 # experiment parameters
 EXP_NAME="pass-heedb-to-ptbxl-with-proj-logreg"
 PRETRAIN_RUN="$RUN_DIR/pass-heedb-to-ptbxl-w-proj"
-N_PROTOTYPES=128
 
 # this version relies on samples projected in the transfer dataset
 python -m pass_pclr.trainer \
@@ -22,10 +21,9 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.n_prototypes $N_PROTOTYPES \
     --model.pretrained_weights $PRETRAIN_RUN/project-prototypes/latest/proj.ckpt
 
-python _pass_pclr_probe.py \
+python _pass_pclr_linear_probe_ptbxl.py \
 --ptbxl-data $DATASET_PATH \
 --prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
 --output-path $RUN_DIR/$EXP_NAME

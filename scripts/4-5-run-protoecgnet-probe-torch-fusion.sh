@@ -73,12 +73,12 @@ python tune.py \
     --proto_time_len 3 # this is for cat3 branch
 
 cd $REPO_ROOT/scripts
-python _protoecgnet_postprocess_results.py \
+python _protoecgnet_postprocess_echonext_results.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --output-path $EXP_DIR \
 --study-pkl $EXP_DIR/optuna_studies/probe_fusion_optuna_study.pkl \
 --trial-predictions $EXP_DIR/test_results/probe_fusion
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $EXP_DIR/probs.npy \

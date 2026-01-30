@@ -30,7 +30,7 @@ $IMAGE_TAG
 
 cd "$REPO_ROOT/scripts"
 
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/echonext-minimodel/prediction_loop/probs.npy \

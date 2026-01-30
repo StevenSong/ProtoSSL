@@ -5,17 +5,17 @@ from warnings import simplefilter
 
 import numpy as np
 import pandas as pd
-import yaml
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegressionCV
 from tqdm import tqdm
+
+from pass_pclr.defines import ECHONEXT_TARGETS
 
 simplefilter("ignore", category=ConvergenceWarning)
 
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument("--target-config", required=True)
     parser.add_argument("--echonext-data", required=True)
     parser.add_argument("--balance-class-weight", action="store_true")
     parser.add_argument("--output-path", required=True)
@@ -25,15 +25,11 @@ def parse_args():
 
 def main(
     *,  # enforce kwargs
-    target_config: str,
     echonext_data: str,
     balance_class_weight: bool,
     output_path: str,
 ):
-    with open(target_config, "r") as f:
-        config = yaml.safe_load(f)
-        mapping = config["target_columns"]  # name --> col
-        mapping = {v: k for k, v in mapping.items()}  # col --> name
+    mapping = {v: k for k, v in ECHONEXT_TARGETS.items()}
 
     echonext_path = Path(echonext_data)
 
@@ -77,7 +73,6 @@ def main(
 if __name__ == "__main__":
     args = parse_args()
     main(
-        target_config=args.target_config,
         echonext_data=args.echonext_data,
         balance_class_weight=args.balance_class_weight,
         output_path=args.output_path,

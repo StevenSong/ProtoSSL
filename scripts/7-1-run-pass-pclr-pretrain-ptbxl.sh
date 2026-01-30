@@ -14,7 +14,6 @@ cd $REPO_ROOT/scripts
 
 # experiment parameters
 EXP_NAME="pass-pretrain-ptbxl"
-N_PROTOTYPES=128
 
 # pretrain via self supervised prototype learning
 python -m pass_pclr.trainer \
@@ -22,8 +21,7 @@ python -m pass_pclr.trainer \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $PRETRAIN_DATASET \
-    --model.n_prototypes $N_PROTOTYPES
+    --data.dataset_path $PRETRAIN_DATASET
 
 # project in the pretraining dataset
 python -m pass_pclr.trainer \
@@ -32,5 +30,4 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET \
-    --model.n_prototypes $N_PROTOTYPES \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes/latest/best.ckpt

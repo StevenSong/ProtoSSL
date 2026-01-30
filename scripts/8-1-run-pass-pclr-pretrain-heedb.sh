@@ -14,18 +14,16 @@ cd $REPO_ROOT/scripts
 
 # experiment parameters
 EXP_NAME="pass-pretrain-heedb"
-N_PROTOTYPES=128
 
 # pretrain via self supervised prototype learning
-# python -m pass_pclr.trainer \
-#     --pipeline-stage learn-prototypes \
-#     --config $REPO_ROOT/configs/pass-pclr.yaml \
-#     --trainer.logger.save_dir $RUN_DIR \
-#     --trainer.logger.name $EXP_NAME \
-#     --data.dataset_path $PRETRAIN_DATASET \
-#     --model.n_prototypes $N_PROTOTYPES \
-#     --data.num_workers 8 \
-#     --data.prefetch_factor 4
+python -m pass_pclr.trainer \
+    --pipeline-stage learn-prototypes \
+    --config $REPO_ROOT/configs/pass-pclr.yaml \
+    --trainer.logger.save_dir $RUN_DIR \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $PRETRAIN_DATASET \
+    --data.num_workers 8 \
+    --data.prefetch_factor 4
 
 # project in the pretraining dataset
 python -m pass_pclr.trainer \
@@ -34,7 +32,6 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET \
-    --model.n_prototypes $N_PROTOTYPES \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes/latest/best.ckpt \
     --data.num_workers 8 \
     --data.prefetch_factor 4

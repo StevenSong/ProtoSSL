@@ -24,7 +24,7 @@ echo "CAN SAFELY IGNORE WARNING ABOUT MISSING COOCCURRENCE MATRIX FOR INFERENCE"
 echo "========================================================================="
 echo
 
-python _protoecgnet_embed.py \
+python _protoecgnet_embed_echonext.py \
 --echonext-data $ECHONEXT_DATA \
 --protoecgnet-repo $PROTOECGNET_REPO \
 --protoecgnet-checkpoints $PROTOECGNET_CKPT \
@@ -34,13 +34,13 @@ python _protoecgnet_embed.py \
 # Probe Cat 1, No PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim1d \
 --output-path $RUN_DIR/proto-sim1d-logreg-unweighted
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-sim1d-logreg-unweighted/probs.npy \
@@ -50,14 +50,14 @@ python _eval_probs.py \
 # Probe Cat 1, No PCA, With Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim1d \
 --balance-class-weight \
 --output-path $RUN_DIR/proto-sim1d-logreg-weighted
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-sim1d-logreg-weighted/probs.npy \
@@ -67,14 +67,14 @@ python _eval_probs.py \
 # Probe Cat 1, 32d PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim1d \
 --embedding-pca 32 \
 --output-path $RUN_DIR/proto-sim1d-logreg-pca32
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-sim1d-logreg-pca32/probs.npy \
@@ -84,14 +84,14 @@ python _eval_probs.py \
 # Probe Cat 3, 64d PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim2d_partial \
 --embedding-pca 64 \
 --output-path $RUN_DIR/proto-sim2d_partial-logreg-pca64
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-sim2d_partial-logreg-pca64/probs.npy \
@@ -101,13 +101,13 @@ python _eval_probs.py \
 # Probe Cat 4, No PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim2d_global \
 --output-path $RUN_DIR/proto-sim2d_global-logreg
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-sim2d_global-logreg/probs.npy \
@@ -117,14 +117,14 @@ python _eval_probs.py \
 # Probe Fusion, 64d PCA, No Weighting
 ################################################################################
 
-python _protoecgnet_probe.py \
+python _protoecgnet_linear_probe_echonext.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type all \
 --embedding-pca 64 \
 --output-path $RUN_DIR/proto-all-logreg-pca64
-python _eval_probs.py \
+python _eval_echonext_probs.py \
 --target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-all-logreg-pca64/probs.npy \
