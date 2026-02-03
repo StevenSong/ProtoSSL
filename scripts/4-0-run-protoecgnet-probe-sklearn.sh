@@ -35,13 +35,11 @@ python _protoecgnet_embed_echonext.py \
 ################################################################################
 
 python _protoecgnet_linear_probe_echonext.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim1d \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-unweighted
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat1-unweighted/probs.npy \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-unweighted
@@ -51,14 +49,12 @@ python _eval_echonext_probs.py \
 ################################################################################
 
 python _protoecgnet_linear_probe_echonext.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim1d \
 --balance-class-weight \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-weighted
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat1-weighted/probs.npy \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-weighted
@@ -68,14 +64,12 @@ python _eval_echonext_probs.py \
 ################################################################################
 
 python _protoecgnet_linear_probe_echonext.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim1d \
 --embedding-pca 32 \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-pca32
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat1-pca32/probs.npy \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat1-pca32
@@ -85,14 +79,12 @@ python _eval_echonext_probs.py \
 ################################################################################
 
 python _protoecgnet_linear_probe_echonext.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim2d_partial \
 --embedding-pca 64 \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat3-pca64
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat3-pca64/probs.npy \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat3-pca64
@@ -102,13 +94,11 @@ python _eval_echonext_probs.py \
 ################################################################################
 
 python _protoecgnet_linear_probe_echonext.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type sim2d_global \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat4
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-cat4/probs.npy \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-cat4
@@ -118,14 +108,12 @@ python _eval_echonext_probs.py \
 ################################################################################
 
 python _protoecgnet_linear_probe_echonext.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/protoecgnet-embeddings \
 --embedding-type all \
 --embedding-pca 64 \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-fusion-pca64
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/proto-ptbxl-pip-logreg-fusion-pca64/probs.npy \
 --output-path $RUN_DIR/proto-ptbxl-pip-logreg-fusion-pca64

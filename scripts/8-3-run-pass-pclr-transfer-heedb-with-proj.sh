@@ -36,7 +36,6 @@ python -m pass_pclr.trainer \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes/latest/proj.ckpt
 
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
