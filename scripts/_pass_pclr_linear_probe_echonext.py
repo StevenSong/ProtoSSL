@@ -58,6 +58,7 @@ def main(
         X_test = pca.transform(X_test)
 
     target_probs = []
+    models = dict()
     for target_col in tqdm(target_cols):
         y_train = train_targets[target_col].to_numpy()
 
@@ -73,11 +74,13 @@ def main(
             n_jobs=-1,
         )
         model.fit(X_train, y_train)
+        models[target_col] = model
 
         y_prob = model.predict_proba(X_test)[:, 1]
         target_probs.append(y_prob)
     target_probs = np.asarray(target_probs).T
     np.save(os.path.join(output_path, "probs.npy"), target_probs)
+    np.savez(os.path.join(output_path, "models.npz"), **models)
 
 
 if __name__ == "__main__":
