@@ -23,7 +23,6 @@ python -m pass_pclr.trainer \
     --data.dataset_path $ECHONEXT_DATA
 
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME

@@ -26,13 +26,11 @@ python -m pass_pclr.trainer \
     --model.pretrained_weights $PRETRAIN_RUN/project-prototypes/latest/proj.ckpt
 
 python _pass_pclr_linear_probe_echonext.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
 --output-path $RUN_DIR/$EXP_NAME
 
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME

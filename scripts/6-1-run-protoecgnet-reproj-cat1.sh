@@ -81,12 +81,10 @@ python tune.py \
 
 cd $REPO_ROOT/scripts
 python _protoecgnet_postprocess_echonext_results.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --output-path $EXP_DIR \
 --study-pkl $EXP_DIR/optuna_studies/cls_cat"$LABEL_SET"_optuna_study.pkl \
 --trial-predictions $EXP_DIR/test_results/cls_cat"$LABEL_SET"
 python _eval_echonext_probs.py \
---target-config $REPO_ROOT/configs/targets.yaml \
 --echonext-data $ECHONEXT_DATA \
 --probs-npy $EXP_DIR/probs.npy \
 --output-path $EXP_DIR
