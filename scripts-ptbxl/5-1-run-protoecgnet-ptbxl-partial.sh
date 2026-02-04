@@ -17,11 +17,12 @@ BATCH_SIZE=2048
 NUM_WORKERS=4
 
 # Experiment parameters
-ARCH=resnet1d18
+ARCH=resnet18
 PROTO_DIM=512
-LABEL_SET=1
-CONV_DIM=1D
-EXP_DIR=$RUN_DIR/proto-from-scratch-cat1
+PROTO_TIME_LEN=3
+LABEL_SET=all
+CONV_DIM=2D
+EXP_DIR=$RUN_DIR/proto-from-scratch-partial
 
 
 cd $PROTOECGNET_REPO/src
@@ -29,7 +30,7 @@ python tune.py \
     --training_stage "joint" \
     --standardize True \
     --remove_baseline True \
-    --job_name joint_cat"$LABEL_SET" \
+    --job_name joint_"$LABEL_SET" \
     --epochs 200 \
     --batch_size $BATCH_SIZE \
     --n_trials $N_TRIALS \
@@ -42,8 +43,8 @@ python tune.py \
     --num_workers $NUM_WORKERS \
     --dimension $CONV_DIM \
     --seed 42 \
-    --custom_groups True \
     --proto_dim $PROTO_DIM \
+    --proto_time_len $PROTO_TIME_LEN \
     --backbone $ARCH
 
 echo
@@ -54,16 +55,16 @@ echo
 
 cd $REPO_ROOT/scripts-ptbxl
 python _protoecgnet_postprocess_ptbxl_results.py \
---output-path $EXP_DIR/checkpoints/joint_cat"$LABEL_SET" \
---study-pkl $EXP_DIR/optuna_studies/joint_cat"$LABEL_SET"_optuna_study.pkl \
---trial-checkpoints $EXP_DIR/checkpoints/joint_cat"$LABEL_SET"
+--output-path $EXP_DIR/checkpoints/joint_"$LABEL_SET" \
+--study-pkl $EXP_DIR/optuna_studies/joint_"$LABEL_SET"_optuna_study.pkl \
+--trial-checkpoints $EXP_DIR/checkpoints/joint_"$LABEL_SET"
 
 cd $PROTOECGNET_REPO/src
 python3 main.py \
     --training_stage projection \
     --standardize True \
     --remove_baseline True \
-    --job_name proj_cat"$LABEL_SET" \
+    --job_name proj_"$LABEL_SET" \
     --batch_size $BATCH_SIZE \
     --checkpoint_dir $EXP_DIR/checkpoints \
     --log_dir $EXP_DIR/logs \
@@ -72,10 +73,10 @@ python3 main.py \
     --num_workers $NUM_WORKERS \
     --dimension $CONV_DIM \
     --seed 42 \
-    --custom_groups True \
     --proto_dim $PROTO_DIM \
+    --proto_time_len $PROTO_TIME_LEN \
     --backbone $ARCH \
-    --pretrained_weights $EXP_DIR/checkpoints/joint_cat"$LABEL_SET"/best.ckpt
+    --pretrained_weights $EXP_DIR/checkpoints/joint_"$LABEL_SET"/best.ckpt
 
 echo
 echo "========================================================================="
@@ -88,7 +89,7 @@ python tune.py \
     --training_stage "classifier" \
     --standardize True \
     --remove_baseline True \
-    --job_name cls_cat"$LABEL_SET" \
+    --job_name cls_"$LABEL_SET" \
     --epochs 200 \
     --batch_size $BATCH_SIZE \
     --n_trials $N_TRIALS \
@@ -101,16 +102,16 @@ python tune.py \
     --num_workers $NUM_WORKERS \
     --dimension $CONV_DIM \
     --seed 42 \
-    --custom_groups True \
     --proto_dim $PROTO_DIM \
+    --proto_time_len $PROTO_TIME_LEN \
     --backbone $ARCH \
-    --pretrained_weights $EXP_DIR/checkpoints/proj_cat"$LABEL_SET"/proj_cat"$LABEL_SET"_projection.pth
+    --pretrained_weights $EXP_DIR/checkpoints/proj_"$LABEL_SET"/proj_"$LABEL_SET"_projection.pth
 
 cd $REPO_ROOT/scripts-ptbxl
 python _protoecgnet_postprocess_ptbxl_results.py \
 --output-path $EXP_DIR \
---study-pkl $EXP_DIR/optuna_studies/cls_cat"$LABEL_SET"_optuna_study.pkl \
---trial-predictions $EXP_DIR/test_results/cls_cat"$LABEL_SET"
+--study-pkl $EXP_DIR/optuna_studies/cls_"$LABEL_SET"_optuna_study.pkl \
+--trial-predictions $EXP_DIR/test_results/cls_"$LABEL_SET"
 python _eval_ptbxl_probs.py \
 --ptbxl-data $DATASET_PATH \
 --probs-npy $EXP_DIR/probs.npy \

@@ -13,4 +13,4 @@ cd $REPO_ROOT/scripts-ptbxl
 PROTOECGNET_REPO=/opt/gpudata/steven/ecg-prototype-fm/external/bbj-lab-protoecgnet
 
 cd $PROTOECGNET_REPO/src
-python label_co.py --label-set 1 --save-path $RUN_DIR/protoecgnet-ptbxl-cooccurrence/label_cooccur_Cat1.pt
+python label_co.py --label-set all --save-path $RUN_DIR/protoecgnet-ptbxl-cooccurrence/label_cooccur_Cat1.pt
