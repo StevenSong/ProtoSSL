@@ -9,6 +9,8 @@ STAGE_T = Literal[
 ]
 SPLIT_T = Literal["train", "val", "test"]
 RESNET_T = Literal["resnet18", "resnet34", "resnet50", "resnet101", "resnet152"]
+CONV_T = Literal["1D", "2D"]
+PROT_T = Literal["global", "partial"]
 
 CACHE_DIR = os.environ.get(
     "CACHE_DIR", "/opt/gpudata/steven/ecg-prototype-fm/pass_pclr_cache"

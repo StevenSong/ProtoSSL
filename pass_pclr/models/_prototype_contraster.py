@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..defines import RESNET_T
+from ..defines import CONV_T, PROT_T, RESNET_T
 from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
 
@@ -13,16 +13,24 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         self,
         *,  # enforce kwargs
         resnet_type: RESNET_T,
+        conv_type: CONV_T,
+        prototype_type: PROT_T,
         n_prototypes: int,
         proj_dim: int | None = None,
         init_log_temp: float = 0.07,
         learnable_temp: bool = True,
         pretrained_weights: str | None = None,
+        partial_len: int | None = None,
+        partial_overlap: float | None = None,
     ):
         super().__init__()
         self.encoder = PrototypeEncoder(
             resnet_type=resnet_type,
             n_prototypes=n_prototypes,
+            conv_type=conv_type,
+            prototytpe_type=prototype_type,
+            partial_len=partial_len,
+            partial_overlap=partial_overlap,
         )
         emb_dim = self.encoder.prototypes.shape[1]
         if proj_dim is None:
@@ -59,7 +67,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
 
         # compute losses
         simclr_loss = self._simclr_loss(x1, x2)
-        koleo_loss = self._koleo_loss(x1) + self._koleo_loss(x2)
+        koleo_loss = self._koleo_loss(self.encoder.prototypes)
         return simclr_loss + koleo_loss
 
     def _simclr_loss(self, x1: torch.Tensor, x2: torch.Tensor):

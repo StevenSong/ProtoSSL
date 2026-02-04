@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from wandb.util import generate_id
 
 from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
-from .defines import RESNET_T, STAGE_T
+from .defines import CONV_T, PROT_T, RESNET_T, STAGE_T
 from .models import (
     BaseClassifier,
     PrototypeClassifier,
@@ -146,44 +146,66 @@ class LitModel(LightningModule):
     def __init__(
         self,
         resnet_type: RESNET_T,
+        conv_type: CONV_T,
         pipeline_stage: STAGE_T,
+        prototype_type: PROT_T | None = None,
         n_prototypes: int | None = None,
         label_names: list[str] | None = None,
         pretrained_weights: str | None = None,
+        partial_len: int | None = None,
+        partial_overlap: float | None = None,
     ):
         super().__init__()
         self.lr = None
         self.save_hyperparameters()
 
         if pipeline_stage == "learn-prototypes":
-            if n_prototypes is None:
+            if n_prototypes is None or prototype_type is None:
                 raise ValueError(
-                    "pipeline_stage=learn-prototypes must be used with model_type=PrototypeContraster and setting n_prototypes"
+                    "pipeline_stage=learn-prototypes must be used with model_type=PrototypeContraster and setting n_prototypes AND prototype_type"
                 )
             warn_unused(label_names=label_names)
             self.model = PrototypeContraster(
                 resnet_type=resnet_type,
+                conv_type=conv_type,
+                prototype_type=prototype_type,
                 n_prototypes=n_prototypes,
                 pretrained_weights=pretrained_weights,
+                partial_len=partial_len,
+                partial_overlap=partial_overlap,
             )
         elif (
             pipeline_stage == "project-prototypes"
             or pipeline_stage == "compute-embeddings"
         ):
-            if n_prototypes is None or pretrained_weights is None:
+            if (
+                n_prototypes is None
+                or pretrained_weights is None
+                or prototype_type is None
+            ):
                 raise ValueError(
-                    "pipeline_stage=[project-prototypes|compute-embeddings] must be used with model_type=PrototypeContraster and setting n_prototypes AND pretrained_weights"
+                    "pipeline_stage=[project-prototypes|compute-embeddings] must be used with model_type=PrototypeContraster and setting n_prototypes, pretrained_weights, AND prototype_type"
                 )
             warn_unused(label_names=label_names)
             self.model = PrototypeContraster(
                 resnet_type=resnet_type,
+                conv_type=conv_type,
+                prototype_type=prototype_type,
                 n_prototypes=n_prototypes,
                 pretrained_weights=pretrained_weights,
+                partial_len=partial_len,
+                partial_overlap=partial_overlap,
             )
         elif pipeline_stage == "train-classifier":
-            if n_prototypes is not None and label_names is not None:
+            if (
+                n_prototypes is not None
+                and label_names is not None
+                and prototype_type is not None
+            ):
                 self.model = PrototypeClassifier(
                     resnet_type=resnet_type,
+                    conv_type=conv_type,
+                    prototype_type=prototype_type,
                     n_prototypes=n_prototypes,
                     n_binary_labels=len(label_names),
                     pretrained_weights=pretrained_weights,
@@ -191,6 +213,7 @@ class LitModel(LightningModule):
             elif n_prototypes is None and label_names is not None:
                 self.model = ResNetClassifier(
                     resnet_type=resnet_type,
+                    conv_type=conv_type,
                     n_binary_labels=len(label_names),
                     pretrained_weights=pretrained_weights,
                 )
