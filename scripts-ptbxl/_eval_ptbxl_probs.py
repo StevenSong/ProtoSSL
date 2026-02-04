@@ -8,7 +8,7 @@ import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from pass_pclr.datasets import get_ptbxl_labels
-from pass_pclr.defines import PTBXL_CAT1_TARGETS
+from pass_pclr.defines import PTBXL_TARGETS
 
 
 def parse_args():
@@ -41,7 +41,7 @@ def main(
     multilabel_true = []
     multilabel_prob = []
     metrics = defaultdict(dict)
-    for i, target_col in enumerate(PTBXL_CAT1_TARGETS):
+    for i, target_col in enumerate(PTBXL_TARGETS):
         y_test = test_labels[:, i]
         y_prob = target_probs[:, i]
 

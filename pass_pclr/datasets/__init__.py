@@ -1,6 +1,6 @@
 from typing import Type
 
-from ..defines import ECHONEXT_TARGETS, PTBXL_CAT1_TARGETS
+from ..defines import ECHONEXT_TARGETS, PTBXL_TARGETS
 from ._base_ecg_dataset import BaseECGDataset, StreamingECGWaveforms, load_cached_data
 from ._echonext_dataset import EchoNextECGDataset
 from ._heedb_dataset import HeedbECGDataset
@@ -21,7 +21,7 @@ def infer_dataset_class_from_path(
     if any(x in dataset_path for x in echonext_indicators):
         return EchoNextECGDataset, list(ECHONEXT_TARGETS.keys())
     elif any(x in dataset_path for x in ptbxl_indicators):
-        return PtbxlECGDataset, PTBXL_CAT1_TARGETS
+        return PtbxlECGDataset, PTBXL_TARGETS
     elif any(x in dataset_path for x in heedb_indicators):
         return HeedbECGDataset, None
     raise ValueError(
