@@ -56,13 +56,13 @@ class PrototypeEncoder(BaseEncoder):
             # x has shape (B, L, T), we will chunk along T axis according to partial_len/overlap
             step = int(self.partial_len * (1 - self.partial_overlap))
             x = x.unfold(2, self.partial_len, step)  # (B, L, num_chunks, partial_len)
-            x = x.permute(0, 2, 1, 3)  # (B, num_chunks, L, partial_len)
+            x = x.permute(0, 2, 1, 3).contiguous()  # (B, num_chunks, L, partial_len)
             B, N, L, P = x.shape
             x = x.view(B * N, L, P)  # (B*num_chunks, L, partial_len)
             x = self.resnet(x)  # (B*num_chunks, E)
             x = self.sim_fn(x, self.prototypes)  # (B*num_chunks, P)
             x = x.view(B, N, -1)  # (B, num_chunks, P)
-            x = x.max(1)  # type: ignore
-            return x  # (B, P)
+            x, _ = x.max(1)  # (B, P)
+            return x
         else:
             raise ValueError(f"Unknown prototype_type={self.prototype_type}")
