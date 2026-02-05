@@ -46,12 +46,14 @@ class PrototypeEncoder(BaseEncoder):
             ), f"Must set partial_overlap if using prototype_type='partial'"
             self.partial_len = partial_len
             self.partial_overlap = partial_overlap
+        self.__last_resnet_out = None
+        self.__last_sim_chunk_idxs = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.prototype_type == "global":
-            x = self.resnet(x)  # (B, E)
-            x = self.sim_fn(x, self.prototypes)  # (B, P)
-            return x
+            x_resnet = self.resnet(x)  # (B, E)
+            x = self.sim_fn(x_resnet, self.prototypes)  # (B, P)
+            idxs = torch.zeros_like(x, dtype=torch.long)  # (B, P)
         if self.prototype_type == "partial":
             # x has shape (B, L, T), we will chunk along T axis according to partial_len/overlap
             step = int(self.partial_len * (1 - self.partial_overlap))
@@ -59,10 +61,26 @@ class PrototypeEncoder(BaseEncoder):
             x = x.permute(0, 2, 1, 3).contiguous()  # (B, num_chunks, L, partial_len)
             B, N, L, P = x.shape
             x = x.view(B * N, L, P)  # (B*num_chunks, L, partial_len)
-            x = self.resnet(x)  # (B*num_chunks, E)
-            x = self.sim_fn(x, self.prototypes)  # (B*num_chunks, P)
+            x_resnet = self.resnet(x)  # (B*num_chunks, E)
+            x = self.sim_fn(x_resnet, self.prototypes)  # (B*num_chunks, P)
             x = x.view(B, N, -1)  # (B, num_chunks, P)
-            x, _ = x.max(1)  # (B, P)
-            return x
+            x_resnet = x_resnet.view(B, N, -1)  # (B, num_chunks, E)
+            x, idxs = x.max(1)  # (B, P) - both
         else:
             raise ValueError(f"Unknown prototype_type={self.prototype_type}")
+
+        if x_resnet.ndim == 2:
+            # global embeddings, simulate chunk dim
+            x_resnet = x_resnet.unsqueeze(1)  # (B, 1, E)
+        self.__last_resnet_out = x_resnet  # (B, num_chunks, E) - per chunk embs
+        self.__last_sim_chunk_idxs = idxs  # (B, P) - which chunk?
+
+        return x
+
+    def get_last_embs_and_chunks(self) -> tuple[torch.Tensor, torch.Tensor]:
+        if self.__last_resnet_out is None or self.__last_sim_chunk_idxs is None:
+            assert (
+                self.__last_sim_chunk_idxs is None and self.__last_resnet_out is None
+            ), "embs and chunks are out of sync? not sure how we got here..."
+            raise ValueError(f"Model has not yet processed a batch!")
+        return self.__last_resnet_out, self.__last_sim_chunk_idxs

@@ -235,7 +235,11 @@ class LitModel(LightningModule):
             self.prototype_sims = [torch.as_tensor(-np.inf)] * n_prototypes
             self.prototype_embs = [torch.empty(0)] * n_prototypes
             self.prototype_ids = [
-                (torch.as_tensor(-1), torch.as_tensor(-1))
+                (
+                    torch.as_tensor(-1),  # patient_id
+                    torch.as_tensor(-1),  # ecg_id
+                    torch.as_tensor(-1),  # chunk_idx
+                )
             ] * n_prototypes
 
     def _common_step(
@@ -279,12 +283,11 @@ class LitModel(LightningModule):
                 )
             loss, preds = None, None
             # waveform/label keys
-            # NOTE: we don't just use the PrototypeEncoder forward because we need the ResNet embeddings
-            embs = self.model.encoder.resnet(batch["waveform"])  # (B, d_emb)
-            sims = self.model.encoder.sim_fn(  # (B, n_prototypes)
-                embs,  # (B, d_emb)
-                self.model.encoder.prototypes,  # (n_prototypes, d_emb)
-            )
+            sims = self.model.encoder(batch["waveform"])  # (B, n_prototypes)
+            (
+                embs,  # (B, chunks, d_emb)
+                chunks,  # (B, n_prototypes) - which chunks resulted in the prototype sims?
+            ) = self.model.encoder.get_last_embs_and_chunks()
             for prot_idx, curr_sim in enumerate(self.prototype_sims):
                 prot_sims = sims[:, prot_idx]
                 candidates = (prot_sims > curr_sim).argwhere().squeeze(1)
@@ -292,8 +295,13 @@ class LitModel(LightningModule):
                     # none in batch are more similar to any of the prototypes
                     continue
                 batch_idx = candidates[0]
-                _id = (batch["patient_id"][batch_idx], batch["ecg_id"][batch_idx])
-                _emb = embs[batch_idx]
+                chunk_idx = chunks[batch_idx, prot_idx]
+                _id = (
+                    batch["patient_id"][batch_idx],
+                    batch["ecg_id"][batch_idx],
+                    chunk_idx,
+                )
+                _emb = embs[batch_idx, chunk_idx]
                 _sim = prot_sims[batch_idx]
 
                 self.prototype_sims[prot_idx] = _sim
@@ -469,13 +477,15 @@ class PredictionWriter(BasePredictionWriter):
             # predictions are all None (see LitModel above)
             # pl_module has prototype projection metadata to save
             n_prototypes = len(pl_module.prototype_sims)  # type: ignore
-            pids = [pid for pid, eid in pl_module.prototype_ids]  # type: ignore
-            eids = [eid for pid, eid in pl_module.prototype_ids]  # type: ignore
+            pids = [pid for pid, _, _ in pl_module.prototype_ids]  # type: ignore
+            eids = [eid for _, eid, _ in pl_module.prototype_ids]  # type: ignore
+            cids = [cid for _, _, cid in pl_module.prototype_ids]  # type: ignore
             meta = pd.DataFrame.from_dict(
                 {
                     "prototype_id": np.arange(n_prototypes),
                     "patient_id": torch.stack(pids).tolist(),
                     "ecg_id": torch.stack(eids).tolist(),
+                    "chunk_idx": torch.stack(cids).tolist(),
                     "emb_sim": torch.stack(pl_module.prototype_sims).tolist(),  # type: ignore
                 },
                 orient="columns",
