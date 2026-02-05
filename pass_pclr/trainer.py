@@ -209,6 +209,8 @@ class LitModel(LightningModule):
                     n_prototypes=n_prototypes,
                     n_binary_labels=len(label_names),
                     pretrained_weights=pretrained_weights,
+                    partial_len=partial_len,
+                    partial_overlap=partial_overlap,
                 )
             elif n_prototypes is None and label_names is not None:
                 self.model = ResNetClassifier(
