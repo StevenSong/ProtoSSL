@@ -18,12 +18,12 @@ if __name__ == "__main__":
 
     get_ptbxl_dataloaders(
         batch_size=32,
-        mode="1D",
+        mode="2D",
         sampling_rate=100,
-        label_set="1",
+        label_set="all",
         work_num=4,
         return_sample_ids=False,
-        custom_groups=True,
+        custom_groups=False,
         standardize=True,
         remove_baseline=True,
     )
