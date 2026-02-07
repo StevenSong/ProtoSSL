@@ -20,9 +20,9 @@ echo "========================================================================="
 echo
 
 cd $PROTOECGNET_REPO/src
-python label_co.py --label-set 1 --save-path $RUN_DIR/protoecgnet-echonext-cooccurrence/label_cooccur_Cat1.pt
-python label_co.py --label-set 3 --save-path $RUN_DIR/protoecgnet-echonext-cooccurrence/label_cooccur_Cat3.pt
-python label_co.py --label-set 4 --save-path $RUN_DIR/protoecgnet-echonext-cooccurrence/label_cooccur_Cat4.pt
+python label_co.py --label-set 1 --save-path $RUN_DIR/protoecgnet-echonext-cooccurrence/label_cooccur_Cat1.pt --custom-groups
+python label_co.py --label-set 3 --save-path $RUN_DIR/protoecgnet-echonext-cooccurrence/label_cooccur_Cat3.pt --custom-groups
+python label_co.py --label-set 4 --save-path $RUN_DIR/protoecgnet-echonext-cooccurrence/label_cooccur_Cat4.pt --custom-groups
 
 echo
 echo "========================================================================="

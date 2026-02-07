@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from optuna import Study
 
-from pass_pclr.defines import PTBXL_CAT1_TARGETS
+from pass_pclr.defines import PTBXL_TARGETS
 
 
 def parse_args():
@@ -30,7 +30,7 @@ def main(
         trial_predictions is not None or trial_checkpoints is not None
     ), "Must provide at least one of trial_predictions or trial_checkpoints to postprocess"
 
-    mapping = {k: f"Prob_{k}" for k in PTBXL_CAT1_TARGETS}
+    mapping = {k: f"Prob_{k}" for k in PTBXL_TARGETS}
     cols = list(mapping.values())
     optuna_study: Study = joblib.load(study_pkl)
     best_trial = optuna_study.best_trial.number

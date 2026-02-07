@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 from pass_pclr.datasets import get_ptbxl_labels
-from pass_pclr.defines import PTBXL_CAT1_TARGETS
+from pass_pclr.defines import PTBXL_TARGETS
 
 simplefilter("ignore", category=ConvergenceWarning)
 
@@ -57,7 +57,7 @@ def main(
 
     target_probs = []
     models = dict()
-    for i, target_col in enumerate(tqdm(PTBXL_CAT1_TARGETS)):
+    for i, target_col in enumerate(tqdm(PTBXL_TARGETS)):
         y_train = train_targets[:, i]
 
         model = LogisticRegressionCV(

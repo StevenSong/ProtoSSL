@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from wandb.util import generate_id
 
 from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
-from .defines import RESNET_T, STAGE_T
+from .defines import CONV_T, PROT_T, RESNET_T, STAGE_T
 from .models import (
     BaseClassifier,
     PrototypeClassifier,
@@ -146,51 +146,76 @@ class LitModel(LightningModule):
     def __init__(
         self,
         resnet_type: RESNET_T,
+        conv_type: CONV_T,
         pipeline_stage: STAGE_T,
+        prototype_type: PROT_T | None = None,
         n_prototypes: int | None = None,
         label_names: list[str] | None = None,
         pretrained_weights: str | None = None,
+        partial_len: int | None = None,
+        partial_overlap: float | None = None,
     ):
         super().__init__()
         self.lr = None
         self.save_hyperparameters()
 
         if pipeline_stage == "learn-prototypes":
-            if n_prototypes is None:
+            if n_prototypes is None or prototype_type is None:
                 raise ValueError(
-                    "pipeline_stage=learn-prototypes must be used with model_type=PrototypeContraster and setting n_prototypes"
+                    "pipeline_stage=learn-prototypes must be used with model_type=PrototypeContraster and setting n_prototypes AND prototype_type"
                 )
             warn_unused(label_names=label_names)
             self.model = PrototypeContraster(
                 resnet_type=resnet_type,
+                conv_type=conv_type,
+                prototype_type=prototype_type,
                 n_prototypes=n_prototypes,
                 pretrained_weights=pretrained_weights,
+                partial_len=partial_len,
+                partial_overlap=partial_overlap,
             )
         elif (
             pipeline_stage == "project-prototypes"
             or pipeline_stage == "compute-embeddings"
         ):
-            if n_prototypes is None or pretrained_weights is None:
+            if (
+                n_prototypes is None
+                or pretrained_weights is None
+                or prototype_type is None
+            ):
                 raise ValueError(
-                    "pipeline_stage=[project-prototypes|compute-embeddings] must be used with model_type=PrototypeContraster and setting n_prototypes AND pretrained_weights"
+                    "pipeline_stage=[project-prototypes|compute-embeddings] must be used with model_type=PrototypeContraster and setting n_prototypes, pretrained_weights, AND prototype_type"
                 )
             warn_unused(label_names=label_names)
             self.model = PrototypeContraster(
                 resnet_type=resnet_type,
+                conv_type=conv_type,
+                prototype_type=prototype_type,
                 n_prototypes=n_prototypes,
                 pretrained_weights=pretrained_weights,
+                partial_len=partial_len,
+                partial_overlap=partial_overlap,
             )
         elif pipeline_stage == "train-classifier":
-            if n_prototypes is not None and label_names is not None:
+            if (
+                n_prototypes is not None
+                and label_names is not None
+                and prototype_type is not None
+            ):
                 self.model = PrototypeClassifier(
                     resnet_type=resnet_type,
+                    conv_type=conv_type,
+                    prototype_type=prototype_type,
                     n_prototypes=n_prototypes,
                     n_binary_labels=len(label_names),
                     pretrained_weights=pretrained_weights,
+                    partial_len=partial_len,
+                    partial_overlap=partial_overlap,
                 )
             elif n_prototypes is None and label_names is not None:
                 self.model = ResNetClassifier(
                     resnet_type=resnet_type,
+                    conv_type=conv_type,
                     n_binary_labels=len(label_names),
                     pretrained_weights=pretrained_weights,
                 )
@@ -210,7 +235,11 @@ class LitModel(LightningModule):
             self.prototype_sims = [torch.as_tensor(-np.inf)] * n_prototypes
             self.prototype_embs = [torch.empty(0)] * n_prototypes
             self.prototype_ids = [
-                (torch.as_tensor(-1), torch.as_tensor(-1))
+                (
+                    torch.as_tensor(-1),  # patient_id
+                    torch.as_tensor(-1),  # ecg_id
+                    torch.as_tensor(-1),  # chunk_idx
+                )
             ] * n_prototypes
 
     def _common_step(
@@ -254,12 +283,11 @@ class LitModel(LightningModule):
                 )
             loss, preds = None, None
             # waveform/label keys
-            # NOTE: we don't just use the PrototypeEncoder forward because we need the ResNet embeddings
-            embs = self.model.encoder.resnet(batch["waveform"])  # (B, d_emb)
-            sims = self.model.encoder.sim_fn(  # (B, n_prototypes)
-                embs,  # (B, d_emb)
-                self.model.encoder.prototypes,  # (n_prototypes, d_emb)
-            )
+            sims = self.model.encoder(batch["waveform"])  # (B, n_prototypes)
+            (
+                embs,  # (B, chunks, d_emb)
+                chunks,  # (B, n_prototypes) - which chunks resulted in the prototype sims?
+            ) = self.model.encoder.get_last_embs_and_chunks()
             for prot_idx, curr_sim in enumerate(self.prototype_sims):
                 prot_sims = sims[:, prot_idx]
                 candidates = (prot_sims > curr_sim).argwhere().squeeze(1)
@@ -267,8 +295,13 @@ class LitModel(LightningModule):
                     # none in batch are more similar to any of the prototypes
                     continue
                 batch_idx = candidates[0]
-                _id = (batch["patient_id"][batch_idx], batch["ecg_id"][batch_idx])
-                _emb = embs[batch_idx]
+                chunk_idx = chunks[batch_idx, prot_idx]
+                _id = (
+                    batch["patient_id"][batch_idx],
+                    batch["ecg_id"][batch_idx],
+                    chunk_idx,
+                )
+                _emb = embs[batch_idx, chunk_idx]
                 _sim = prot_sims[batch_idx]
 
                 self.prototype_sims[prot_idx] = _sim
@@ -444,13 +477,15 @@ class PredictionWriter(BasePredictionWriter):
             # predictions are all None (see LitModel above)
             # pl_module has prototype projection metadata to save
             n_prototypes = len(pl_module.prototype_sims)  # type: ignore
-            pids = [pid for pid, eid in pl_module.prototype_ids]  # type: ignore
-            eids = [eid for pid, eid in pl_module.prototype_ids]  # type: ignore
+            pids = [pid for pid, _, _ in pl_module.prototype_ids]  # type: ignore
+            eids = [eid for _, eid, _ in pl_module.prototype_ids]  # type: ignore
+            cids = [cid for _, _, cid in pl_module.prototype_ids]  # type: ignore
             meta = pd.DataFrame.from_dict(
                 {
                     "prototype_id": np.arange(n_prototypes),
                     "patient_id": torch.stack(pids).tolist(),
                     "ecg_id": torch.stack(eids).tolist(),
+                    "chunk_idx": torch.stack(cids).tolist(),
                     "emb_sim": torch.stack(pl_module.prototype_sims).tolist(),  # type: ignore
                 },
                 orient="columns",

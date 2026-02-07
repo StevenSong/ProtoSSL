@@ -10,10 +10,10 @@ from wfdb import rdsamp
 
 from pass_pclr.datasets import BaseECGDataset, load_cached_data
 from pass_pclr.defines import (
-    PTBXL_CAT1_TARGETS,
     PTBXL_CLIPPED_MEANS,
     PTBXL_CLIPPED_STDS,
     PTBXL_LOWERS,
+    PTBXL_TARGETS,
     PTBXL_UPPERS,
     SPLIT_T,
 )
@@ -23,7 +23,7 @@ TEST_FOLD = 10
 
 
 def get_ptbxl_labels(df: pd.DataFrame) -> np.ndarray:
-    label_idx = {l: i for i, l in enumerate(PTBXL_CAT1_TARGETS)}
+    label_idx = {l: i for i, l in enumerate(PTBXL_TARGETS)}
     temp = df["scp_codes"].apply(lambda x: ast.literal_eval(x))
     labels = np.zeros((len(df), len(label_idx)))
     for i, label_dict in enumerate(temp):

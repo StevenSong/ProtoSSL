@@ -40,6 +40,10 @@ model:
   class_path: LitModel
   init_args:
     resnet_type: resnet18
+    conv_type: 2D
+    prototype_type: partial
+    partial_len: 100 # 1-second @ 100 Hz
+    partial_overlap: 0.5
     n_prototypes: 128
     # pretrained_weights: /path/to/weights
 data:

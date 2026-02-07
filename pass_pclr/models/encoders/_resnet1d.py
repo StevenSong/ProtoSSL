@@ -109,9 +109,14 @@ class ResNet1D(BaseEncoder):
     def _make_layers(self, block, layers, input_channels):
         self.inplanes = 64
         self.conv1 = nn.Conv1d(
-            input_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
+            input_channels,
+            self.inplanes,
+            kernel_size=7,
+            stride=2,
+            padding=3,
+            bias=False,
         )
-        self.bn1 = nn.BatchNorm1d(64)
+        self.bn1 = nn.BatchNorm1d(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
@@ -141,9 +146,9 @@ class ResNet1D(BaseEncoder):
         return nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if x.ndim == 4:
-            assert x.shape[1] == 1, f"Unexpected shape {x.shape}"
-            x = x.squeeze(1)
+        assert (
+            x.ndim == 3
+        ), f"Input should be 3D (batch, leads, timesteps), got {x.shape}"
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)

@@ -215,6 +215,7 @@ temp/
 *.BAK
 
 outputs/
+outputs.2026-01/
 slurm-logs/
 protoecgnet-cache/
 pass_pclr_cache/
