@@ -63,19 +63,9 @@ class LitData(LightningDataModule):
                 val_ds = PCLRWrapperDataset(val_ds)
             self.val_ds = val_ds
         if stage in ["test", "predict"]:
-            split = "test"
-            if stage == "predict" and pipeline_stage == "project-prototypes":
-                # hijack predict for prototype projection over training samples
-                split = "train"
-                print("======================LitData======================")
-                print(
-                    "Using training split for prediction data loader for prototype projection stage"
-                )
-                print("===================================================")
-
             test_ds = self.ds_cls(
                 dataset_path=dataset_path,
-                split=split,
+                split="test",
                 sampling_rate=sampling_rate,
             )
             if wrap_pclr:
@@ -485,9 +475,10 @@ def run():
         )
     elif pipeline_stage == "project-prototypes":
         # hijack predict over train set for prototype projection (see LitData above)
+        cli.datamodule.setup("fit")
         cli.trainer.predict(
             model=cli.model,
-            datamodule=cli.datamodule,
+            dataloaders=cli.datamodule.train_dataloader(),
         )
         ckpt_path = os.path.join(cli.trainer.log_dir, "proj.ckpt")  # type: ignore
         cli.trainer.save_checkpoint(ckpt_path, weights_only=False)
