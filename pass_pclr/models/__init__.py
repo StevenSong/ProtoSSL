@@ -1,4 +1,6 @@
 from ._base_classifier import BaseClassifier
 from ._prototype_classifier import PrototypeClassifier
 from ._prototype_contraster import PrototypeContraster
+from ._prototype_projector import PrototypeProjector
+from ._prototype_supervisor import PrototypeSupervisor
 from ._resnet_classifier import ResNetClassifier

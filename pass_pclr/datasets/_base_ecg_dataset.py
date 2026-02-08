@@ -153,7 +153,7 @@ class BaseECGDataset(Dataset, ABC):
     def __len__(self) -> int:
         return self.waveforms.shape[0]
 
-    def get_label_cooccurrence_matrix(self) -> torch.Tensor:
+    def get_label_cooccurrence(self) -> torch.Tensor:
         # jaccard similarity
         if self.labels is None:
             raise ValueError("This dataset does not have any labels!")

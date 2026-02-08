@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..defines import CONV_T, PROT_T, RESNET_T
+from ..defines import CONV_T, PROT_T, RESNET_T, SIM_MAX
 from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
 
@@ -16,7 +16,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         prototype_type: PROT_T,
         n_prototypes_per_label: int,
         label_weights: torch.Tensor,
-        cooccurrence_matrix: torch.Tensor,
+        label_cooccurrence: torch.Tensor,
         pretrained_weights: str | None = None,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
@@ -25,7 +25,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         self.n_prototypes_per_label = n_prototypes_per_label
         self.n_binary_labels = label_weights.shape[0]
         self.label_weights = label_weights
-        self.cooccurrence_matrix = cooccurrence_matrix
+        self.label_cooccurrence = label_cooccurrence
         self.encoder = PrototypeEncoder(
             resnet_type=resnet_type,
             n_prototypes=self.n_binary_labels * n_prototypes_per_label,
@@ -73,13 +73,13 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         neg_mask = 1 - pos_mask
         # only consider similarity for prototypes assigned to the sample
         # since we take the max of the valid similarities, mask invalid entries
-        # with similarities less than all other similarities (NOTE may need to adjust const)
-        pos_prot_sims = pos_mask * sims + neg_mask * -100  # (B, P)
+        # with similarities less than all other similarities
+        pos_prot_sims = pos_mask * sims + neg_mask * -SIM_MAX  # (B, P)
         per_sample_max_pos_sim, _ = pos_prot_sims.max(1)  # (B,)
         clst_loss = -per_sample_max_pos_sim.mean()
 
         # separation loss
-        neg_prot_sims = neg_mask * sims + pos_mask * -100  # (B, P)
+        neg_prot_sims = neg_mask * sims + pos_mask * -SIM_MAX  # (B, P)
         per_sample_max_neg_sim, _ = neg_prot_sims.max(1)  # (B,)
         sep_loss = per_sample_max_neg_sim.mean()
 
@@ -93,7 +93,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         div_loss = ((inter_prot_sims - identity) ** 2).sum() / (n_prot**2)
 
         # contrastive loss
-        cooc = self.cooccurrence_matrix  # (L, L)
+        cooc = self.label_cooccurrence  # (L, L)
         ppl = self.n_prototypes_per_label
         cooc_kron = torch.kron(cooc, torch.ones(ppl, ppl, device=cooc.device))  # (P, P)
         # NOTE: cooc normalization not in ProtoECGNet paper but in their codebase
