@@ -152,3 +152,23 @@ class BaseECGDataset(Dataset, ABC):
 
     def __len__(self) -> int:
         return self.waveforms.shape[0]
+
+    def get_label_cooccurrence_matrix(self) -> torch.Tensor:
+        # jaccard similarity
+        if self.labels is None:
+            raise ValueError("This dataset does not have any labels!")
+        cooc_counts = self.labels.T @ self.labels  # (L, L)
+        per_label_count = self.labels.sum(dim=0)  # (L,)
+        union = (
+            per_label_count.unsqueeze(1)  # (L, 1)
+            + per_label_count.unsqueeze(0)  # (1, L)
+            - cooc_counts  # don't double count
+        )
+        return cooc_counts / (union + 1e-10)
+
+    def get_label_weights(self) -> torch.Tensor:
+        if self.labels is None:
+            raise ValueError("This dataset does not have any labels!")
+        n_samples = self.labels.shape[0]
+        per_label_count = self.labels.sum(dim=0)
+        return (n_samples - per_label_count) / per_label_count

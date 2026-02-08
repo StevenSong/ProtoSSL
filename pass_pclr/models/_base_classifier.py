@@ -76,7 +76,7 @@ class BaseClassifier(PretrainedMixin, nn.Module):
             per_label_logits = logits[:, i : i + 2]  # (B, 2)
             per_label_loss = F.cross_entropy(
                 input=per_label_logits,  # (B, 2)
-                target=y[:, i // 2],  # (B, 2)
+                target=y[:, i // 2],  # (B,)
             )
             losses.append(per_label_loss)
             probs.append(F.softmax(per_label_logits, dim=1)[:, 1])
