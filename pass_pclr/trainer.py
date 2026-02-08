@@ -1,6 +1,4 @@
 import os
-import re
-from pathlib import Path
 from typing import get_args
 
 import numpy as np
@@ -9,17 +7,16 @@ import torch
 from lightning import LightningDataModule, LightningModule
 from lightning.pytorch.callbacks import BasePredictionWriter
 from lightning.pytorch.cli import LightningCLI
-from lightning.pytorch.loggers import WandbLogger
-from lightning.pytorch.utilities import rank_zero_only
 from torch.utils.data import DataLoader
-from wandb.util import generate_id
 
 from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
-from .defines import CONV_T, PROT_T, RESNET_T, STAGE_T
+from .defines import CONV_T, PROT_T, RESNET_T, SIM_MAX, STAGE_T
 from .models import (
     BaseClassifier,
     PrototypeClassifier,
     PrototypeContraster,
+    PrototypeProjector,
+    PrototypeSupervisor,
     ResNetClassifier,
 )
 
@@ -41,6 +38,21 @@ class LitData(LightningDataModule):
 
         # label names is linked to LitModel via LitCLI
         self.ds_cls, self.label_names = infer_dataset_class_from_path(dataset_path)
+        if pipeline_stage == "learn-prototypes-supervised":
+            # need label weights and cooccurrence matrix, not best practice
+            # to instantiate dataset outside of `setup` but we know we'll need
+            # the train_ds in this pipeline_stage anyways
+            self.train_ds = self.ds_cls(
+                dataset_path=dataset_path,
+                split="train",
+                sampling_rate=sampling_rate,
+            )
+            self.label_weights = self.train_ds.get_label_weights()
+            self.label_cooccurrence = self.train_ds.get_label_cooccurrence()
+        else:
+            # set to defaults so LitCLI can link these to LitModel args
+            self.label_weights = None
+            self.label_cooccurrence = None
 
     def setup(self, stage: str):
         dataset_path: str = self.hparams.dataset_path  # type: ignore
@@ -49,14 +61,16 @@ class LitData(LightningDataModule):
         wrap_pclr = pipeline_stage == "learn-prototypes"
 
         if stage == "fit":
-            train_ds = self.ds_cls(
-                dataset_path=dataset_path,
-                split="train",
-                sampling_rate=sampling_rate,
-            )
+            if not hasattr(self, "train_ds"):
+                self.train_ds = self.ds_cls(
+                    dataset_path=dataset_path,
+                    split="train",
+                    sampling_rate=sampling_rate,
+                )
+            else:
+                assert self.train_ds is not None, "Not sure how train_ds is None"
             if wrap_pclr:
-                train_ds = PCLRWrapperDataset(train_ds)
-            self.train_ds = train_ds
+                self.train_ds = PCLRWrapperDataset(self.train_ds)  # type: ignore
         if stage in ["fit", "validate"]:
             val_ds = self.ds_cls(
                 dataset_path=dataset_path,
@@ -67,19 +81,9 @@ class LitData(LightningDataModule):
                 val_ds = PCLRWrapperDataset(val_ds)
             self.val_ds = val_ds
         if stage in ["test", "predict"]:
-            split = "test"
-            if stage == "predict" and pipeline_stage == "project-prototypes":
-                # hijack predict for prototype projection over training samples
-                split = "train"
-                print("======================LitData======================")
-                print(
-                    "Using training split for prediction data loader for prototype projection stage"
-                )
-                print("===================================================")
-
             test_ds = self.ds_cls(
                 dataset_path=dataset_path,
-                split=split,
+                split="test",
                 sampling_rate=sampling_rate,
             )
             if wrap_pclr:
@@ -94,6 +98,7 @@ class LitData(LightningDataModule):
             shuffle=pipeline_stage
             not in {
                 "project-prototypes",
+                "project-prototypes-supervised",
                 "compute-embeddings",
             },  # no shuffle if projecting or embedding
             pin_memory=True,
@@ -142,6 +147,26 @@ def warn_unused(**kwargs):
         print("===================================================")
 
 
+def compute_n_prototypes(
+    *,  # enforce kwargs
+    n_prototypes: int | None,
+    n_prototypes_per_label: int | None,
+    label_names: list[str] | None,
+) -> int | None:
+    if n_prototypes is not None and n_prototypes_per_label is not None:
+        raise ValueError(f"Cannot set both n_prototypes and n_prototypes_per_label")
+
+    if n_prototypes is not None:
+        return n_prototypes
+    elif n_prototypes_per_label is not None:
+        assert (
+            label_names is not None
+        ), "label_names canot be None if n_prototypes_per_label is not None"
+        return n_prototypes_per_label * len(label_names)
+    else:
+        return None
+
+
 class LitModel(LightningModule):
     def __init__(
         self,
@@ -150,7 +175,10 @@ class LitModel(LightningModule):
         pipeline_stage: STAGE_T,
         prototype_type: PROT_T | None = None,
         n_prototypes: int | None = None,
+        n_prototypes_per_label: int | None = None,
         label_names: list[str] | None = None,
+        label_weights: torch.Tensor | None = None,
+        label_cooccurrence: torch.Tensor | None = None,
         pretrained_weights: str | None = None,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
@@ -158,47 +186,84 @@ class LitModel(LightningModule):
         super().__init__()
         self.lr = None
         self.save_hyperparameters()
+        _n_prototypes = compute_n_prototypes(
+            n_prototypes=n_prototypes,
+            n_prototypes_per_label=n_prototypes_per_label,
+            label_names=label_names,
+        )
 
         if pipeline_stage == "learn-prototypes":
             if n_prototypes is None or prototype_type is None:
                 raise ValueError(
                     "pipeline_stage=learn-prototypes must be used with model_type=PrototypeContraster and setting n_prototypes AND prototype_type"
                 )
-            warn_unused(label_names=label_names)
+            warn_unused(
+                label_names=label_names,
+                label_weights=label_weights,
+                label_cooccurrence=label_cooccurrence,
+            )
             self.model = PrototypeContraster(
                 resnet_type=resnet_type,
                 conv_type=conv_type,
                 prototype_type=prototype_type,
                 n_prototypes=n_prototypes,
+                pretrained_weights=pretrained_weights,
+                partial_len=partial_len,
+                partial_overlap=partial_overlap,
+            )
+        elif pipeline_stage == "learn-prototypes-supervised":
+            if (
+                n_prototypes_per_label is None
+                or prototype_type is None
+                or label_weights is None
+                or label_cooccurrence is None
+            ):
+                raise ValueError(
+                    "pipeline_stage=learn-prototypes-supervised must be used with model_type=PrototypeSupervisor and setting "
+                    "n_prototypes_per_label AND prototype_type AND label_weights AND label_cooccurrence"
+                )
+            self.model = PrototypeSupervisor(
+                resnet_type=resnet_type,
+                conv_type=conv_type,
+                prototype_type=prototype_type,
+                n_prototypes_per_label=n_prototypes_per_label,
+                label_weights=label_weights,
+                label_cooccurrence=label_cooccurrence,
                 pretrained_weights=pretrained_weights,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
             )
         elif (
             pipeline_stage == "project-prototypes"
+            or pipeline_stage == "project-prototypes-supervised"
             or pipeline_stage == "compute-embeddings"
         ):
             if (
-                n_prototypes is None
+                _n_prototypes is None
                 or pretrained_weights is None
                 or prototype_type is None
             ):
                 raise ValueError(
-                    "pipeline_stage=[project-prototypes|compute-embeddings] must be used with model_type=PrototypeContraster and setting n_prototypes, pretrained_weights, AND prototype_type"
+                    "pipeline_stage=[project-prototypes|project-prototypes-supervised|compute-embeddings] "
+                    "must be used with model_type=PrototypeProjector and setting "
+                    "[n_prototypes|n_prototypes_per_label^n_binary_labels], pretrained_weights, AND prototype_type"
                 )
-            warn_unused(label_names=label_names)
-            self.model = PrototypeContraster(
+            warn_unused(
+                label_weights=label_weights,
+                label_cooccurrence=label_cooccurrence,
+            )
+            self.model = PrototypeProjector(
                 resnet_type=resnet_type,
                 conv_type=conv_type,
                 prototype_type=prototype_type,
-                n_prototypes=n_prototypes,
+                n_prototypes=_n_prototypes,
                 pretrained_weights=pretrained_weights,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
             )
         elif pipeline_stage == "train-classifier":
             if (
-                n_prototypes is not None
+                _n_prototypes is not None
                 and label_names is not None
                 and prototype_type is not None
             ):
@@ -206,13 +271,13 @@ class LitModel(LightningModule):
                     resnet_type=resnet_type,
                     conv_type=conv_type,
                     prototype_type=prototype_type,
-                    n_prototypes=n_prototypes,
+                    n_prototypes=_n_prototypes,
                     n_binary_labels=len(label_names),
                     pretrained_weights=pretrained_weights,
                     partial_len=partial_len,
                     partial_overlap=partial_overlap,
                 )
-            elif n_prototypes is None and label_names is not None:
+            elif _n_prototypes is None and label_names is not None:
                 self.model = ResNetClassifier(
                     resnet_type=resnet_type,
                     conv_type=conv_type,
@@ -229,18 +294,22 @@ class LitModel(LightningModule):
         if pretrained_weights is not None and isinstance(self.model, BaseClassifier):
             self.model.freeze_encoder()
 
-        if pipeline_stage == "project-prototypes":
-            assert n_prototypes is not None
+        if (
+            pipeline_stage == "project-prototypes"
+            or pipeline_stage == "project-prototypes-supervised"
+        ):
+            if _n_prototypes is None:
+                raise ValueError("Could not determine number of prototypes")
             # placeholder tensor values for the prediction writer to access, mostly to help with type checking
-            self.prototype_sims = [torch.as_tensor(-np.inf)] * n_prototypes
-            self.prototype_embs = [torch.empty(0)] * n_prototypes
+            self.prototype_sims = [torch.as_tensor(-SIM_MAX)] * _n_prototypes
+            self.prototype_embs = [torch.empty(0)] * _n_prototypes
             self.prototype_ids = [
                 (
                     torch.as_tensor(-1),  # patient_id
                     torch.as_tensor(-1),  # ecg_id
                     torch.as_tensor(-1),  # chunk_idx
                 )
-            ] * n_prototypes
+            ] * _n_prototypes
 
     def _common_step(
         self,
@@ -262,20 +331,31 @@ class LitModel(LightningModule):
             assert isinstance(self.model, PrototypeContraster)
             if stage not in ["train", "val"]:
                 raise ValueError(
-                    f"Cannot use _common_step with pipeline_stage=learn-prototype and (lightning) stage={stage}"
+                    f"Cannot use _common_step with pipeline_stage=learn-prototypes and (lightning) stage={stage}"
                 )
-            # x1/x2 keys
             preds = None
-            loss = self.model(
-                batch["x1"],
-                batch["x2"],
-            )
+            loss = self.model(batch["x1"], batch["x2"])
             if log:
                 self.log(
                     f"{stage}_loss", loss, batch_size=batch_size, sync_dist=sync_dist
                 )
-        elif pipeline_stage == "project-prototypes":
-            assert isinstance(self.model, PrototypeContraster)
+        elif pipeline_stage == "learn-prototypes-supervised":
+            assert isinstance(self.model, PrototypeSupervisor)
+            if stage not in ["train", "val"]:
+                raise ValueError(
+                    f"Cannot use _common_step with pipeline_stage=learn-prototypes-supervised and (lightning) stage={stage}"
+                )
+            preds = None
+            loss = self.model(batch["waveform"], batch["label"])
+            if log:
+                self.log(
+                    f"{stage}_loss", loss, batch_size=batch_size, sync_dist=sync_dist
+                )
+        elif (
+            pipeline_stage == "project-prototypes"
+            or pipeline_stage == "project-prototypes-supervised"
+        ):
+            assert isinstance(self.model, PrototypeProjector)
             if stage != "predict":
                 raise ValueError(
                     f"Cannot use pipeline_stage=project-prototypes with non-predict stage (got stage={stage}).\n"
@@ -283,11 +363,18 @@ class LitModel(LightningModule):
                 )
             loss, preds = None, None
             # waveform/label keys
-            sims = self.model.encoder(batch["waveform"])  # (B, n_prototypes)
+            sims = self.model(batch["waveform"])  # (B, n_prototypes)
+            if pipeline_stage == "project-prototypes-supervised":
+                # mask out prototypes for which the sample cannot belong to
+                _, L = batch["label"].shape  # (B, L)
+                _, P = sims.shape
+                ppl = P // L  # n_prototypes_per_label
+                pos_mask = batch["label"].repeat_interleave(ppl, 1)  # (B, P)
+                sims = pos_mask * sims + (1 - pos_mask) * -SIM_MAX  # (B, P)
             (
                 embs,  # (B, chunks, d_emb)
                 chunks,  # (B, n_prototypes) - which chunks resulted in the prototype sims?
-            ) = self.model.encoder.get_last_embs_and_chunks()
+            ) = self.model.get_last_embs_and_chunks()
             for prot_idx, curr_sim in enumerate(self.prototype_sims):
                 prot_sims = sims[:, prot_idx]
                 candidates = (prot_sims > curr_sim).argwhere().squeeze(1)
@@ -308,7 +395,7 @@ class LitModel(LightningModule):
                 self.prototype_embs[prot_idx] = _emb
                 self.prototype_ids[prot_idx] = _id
         elif pipeline_stage == "compute-embeddings":
-            assert isinstance(self.model, PrototypeContraster)
+            assert isinstance(self.model, PrototypeProjector)
             if stage != "predict":
                 raise ValueError(
                     f"Cannot use pipeline_stage=compute-embeddings with non-predict stage (got stage={stage}).\n"
@@ -384,79 +471,14 @@ class LitModel(LightningModule):
         # the prototypes to the projected samples - metadata is saved by
         # prediction writer utilities and checkpoint is saved in main function
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
-        if pipeline_stage == "project-prototypes":
-            assert isinstance(self.model, PrototypeContraster)
+        if (
+            pipeline_stage == "project-prototypes"
+            or pipeline_stage == "project-prototypes-supervised"
+        ):
+            assert isinstance(self.model, PrototypeProjector)
             # save prototypes to model parameter
             with torch.no_grad():
                 self.model.encoder.prototypes.copy_(torch.stack(self.prototype_embs))
-
-
-@rank_zero_only
-def makedirs_wrapper(save_dir, latest_link):
-    os.makedirs(save_dir)
-    if os.path.exists(latest_link):
-        os.remove(latest_link)
-    rel_dir = save_dir
-    rel_dir = rel_dir.replace(os.path.dirname(rel_dir), "")
-    rel_dir = rel_dir.lstrip(os.path.sep)
-    os.symlink(rel_dir, latest_link)
-
-
-def next_version(path, prefix="v"):
-    path = Path(path)
-    if not path.exists():
-        return f"{prefix}1-{generate_id()}"
-
-    versions = []
-    pattern = re.compile(rf"^{re.escape(prefix)}(\d+)-(.+)$")
-
-    for p in path.iterdir():
-        if p.is_dir():
-            m = pattern.match(p.name)
-            if m:
-                versions.append(int(m.group(1)))
-
-    # the "UUID" suffix is needed in case runs are deleted and versions are reused
-    # as wandb does not allow name reusage even after "deletion" (not really deleted?)
-    return f"{prefix}{max(versions) + 1 if versions else 1}-{generate_id()}"
-
-
-class StrictWandbLogger(WandbLogger):
-    def __init__(
-        self,
-        *,
-        project: str,
-        name: str,
-        save_dir: str,
-        pipeline_stage: STAGE_T,
-    ):
-        run_dir = os.path.join(save_dir, name, pipeline_stage)
-        version = next_version(run_dir)
-        latest_link = os.path.join(run_dir, "latest")
-        save_dir = os.path.join(run_dir, version)
-        self.best_link = os.path.join(save_dir, "best.ckpt")
-
-        super().__init__(project=project, name=name, version=version, save_dir=save_dir)
-        if os.path.exists(self.save_dir):  # type: ignore
-            raise FileExistsError(
-                "\033[91mREAD THIS ERROR MSG: \033[0m"
-                f"Experiment already exists at {self.save_dir}."
-                " This logger uses some custom logic to put all logs,"
-                " checkpoints, and configs related to an experiment"
-                " under one directory. Please delete or rename to retry."
-            )
-        makedirs_wrapper(self.save_dir, latest_link)
-
-    def after_save_checkpoint(self, checkpoint_callback):
-        best_model_path = checkpoint_callback.best_model_path
-        best_model_path = best_model_path.replace(os.path.dirname(self.best_link), "")
-        best_model_path = best_model_path.lstrip(os.path.sep)
-        if os.path.exists(self.best_link):
-            os.remove(self.best_link)
-        os.symlink(
-            best_model_path,
-            self.best_link,
-        )
 
 
 class PredictionWriter(BasePredictionWriter):
@@ -472,7 +494,10 @@ class PredictionWriter(BasePredictionWriter):
     ):
         # hard to set pipeline_stage on prediction_writer with CLI link_arguments but we can borrow from lit module
         pipeline_stage: STAGE_T = pl_module.hparams.pipeline_stage  # type: ignore
-        if pipeline_stage == "project-prototypes":
+        if (
+            pipeline_stage == "project-prototypes"
+            or pipeline_stage == "project-prototypes-supervised"
+        ):
             assert hasattr(pl_module, "prototype_ids")
             # predictions are all None (see LitModel above)
             # pl_module has prototype projection metadata to save
@@ -542,6 +567,16 @@ class LitCLI(LightningCLI):
             "model.init_args.label_names",
             apply_on="instantiate",
         )
+        parser.link_arguments(
+            "data.label_weights",
+            "model.init_args.label_weights",
+            apply_on="instantiate",
+        )
+        parser.link_arguments(
+            "data.label_cooccurrence",
+            "model.init_args.label_cooccurrence",
+            apply_on="instantiate",
+        )
 
 
 def run():
@@ -550,16 +585,23 @@ def run():
 
     # NOTE all model/data validation should happen in their respective modules above
     # Assume at this point, we have the correct models/datasets for the given stage
-    if pipeline_stage == "learn-prototypes":
+    if (
+        pipeline_stage == "learn-prototypes"
+        or pipeline_stage == "learn-prototypes-supervised"
+    ):
         cli.trainer.fit(
             model=cli.model,
             datamodule=cli.datamodule,
         )
-    elif pipeline_stage == "project-prototypes":
+    elif (
+        pipeline_stage == "project-prototypes"
+        or pipeline_stage == "project-prototypes-supervised"
+    ):
         # hijack predict over train set for prototype projection (see LitData above)
+        cli.datamodule.setup("fit")
         cli.trainer.predict(
             model=cli.model,
-            datamodule=cli.datamodule,
+            dataloaders=cli.datamodule.train_dataloader(),
         )
         ckpt_path = os.path.join(cli.trainer.log_dir, "proj.ckpt")  # type: ignore
         cli.trainer.save_checkpoint(ckpt_path, weights_only=False)

@@ -1,9 +1,13 @@
 import os
 from typing import Literal
 
+SIM_MAX = 1e6
+
 STAGE_T = Literal[
     "learn-prototypes",
+    "learn-prototypes-supervised",
     "project-prototypes",
+    "project-prototypes-supervised",
     "compute-embeddings",
     "train-classifier",
 ]
