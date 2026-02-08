@@ -24,8 +24,8 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         super().__init__()
         self.n_prototypes_per_label = n_prototypes_per_label
         self.n_binary_labels = label_weights.shape[0]
-        self.label_weights = label_weights
-        self.label_cooccurrence = label_cooccurrence
+        self.register_buffer("label_weights", label_weights, persistent=False)
+        self.register_buffer("label_cooccurrence", label_cooccurrence, persistent=False)
         self.encoder = PrototypeEncoder(
             resnet_type=resnet_type,
             n_prototypes=self.n_binary_labels * n_prototypes_per_label,
@@ -52,6 +52,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         # from ProtoECGNet: https://arxiv.org/pdf/2504.08713
 
         sims: torch.Tensor = self.encoder(x)  # (B, P)
+        label_weights: torch.Tensor = self.label_weights  # type: ignore
 
         # binary cross entropy loss
         logits = self.cls(sims)  # (B, 2 * L)
@@ -59,13 +60,16 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         for i in range(self.n_binary_labels):
             i = i * 2
             per_label_logits = logits[:, i : i + 2]  # (B, 2)
+            wt = torch.ones(2, dtype=label_weights.dtype, device=label_weights.device)
+            wt[1] = label_weights[i // 2]  # use weights: [1, pos_weight]
             per_label_loss = F.cross_entropy(
                 input=per_label_logits,  # (B, 2)
                 target=y[:, i // 2],  # (B,)
-                weight=self.label_weights[i // 2],  # (,)
+                weight=wt,  # (2,)
             )
             losses.append(per_label_loss)
-        bce_loss = torch.stack(losses).sum()
+        # NOTE: Eq 3 in ProtoECGNet paper does not show mean reduction over classes but seems like it should be based on their codebase
+        bce_loss = torch.stack(losses).mean()
 
         # clustering loss
         # use repeat_interleave as all prototypes for a given label should be contiguous
@@ -93,14 +97,16 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         div_loss = ((inter_prot_sims - identity) ** 2).sum() / (n_prot**2)
 
         # contrastive loss
-        cooc = self.label_cooccurrence  # (L, L)
+        cooc: torch.Tensor = self.label_cooccurrence  # type: ignore - (L, L)
         ppl = self.n_prototypes_per_label
+        # use Kronecker product to expand cooccurrence matrix to prototype assignemnts
         cooc_kron = torch.kron(cooc, torch.ones(ppl, ppl, device=cooc.device))  # (P, P)
         # NOTE: cooc normalization not in ProtoECGNet paper but in their codebase
         pos_cooc = cooc_kron / (cooc_kron.sum() + 1e-6)
         neg_cooc = (1 - cooc_kron) / ((1 - cooc_kron).sum() + 1e-6)
-        weighted_prot_sims = pos_cooc * inter_prot_sims - neg_cooc * inter_prot_sims
-        cntrst_loss = weighted_prot_sims / n_prot**0.5
+        pos_weighted_sims = (pos_cooc * inter_prot_sims).sum()
+        neg_weighted_sims = (neg_cooc * inter_prot_sims).sum()
+        cntrst_loss = (pos_weighted_sims - neg_weighted_sims) / n_prot**0.5
 
         return (
             bce_loss

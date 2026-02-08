@@ -42,7 +42,12 @@ class PrototypeProjector(PretrainedMixin, nn.Module):
 
     @property
     def allow_extra_keys(self) -> list[str]:
-        return []
+        # fmt: off
+        return [
+            "proj.weight", "proj.bias", "log_temperature", # from PrototypeContraster
+            "cls.weight", "cls.bias", # from PrototypeSupervisor
+        ]
+        # fmt: on
 
     @property
     def allow_missing_keys(self) -> list[str]:

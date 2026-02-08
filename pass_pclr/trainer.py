@@ -9,7 +9,6 @@ from lightning.pytorch.callbacks import BasePredictionWriter
 from lightning.pytorch.cli import LightningCLI
 from torch.utils.data import DataLoader
 
-from ._lightning_utilities import StrictWandbLogger
 from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
 from .defines import CONV_T, PROT_T, RESNET_T, SIM_MAX, STAGE_T
 from .models import (
@@ -62,12 +61,14 @@ class LitData(LightningDataModule):
         wrap_pclr = pipeline_stage == "learn-prototypes"
 
         if stage == "fit":
-            if self.train_ds is None:
+            if not hasattr(self, "train_ds"):
                 self.train_ds = self.ds_cls(
                     dataset_path=dataset_path,
                     split="train",
                     sampling_rate=sampling_rate,
                 )
+            else:
+                assert self.train_ds is not None, "Not sure how train_ds is None"
             if wrap_pclr:
                 self.train_ds = PCLRWrapperDataset(self.train_ds)  # type: ignore
         if stage in ["fit", "validate"]:
@@ -297,17 +298,18 @@ class LitModel(LightningModule):
             pipeline_stage == "project-prototypes"
             or pipeline_stage == "project-prototypes-supervised"
         ):
-            assert n_prototypes is not None
+            if _n_prototypes is None:
+                raise ValueError("Could not determine number of prototypes")
             # placeholder tensor values for the prediction writer to access, mostly to help with type checking
-            self.prototype_sims = [torch.as_tensor(-SIM_MAX)] * n_prototypes
-            self.prototype_embs = [torch.empty(0)] * n_prototypes
+            self.prototype_sims = [torch.as_tensor(-SIM_MAX)] * _n_prototypes
+            self.prototype_embs = [torch.empty(0)] * _n_prototypes
             self.prototype_ids = [
                 (
                     torch.as_tensor(-1),  # patient_id
                     torch.as_tensor(-1),  # ecg_id
                     torch.as_tensor(-1),  # chunk_idx
                 )
-            ] * n_prototypes
+            ] * _n_prototypes
 
     def _common_step(
         self,
@@ -492,7 +494,10 @@ class PredictionWriter(BasePredictionWriter):
     ):
         # hard to set pipeline_stage on prediction_writer with CLI link_arguments but we can borrow from lit module
         pipeline_stage: STAGE_T = pl_module.hparams.pipeline_stage  # type: ignore
-        if pipeline_stage == "project-prototypes":
+        if (
+            pipeline_stage == "project-prototypes"
+            or pipeline_stage == "project-prototypes-supervised"
+        ):
             assert hasattr(pl_module, "prototype_ids")
             # predictions are all None (see LitModel above)
             # pl_module has prototype projection metadata to save
@@ -580,12 +585,18 @@ def run():
 
     # NOTE all model/data validation should happen in their respective modules above
     # Assume at this point, we have the correct models/datasets for the given stage
-    if pipeline_stage == "learn-prototypes":
+    if (
+        pipeline_stage == "learn-prototypes"
+        or pipeline_stage == "learn-prototypes-supervised"
+    ):
         cli.trainer.fit(
             model=cli.model,
             datamodule=cli.datamodule,
         )
-    elif pipeline_stage == "project-prototypes":
+    elif (
+        pipeline_stage == "project-prototypes"
+        or pipeline_stage == "project-prototypes-supervised"
+    ):
         # hijack predict over train set for prototype projection (see LitData above)
         cli.datamodule.setup("fit")
         cli.trainer.predict(
