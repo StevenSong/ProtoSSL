@@ -99,6 +99,11 @@ def stratify(data, classes, ratios, qualities, ecgs_per_patient, nr_clean_folds=
                 subset_sizes_for_label = subset_sizes_for_label[
                     : len(ratios) - nr_clean_folds
                 ]
+            elif qualities[current_id] > 3:
+                # Set all folds except the last to 0 (no capacity)
+                subset_sizes_for_label = [0] * (len(ratios) - 1) + [
+                    subset_sizes_for_label[-1]
+                ]
 
             # Find argmax clj i.e. subset in greatest need of the current label
             largest_subsets = np.argwhere(
