@@ -2,7 +2,7 @@
 
 set -e
 
-SUFFIXES=("" "-8k" "-4k" "-2k")
+SUFFIXES=("" "-8k" "-4k" "-2k" "-1k" "-512" "-256")
 
 function submit_job() {
     # $1 - suffix
@@ -28,14 +28,12 @@ for suffix in "${SUFFIXES[@]}"; do
     echo $cache_id
 
     # submit all jobs
-    cooc_id=$(submit_job "$suffix" 5-0-run-protoecgnet-ptbxl-cooccurrence.sh "--dependency=afterok:$cache_id")
-    echo $cooc_id
-    submit_job "$suffix" 5-1-run-protoecgnet-ptbxl-partial.sh "--dependency=afterok:$cache_id,$cooc_id"
-
     submit_job "$suffix" 8-2-run-pass-pclr-transfer-heedb.sh "--dependency=afterok:$cache_id"
     with_proj_id=$(submit_job "$suffix" 8-3-run-pass-pclr-transfer-heedb-with-proj.sh "--dependency=afterok:$cache_id")
     echo $with_proj_id
 
     submit_job "$suffix" 8-4-run-pass-pclr-transfer-heedb-logreg.sh "--dependency=afterok:$cache_id"
     submit_job "$suffix" 8-5-run-pass-pclr-transfer-heedb-with-proj-logreg.sh "--dependency=afterok:$cache_id,$with_proj_id"
+
+    submit_job "$suffix" 9-0-run-proto-from-scratch-v2.sh "--dependency=afterok:$cache_id"
 done
