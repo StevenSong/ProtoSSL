@@ -33,7 +33,7 @@ def load_cached_data(
     os.makedirs(CACHE_DIR, exist_ok=True)
 
     # use a short hash of the source dataest path to distinguish different sources (e.g. if using different dataset subsets)
-    identifier = f"{dataset_path}_{split}_{sampling_rate}"
+    identifier = f"{dataset_path.rstrip(os.sep)}_{split}_{sampling_rate}"
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     cache_file = os.path.join(CACHE_DIR, f"{hashed}.pt")
 
