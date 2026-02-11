@@ -3,14 +3,15 @@
 set -e
 
 # set these env vars prior to executing this script
-# ECHONEXT_DATA=/opt/gpudata/ecg/echonext
-# RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/runs
-: "${ECHONEXT_DATA:?Env var ECHONEXT_DATA must be set prior to script execution}"
+: "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
 : "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
-echo "Using ECHONEXT_DATA=$ECHONEXT_DATA"
+: "${REPO_ROOT:?Env var REPO_ROOT must be set prior to script execution}"
+echo "Using DATASET_PATH=$DATASET_PATH"
 echo "Using RUN_DIR=$RUN_DIR"
-REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
-cd $REPO_ROOT/scripts/echonext
+echo "Using REPO_ROOT=$REPO_ROOT"
+cd $REPO_ROOT/scripts
+
+# run using docker
 IMAGE_TAG=echonext-minimodel
 : "${CUDA_VISIBLE_DEVICES:?Env var CUDA_VISIBLE_DEVICES must be set prior to script execution}"
 GPU_IDX=$CUDA_VISIBLE_DEVICES
@@ -20,18 +21,15 @@ GPU_IDX=$CUDA_VISIBLE_DEVICES
 mkdir -p $RUN_DIR/columbia-minimodel
 
 cd "$REPO_ROOT/external/PierreElias-IntroECG/7-EchoNext Minimodel"
-
 docker build -t $IMAGE_TAG .
-
 docker run --rm --gpus device=$GPU_IDX \
--v $ECHONEXT_DATA:/processed_data \
+-v $DATASET_PATH:/processed_data \
 -v $RUN_DIR/columbia-minimodel:/results \
 $IMAGE_TAG
 
-cd "$REPO_ROOT/scripts/echonext"
-
-python _eval_echonext_probs.py \
---echonext-data $ECHONEXT_DATA \
+cd "$REPO_ROOT/scripts"
+python _eval_probs.py \
+--dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/columbia-minimodel/prediction_loop/probs.npy \
 --output-path $RUN_DIR/columbia-minimodel
 

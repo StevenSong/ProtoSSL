@@ -4,22 +4,20 @@ from pathlib import Path
 from warnings import simplefilter
 
 import numpy as np
-import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
-from pass_pclr.datasets import get_ptbxl_labels
-from pass_pclr.defines import PTBXL_TARGETS
+from pass_pclr.datasets import infer_dataset_class_from_path
 
 simplefilter("ignore", category=ConvergenceWarning)
 
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument("--ptbxl-data", required=True)
+    parser.add_argument("--dataset-path", required=True)
     parser.add_argument("--prototype-embeddings", required=True)
     parser.add_argument("--embedding-pca", type=int)
     parser.add_argument("--balance-class-weight", action="store_true")
@@ -30,17 +28,19 @@ def parse_args():
 
 def main(
     *,  # enforce kwargs
-    ptbxl_data: str,
+    dataset_path: str,
     prototype_embeddings: str,
     embedding_pca: int | None = None,
     balance_class_weight: bool,
     output_path: str,
 ):
-    ptbxl_path = Path(ptbxl_data)
-    df = pd.read_csv(ptbxl_path / "ptbxl_database.csv")
-    train_mask = ~df["strat_fold"].isin({9, 10})
-    train_df = df.loc[train_mask]
-    train_targets = get_ptbxl_labels(train_df)
+    ds_cls, label_names = infer_dataset_class_from_path(dataset_path)
+    assert label_names is not None
+
+    train_ds = ds_cls(dataset_path=dataset_path, split="train", sampling_rate=100)
+
+    assert train_ds.labels is not None
+    train_targets = train_ds.labels.numpy()
 
     prototype_path = Path(prototype_embeddings)
     X_train = np.load(prototype_path / "train_embeds.npy")
@@ -57,7 +57,7 @@ def main(
 
     target_probs = []
     models = dict()
-    for i, target_col in enumerate(tqdm(PTBXL_TARGETS)):
+    for i, target_col in enumerate(tqdm(label_names)):
         y_train = train_targets[:, i]
 
         model = LogisticRegressionCV(
@@ -84,7 +84,7 @@ def main(
 if __name__ == "__main__":
     args = parse_args()
     main(
-        ptbxl_data=args.ptbxl_data,
+        dataset_path=args.dataset_path,
         prototype_embeddings=args.prototype_embeddings,
         embedding_pca=args.embedding_pca,
         balance_class_weight=args.balance_class_weight,

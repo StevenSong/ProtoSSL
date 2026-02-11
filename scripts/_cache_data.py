@@ -8,14 +8,15 @@ SPLITS: list[SPLIT_T] = ["train", "val", "test"]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--echonext-data", required=True)
+    parser.add_argument("--dataset-path", required=True)
     args = parser.parse_args()
 
-    ds_cls, _ = infer_dataset_class_from_path(args.echonext_data)
+    ds_cls, _ = infer_dataset_class_from_path(args.dataset_path)
 
     for split in SPLITS:
+        # caches data if it has not yet been loaded before
         ds_cls(
-            dataset_path=args.echonext_data,
+            dataset_path=args.dataset_path,
             split=split,
             sampling_rate=FREQ,
         )
