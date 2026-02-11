@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+
+SUFFIXES=("" "-4k" "-2k" "-1k" "-512" "-256")
+
+export BASE_DATASET_PATH=/opt/gpudata/ecg/cinc-2020
+export BASE_RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs/runs-cinc
+export REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
+
+source _submit_job.sh
+
+for suffix in "${SUFFIXES[@]}"; do
+    echo "SUFFIX: $suffix"
+
+    cache_id=$(submit_job "$suffix" 0-run-cache-data.sh)
+    echo $cache_id
+
+    submit_job "$suffix" 1-1-run-proto-from-scratch.sh "--dependency=afterok:$cache_id"
+
+    submit_job "$suffix" 2-1-run-pass-heedb-pip.sh "--dependency=afterok:$cache_id"
+    pit_id=$(submit_job "$suffix" 2-2-run-pass-heedb-pit.sh "--dependency=afterok:$cache_id")
+    echo $pit_id
+
+    submit_job "$suffix" 2-3-run-pass-heedb-pip-logreg.sh "--dependency=afterok:$cache_id"
+    submit_job "$suffix" 2-4-run-pass-heedb-pit-logreg.sh "--dependency=afterok:$cache_id,$pit_id"
+done

@@ -1,7 +1,12 @@
+# from https://www.nature.com/articles/s41597-020-0495-6#Sec20
+# modified to actually implement the quality control described in the docstring
+
 import numpy as np
 
 
-def stratify(data, classes, ratios, qualities, ecgs_per_patient, nr_clean_folds=1):
+def stratify(
+    data, classes, ratios, qualities, ecgs_per_patient, nr_clean_folds=1, random_seed=0
+):
     """Stratifying procedure. Modified from https://vict0rs.ch/2018/05/24/sample-multilabel-dataset/ (based on Sechidis 2011)
 
     data is a list of lists: a list of labels, for each sample.
@@ -19,7 +24,7 @@ def stratify(data, classes, ratios, qualities, ecgs_per_patient, nr_clean_folds=
 
     nr_clean_folds: the last nr_clean_folds can only take clean entries
     """
-    np.random.seed(0)  # fix the random seed
+    np.random.seed(random_seed)  # fix the random seed
 
     # data is now always a list of lists; len(data) is the number
     # of patients; data[i] is the list of all labels for patient i
