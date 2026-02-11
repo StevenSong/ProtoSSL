@@ -17,7 +17,7 @@ CONV_T = Literal["1D", "2D"]
 PROT_T = Literal["global", "partial"]
 
 CACHE_DIR = os.environ.get(
-    "CACHE_DIR", "/opt/gpudata/steven/ecg-prototype-fm/pass_pclr_cache"
+    "CACHE_DIR", os.path.join(os.path.expanduser("~"), ".cache/pass_pclr_cache")
 )
 
 ECHONEXT_TARGETS = {

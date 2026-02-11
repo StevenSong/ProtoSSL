@@ -40,7 +40,7 @@ model:
   class_path: LitModel
   init_args:
     resnet_type: resnet50
-    conv_type: 1D
+    # conv_type: 1D|2D
 data:
   class_path: LitData
   init_args:
