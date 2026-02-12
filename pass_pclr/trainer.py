@@ -150,11 +150,16 @@ def warn_unused(**kwargs):
 
 def compute_n_prototypes(
     *,  # enforce kwargs
+    pipeline_stage: STAGE_T,
     n_prototypes: int | None,
     n_prototypes_per_label: int | None,
     label_names: list[str] | None,
 ) -> int | None:
-    if n_prototypes is not None and n_prototypes_per_label is not None:
+    if (
+        n_prototypes is not None
+        and n_prototypes_per_label is not None
+        and pipeline_stage != "learn-prototype-assignments"
+    ):
         raise ValueError(f"Cannot set both n_prototypes and n_prototypes_per_label")
 
     if n_prototypes is not None:
@@ -187,7 +192,9 @@ class LitModel(LightningModule):
         super().__init__()
         self.lr = None
         self.save_hyperparameters()
+        # only used to instantiate PrototypeProjector or PrototypeClassifier
         _n_prototypes = compute_n_prototypes(
+            pipeline_stage=pipeline_stage,
             n_prototypes=n_prototypes,
             n_prototypes_per_label=n_prototypes_per_label,
             label_names=label_names,

@@ -1,10 +1,27 @@
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
+from fnmatch import fnmatch
 
 import torch
 import torch.nn as nn
 
 
+def match_whitelist_with_wildcard(keys: Iterable[str], whitelist: Iterable[str]):
+    return [key for key in keys if any(fnmatch(key, pattern) for pattern in whitelist)]
+
+
 class PretrainedMixin(ABC, nn.Module):
+    """
+    Mixin class to support loading pretrained weights with configurable whitelist
+    for mismatched keys between module instance and saved state dict. Whitelist
+    supports wildcard patterns. For example, the following are equivalent:
+    ```
+    ["cls.weight", "cls.bias"]
+    ["cls.*"]
+    ```
+
+    Note that this is a wildcard and not regex (we use fnmatch under the hood)!
+    """
 
     @property
     @abstractmethod
@@ -35,7 +52,23 @@ class PretrainedMixin(ABC, nn.Module):
             prefix = "model."
 
         sd = {k.removeprefix(prefix): v for k, v in sd.items()}
-        for k in self.allow_size_mismatched_keys:
+
+        # whitelist within the pretrained module
+        allow_size_mismatched_keys = match_whitelist_with_wildcard(
+            keys=sd,
+            whitelist=self.allow_size_mismatched_keys,
+        )
+        allow_extra_keys = match_whitelist_with_wildcard(
+            keys=sd,
+            whitelist=self.allow_extra_keys,
+        )
+        # whitelist within the current module
+        allow_missing_keys = match_whitelist_with_wildcard(
+            keys=self.state_dict(),
+            whitelist=self.allow_missing_keys,
+        )
+
+        for k in allow_size_mismatched_keys:
             v_ckpt = sd.get(k)
             try:
                 v_self = self.get_parameter(k)
@@ -51,10 +84,10 @@ class PretrainedMixin(ABC, nn.Module):
                     del sd[k]
 
         bad_keys = self.load_state_dict(sd, strict=False)
-        bad_extra = set(bad_keys.unexpected_keys) - set(self.allow_extra_keys)
-        bad_missing = set(bad_keys.missing_keys) - set(self.allow_missing_keys)
-        skipped_extra = set(bad_keys.unexpected_keys) & set(self.allow_extra_keys)
-        skipped_missing = set(bad_keys.missing_keys) & set(self.allow_missing_keys)
+        bad_extra = set(bad_keys.unexpected_keys) - set(allow_extra_keys)
+        bad_missing = set(bad_keys.missing_keys) - set(allow_missing_keys)
+        skipped_extra = set(bad_keys.unexpected_keys) & set(allow_extra_keys)
+        skipped_missing = set(bad_keys.missing_keys) & set(allow_missing_keys)
         if len(skipped_extra) != 0:
             print(
                 f"These extra keys were in pretrained_weights but are allowed to be extra according to the current model configuration:\n"
@@ -69,7 +102,7 @@ class PretrainedMixin(ABC, nn.Module):
             raise ValueError(
                 f"Tried to load weights from {pretrained_weights} but got unexpected mismatching keys:\n"
                 f"Extra keys: {sorted(list(bad_extra))}\n"
-                f"Missing keys: {sorted(list(bad_extra))}"
+                f"Missing keys: {sorted(list(bad_missing))}"
             )
         print(f"Pretrained weights loaded from {pretrained_weights}")
         print(f"===================================================")

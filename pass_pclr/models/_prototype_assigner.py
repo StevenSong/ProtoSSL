@@ -10,7 +10,7 @@ class PrototypeAssigner(BaseClassifier):
 
     @property
     def allow_missing_keys(self) -> list[str]:
-        return ["cls.weight", "cls.bias"]
+        return ["cls.*", "encoder.assignment_weights"]
 
     def __init__(
         self,
