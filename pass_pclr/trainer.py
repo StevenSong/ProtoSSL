@@ -252,6 +252,7 @@ class LitModel(LightningModule):
                     "pipeline_stage=learn-prototype-assignments must be used with model_type=PrototypeAssigner "
                     "and setting n_prototypes AND n_prototypes_per_label AND label_names AND prototype_type"
                 )
+            # TODO should PrototypeAssigner require pretrained_weights?
             self.model = PrototypeAssigner(
                 resnet_type=resnet_type,
                 conv_type=conv_type,
@@ -323,6 +324,16 @@ class LitModel(LightningModule):
 
         if pretrained_weights is not None and isinstance(self.model, BaseClassifier):
             self.model.freeze_encoder()
+            if (
+                isinstance(self.model, PrototypeAssigner)
+                and pipeline_stage == "learn-prototype-assignments"
+            ):
+                for name, parameter in self.model.encoder.named_parameters():
+                    if name == "assignment_weights":
+                        parameter.requires_grad = True
+                print("=================LitModel.__init__=================")
+                print("Unfroze PrototypeAssigner assignment weights")
+                print("===================================================")
 
         if (
             pipeline_stage == "project-prototypes"

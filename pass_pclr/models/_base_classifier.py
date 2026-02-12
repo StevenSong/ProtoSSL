@@ -98,7 +98,7 @@ class BaseClassifier(PretrainedMixin, nn.Module):
     def freeze_encoder(self):
         for param in self.encoder.parameters():
             param.requires_grad = False
-        print("==================freeze_encoder==================")
+        print("==================freeze_encoder===================")
         print("Froze classifier encoder, only training classification layer")
         print("===================================================")
 
