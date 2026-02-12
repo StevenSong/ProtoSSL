@@ -42,13 +42,13 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         # TODO: consider enforcing separability of prototype slots
         # TODO: maybe consider hard (one-hot) assignment via `y_hard - y_soft.detach() + y_soft`
         # See: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gumbel_softmax.html#torch-nn-functional-gumbel-softmax
-        assignments = F.gumbel_softmax(self.assignment_weights, dim=1, tau=0.5)
+        assignments = F.gumbel_softmax(self.assignment_weights, dim=-1, tau=0.5)
 
-        # assignments has shape (L, PPL, P), where:
-        # L = n_labels, PPL = n_prototypes_per_label, P = n_prototypes
+        # assignments has shape (L, K, P), where:
+        # L = n_labels, K = n_prototypes_per_label, P = n_prototypes
         # and can be interpreted as:
         # for every label, for every slot (prototype_per_label), what is the
         # probability that a given prototype belongs to that label-slot?
 
         # compute weighted prototype assignments for each label-slot
-        return torch.einsum("bp,ckp->bck", sims, assignments)  # (B, L, PPL)
+        return torch.einsum("bp,lkp->blk", sims, assignments)  # (B, L, K)
