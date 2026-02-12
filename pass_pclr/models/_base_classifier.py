@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 from ._pretrained_utils import PretrainedMixin
 from .encoders import BaseEncoder
+from .layers import MultiInputLinear
 
 
 class BaseClassifier(PretrainedMixin, nn.Module):
@@ -52,10 +53,18 @@ class BaseClassifier(PretrainedMixin, nn.Module):
     ):
         super().__init__()
         self.encoder = encoder
-        self.cls = nn.Linear(
-            in_features=self.encoder.emb_dim,
-            out_features=n_binary_labels * 2,
-        )
+        if encoder.ret_per_label:
+            # encoder returns a per-label embedding
+            self.cls = MultiInputLinear(
+                num_inputs=n_binary_labels,
+                in_features=self.encoder.emb_dim,
+                out_features=2,  # binary label output
+            )
+        else:
+            self.cls = nn.Linear(
+                in_features=self.encoder.emb_dim,
+                out_features=n_binary_labels * 2,
+            )
 
         # assumes no other submodules are initialized in subclasses
         if pretrained_weights is not None:
@@ -66,7 +75,7 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         x: torch.Tensor,
         y: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        x = self.encoder(x)  # (B, H), H = hidden_dim
+        x = self.encoder(x)  # (B, [L,] H), H = hidden_dim
         logits = self.cls(x)  # (B, 2 * L), L = n_binary_labels
 
         # compute per-label loss
