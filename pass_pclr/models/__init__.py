@@ -1,4 +1,5 @@
 from ._base_classifier import BaseClassifier
+from ._prototype_assigner import PrototypeAssigner
 from ._prototype_classifier import PrototypeClassifier
 from ._prototype_contraster import PrototypeContraster
 from ._prototype_projector import PrototypeProjector

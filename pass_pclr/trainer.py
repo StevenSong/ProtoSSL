@@ -13,6 +13,7 @@ from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
 from .defines import CONV_T, PROT_T, RESNET_T, SIM_MAX, STAGE_T
 from .models import (
     BaseClassifier,
+    PrototypeAssigner,
     PrototypeClassifier,
     PrototypeContraster,
     PrototypeProjector,
@@ -233,6 +234,28 @@ class LitModel(LightningModule):
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
             )
+        elif pipeline_stage == "learn-prototype-assignments":
+            if (
+                n_prototypes is None
+                or n_prototypes_per_label is None
+                or label_names is None
+                or prototype_type is None
+            ):
+                raise ValueError(
+                    "pipeline_stage=learn-prototype-assignments must be used with model_type=PrototypeAssigner "
+                    "and setting n_prototypes AND n_prototypes_per_label AND label_names AND prototype_type"
+                )
+            self.model = PrototypeAssigner(
+                resnet_type=resnet_type,
+                conv_type=conv_type,
+                prototype_type=prototype_type,
+                n_prototypes=n_prototypes,
+                n_prototypes_per_label=n_prototypes_per_label,
+                n_binary_labels=len(label_names),
+                pretrained_weights=pretrained_weights,
+                partial_len=partial_len,
+                partial_overlap=partial_overlap,
+            )
         elif (
             pipeline_stage == "project-prototypes"
             or pipeline_stage == "project-prototypes-supervised"
@@ -402,7 +425,10 @@ class LitModel(LightningModule):
                 )
             loss = None
             preds = self.model.encoder(batch["waveform"])  # (B, n_prototypes)
-        elif pipeline_stage == "train-classifier":
+        elif (
+            pipeline_stage == "train-classifier"
+            or pipeline_stage == "learn-prototype-assignments"
+        ):
             assert isinstance(self.model, BaseClassifier)
             # waveform/label keys
             (
@@ -519,7 +545,10 @@ class PredictionWriter(BasePredictionWriter):
                 os.path.join(trainer.log_dir, "projection_metadata.csv"),  # type: ignore
                 index=False,
             )
-        elif pipeline_stage == "train-classifier":
+        elif (
+            pipeline_stage == "train-classifier"
+            or pipeline_stage == "learn-prototype-assignments"
+        ):
             assert isinstance(predictions[0], dict)  # classifiction probabilities
             target_names: list[str] = pl_module.hparams.label_names  # type: ignore
             probs = {k: [] for k in target_names}
@@ -619,7 +648,10 @@ def run():
             model=cli.model,
             dataloaders=cli.datamodule.test_dataloader(),
         )
-    elif pipeline_stage == "train-classifier":
+    elif (
+        pipeline_stage == "train-classifier"
+        or pipeline_stage == "learn-prototype-assignments"
+    ):
         cli.trainer.fit(
             model=cli.model,
             datamodule=cli.datamodule,
