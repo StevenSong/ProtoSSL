@@ -38,11 +38,11 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         sims = super().forward(x)  # (B, P)
 
         # from ProtoPool: https://github.com/gmum/ProtoPool/blob/2bd42882282fd309b3b70faa62a73c3c88cddd56/model.py#L148
-        # TODO: maybe consider adding `gumbel_scale`?
+        # NOTE: `gumbel_scale` here is constant scalar (1000), ProtoPool code does ramp up over some number of epochs
         # TODO: consider enforcing separability of prototype slots
         # TODO: maybe consider hard (one-hot) assignment via `y_hard - y_soft.detach() + y_soft`
         # See: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gumbel_softmax.html#torch-nn-functional-gumbel-softmax
-        assignments = F.gumbel_softmax(self.assignment_weights, dim=-1, tau=0.5)
+        assignments = F.gumbel_softmax(self.assignment_weights * 1000, dim=-1, tau=0.5)
 
         # assignments has shape (L, K, P), where:
         # L = n_labels, K = n_prototypes_per_label, P = n_prototypes
