@@ -16,7 +16,9 @@ for suffix in "${SUFFIXES[@]}"; do
     cache_id=$(submit_job "$suffix" 0-run-cache-data.sh)
     echo $cache_id
 
-    submit_job "$suffix" 1-1-run-proto-from-scratch.sh "--dependency=afterok:$cache_id"
+    pfs_id=$(submit_job "$suffix" 1-1-run-proto-from-scratch.sh "--dependency=afterok:$cache_id")
+    echo $pfs_id
+    submit_job "$suffix" 1-2-run-proto-from-scratch-logreg.sh "--dependency=afterok:$cache_id,$pfs_id"
 
     submit_job "$suffix" 2-1-run-pass-heedb-pip.sh "--dependency=afterok:$cache_id"
     pit_id=$(submit_job "$suffix" 2-2-run-pass-heedb-pit.sh "--dependency=afterok:$cache_id")

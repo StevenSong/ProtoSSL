@@ -24,7 +24,7 @@ trainer:
         mode: min
         save_last: link
     - class_path: PredictionWriter
-  max_epochs: 100
+  # max_epochs: 100 for learn-prototypes, 1000 for train-classifier (default if you don't set it)
   log_every_n_steps: 1
 optimizer:
   class_path: torch.optim.AdamW
