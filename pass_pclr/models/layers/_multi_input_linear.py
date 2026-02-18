@@ -35,3 +35,7 @@ class MultiInputLinear(nn.Module):
             x_i = self.linears[i](x_i)  # (..., out_dim // num_inputs)
             outs.append(x_i)
         return torch.concat(outs, dim=1)  # (..., out_dim)
+
+    @property
+    def weight(self) -> torch.Tensor:
+        return torch.concat([l.weight for l in self.linears], dim=0)  # type: ignore

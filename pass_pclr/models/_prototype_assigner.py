@@ -9,8 +9,8 @@ class PrototypeAssigner(BaseClassifier):
         return ["proj.weight", "proj.bias", "log_temperature"]
 
     @property
-    def allow_missing_keys(self) -> list[str]:
-        return ["cls.*", "encoder.assignment_weights"]
+    def _allow_missing_keys(self) -> list[str]:
+        return ["encoder.assignment_weights"]
 
     def __init__(
         self,

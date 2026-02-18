@@ -8,10 +8,6 @@ class PrototypeClassifier(BaseClassifier):
     def allow_extra_keys(self) -> list[str]:
         return ["proj.weight", "proj.bias", "log_temperature"]
 
-    @property
-    def allow_missing_keys(self) -> list[str]:
-        return ["cls.weight", "cls.bias"]
-
     def __init__(
         self,
         *,  # enforce kwargs
