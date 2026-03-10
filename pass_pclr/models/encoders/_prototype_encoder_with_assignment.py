@@ -34,21 +34,30 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         self.ret_per_label = True
         self.emb_dim = n_prototypes_per_label
 
+    def get_assignments(self, hard: bool = False):
+        return F.gumbel_softmax(self.assignment_weights, dim=-1, tau=0.5, hard=hard)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         sims = super().forward(x)  # (B, P)
 
-        # from ProtoPool: https://github.com/gmum/ProtoPool/blob/2bd42882282fd309b3b70faa62a73c3c88cddd56/model.py#L148
-        # NOTE: `gumbel_scale` here is constant scalar (1000), ProtoPool code does ramp up over some number of epochs
-        # TODO: consider enforcing separability of prototype slots
-        # TODO: maybe consider hard (one-hot) assignment via `y_hard - y_soft.detach() + y_soft`
+        # NOTE: loss for separability of prototype slots is computed at the model level (encoder shouldn't care about losses)
+
+        # NOTE: ProtoPool code does ramp up of GUMBEL_SCALE to 1000 over some number of epochs,
+        # with tau=0.5, this makes the effective temperature 5e-4, approaching a one-hot distribution
+        # See: https://github.com/gmum/ProtoPool/blob/2bd42882282fd309b3b70faa62a73c3c88cddd56/model.py#L148
+        # rather than do this, we rely on the trick below to derive true one-hot assignments with gradients:
+        soft_dist = self.get_assignments()
+        hard_dist = self.get_assignments(hard=True)
+
+        # NOTE: we use a trick to derive one-hot assignments while still having
+        # gradients flow through a soft-assignment probability distribution
         # See: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gumbel_softmax.html#torch-nn-functional-gumbel-softmax
-        assignments = F.gumbel_softmax(self.assignment_weights * 1000, dim=-1, tau=0.5)
+        assignments = hard_dist - soft_dist.detach() + soft_dist
 
         # assignments has shape (L, K, P), where:
         # L = n_labels, K = n_prototypes_per_label, P = n_prototypes
         # and can be interpreted as:
         # for every label, for every slot (prototype_per_label), what is the
         # probability that a given prototype belongs to that label-slot?
-
-        # compute weighted prototype assignments for each label-slot
+        # using this, compute weighted prototype assignments for each label-slot
         return torch.einsum("bp,lkp->blk", sims, assignments)  # (B, L, K)

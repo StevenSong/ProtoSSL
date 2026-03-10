@@ -124,6 +124,7 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         losses = torch.stack(losses)  # (L,)
         probs = torch.stack(probs)  # (L, B)
 
+        # per-task elasticnet regularization
         if self.regularize:
             weights = self.cls.weight  # (L * 2, H) - contiguous blocks of (2, H)
             weights = weights.view(-1, 2, weights.shape[-1])  # (L, 2, H) - infer L
@@ -134,6 +135,14 @@ class BaseClassifier(PretrainedMixin, nn.Module):
             losses = losses + penalty  # (L,)
 
         return losses, probs
+
+    # TODO: consider refactoring this method which makes the model intrinsically
+    # tied to our trainer, maybe the return of losses above should be a dict?
+    def static_losses(self) -> torch.Tensor | None:
+        # because the classifier returns a per-task loss, if a subclass has loss
+        # components which do not depend on the inputs, they should implement this
+        # method which will be called after the main input-dependent forward
+        return None
 
     def freeze_encoder(self):
         for param in self.encoder.parameters():

@@ -464,6 +464,11 @@ class LitModel(LightningModule):
                 losses[target_name] = _losses[i]
                 preds[target_name] = _preds[i]
 
+            # TODO: consider refactoring this, otherwise the model losses are intrinsically tied to this trainer
+            static_loss = self.model.static_losses()
+            if static_loss is not None:
+                losses["static_loss"] = static_loss
+
             loss = self._log_and_composite_losses(
                 stage=stage,
                 losses=losses,
@@ -523,6 +528,10 @@ class LitModel(LightningModule):
             # save prototypes to model parameter
             with torch.no_grad():
                 self.model.encoder.prototypes.copy_(torch.stack(self.prototype_embs))
+        elif pipeline_stage == "learn-prototype-assignments":
+            with torch.no_grad():
+                assert isinstance(self.model, PrototypeAssigner)
+                self.model = self.model.convert_to_proto_classifier()
 
 
 class PredictionWriter(BasePredictionWriter):
@@ -679,6 +688,13 @@ def run():
             datamodule=cli.datamodule,
             ckpt_path=os.path.join(cli.trainer.log_dir, "best.ckpt"),  # type: ignore
         )
+        if pipeline_stage == "learn-prototype-assignments":
+            # at the end of predict with `learn-prototype-assignments`, LitModel
+            # will convert the PrototypeAssigner model to a PrototypeClassifier
+            # and predictions prior to conversion should be equivalent given
+            # one-hot assignment in PrototypeAssigner
+            ckpt_path = os.path.join(cli.trainer.log_dir, "assigned.ckpt")  # type: ignore
+            cli.trainer.save_checkpoint(ckpt_path, weights_only=False)
     else:
         raise ValueError(f"Unknown pipeline stage {pipeline_stage}")
 
