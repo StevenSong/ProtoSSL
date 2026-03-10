@@ -32,7 +32,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes-assignments/latest/assigned.ckpt
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-assignments/latest/assigned.ckpt
 
 # then train classifier
 python -m pass_pclr.trainer \
