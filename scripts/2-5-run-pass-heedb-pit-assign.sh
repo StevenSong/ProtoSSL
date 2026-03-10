@@ -32,7 +32,9 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt \
+    --model.n_prototypes_per_label 5 \
+    --model.n_prototypes null
 
 # then train classifier
 python -m pass_pclr.trainer \
@@ -41,7 +43,9 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes/latest/proj.ckpt
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes/latest/proj.ckpt \
+    --model.n_prototypes_per_label 5 \
+    --model.n_prototypes null
 
 python _eval_probs.py \
 --dataset-path $DATASET_PATH \
