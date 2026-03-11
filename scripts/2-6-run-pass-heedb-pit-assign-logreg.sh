@@ -12,7 +12,7 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="pass-heedb-pit-assing-logreg"
+EXP_NAME="pass-heedb-pit-assign-logreg"
 PRETRAIN_RUN="$RUN_DIR/pass-heedb-pit-assign"
 
 # this version relies on samples projected in the transfer dataset
