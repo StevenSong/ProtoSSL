@@ -1,10 +1,10 @@
 from typing import Type
 
-from ..defines import CINC_TARGETS, ECHONEXT_TARGETS, PTBXL_TARGETS
+from ..defines import CINC_TARGETS, ECHONEXT_TARGETS, HEEDB_TARGETS, PTBXL_TARGETS
 from ._base_ecg_dataset import BaseECGDataset, StreamingECGWaveforms, load_cached_data
 from ._cinc_dataset import CincECGDataset
 from ._echonext_dataset import EchoNextECGDataset
-from ._heedb_dataset import HeedbECGDataset
+from ._heedb_dataset import HeedbECGDataset, get_heedb_labels
 from ._pclr_wrapper_dataset import PCLRWrapperDataset
 from ._ptbxl_dataset import PtbxlECGDataset, get_ptbxl_labels
 
@@ -27,7 +27,7 @@ def infer_dataset_class_from_path(
     elif any(x in dataset_path for x in cinc_indicators):
         return CincECGDataset, CINC_TARGETS
     elif any(x in dataset_path for x in heedb_indicators):
-        return HeedbECGDataset, None
+        return HeedbECGDataset, list(HEEDB_TARGETS.keys())
     raise ValueError(
         f"Could not infer BaseECGDataset subclass from dataset_path: {dataset_path}"
     )
