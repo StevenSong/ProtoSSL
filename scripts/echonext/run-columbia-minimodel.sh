@@ -33,5 +33,4 @@ python _eval_probs.py \
 --probs-npy $RUN_DIR/columbia-minimodel/prediction_loop/probs.npy \
 --output-path $RUN_DIR/columbia-minimodel
 
-ln -s ./prediction_loop/probs.npy \
-$RUN_DIR/columbia-minimodel/probs.npy 
+cp $RUN_DIR/columbia-minimodel/prediction_loop/probs.npy $RUN_DIR/columbia-minimodel/probs.npy 
