@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 
 from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
 from .defines import CONV_T, PROT_T, RESNET_T, SIM_MAX, STAGE_T
+from .lightning_utils import check_final_link
 from .models import (
     BaseClassifier,
     PrototypeClassifier,
@@ -631,6 +632,7 @@ def run():
         )
     else:
         raise ValueError(f"Unknown pipeline stage {pipeline_stage}")
+    check_final_link(cli.trainer.log_dir)
 
 
 if __name__ == "__main__":
