@@ -27,7 +27,12 @@ class StrictWandbLogger(WandbLogger):
         self.best_link = os.path.join(save_dir, "best.ckpt")
         self.best_link_warned_once = False  # only used to prevent cluttering stdout for non-symlink checkpointing
 
-        super().__init__(project=project, name=name, version=version, save_dir=save_dir)
+        super().__init__(
+            project=project,
+            name=f"{name}-{pipeline_stage}",
+            version=version,
+            save_dir=save_dir,
+        )
         if os.path.exists(self.save_dir):  # type: ignore
             raise FileExistsError(
                 "\033[91mREAD THIS ERROR MSG: \033[0m"

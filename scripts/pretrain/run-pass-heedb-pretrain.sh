@@ -22,6 +22,7 @@ EXP_NAME="pass-pretrain-heedb"
 python -m pass_pclr.trainer \
     --pipeline-stage learn-prototypes \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
+    --trainer.max_epochs 100 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET \
