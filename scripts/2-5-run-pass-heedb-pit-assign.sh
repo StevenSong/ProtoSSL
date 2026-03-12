@@ -27,7 +27,7 @@ python -m pass_pclr.trainer \
 
 # then project
 python -m pass_pclr.trainer \
-    --pipeline-stage project-prototypes \
+    --pipeline-stage project-prototypes-supervised \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
@@ -43,7 +43,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes/latest/proj.ckpt \
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt \
     --model.n_prototypes_per_label 5 \
     --model.n_prototypes null
 

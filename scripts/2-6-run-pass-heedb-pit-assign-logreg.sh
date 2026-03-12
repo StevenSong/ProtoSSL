@@ -22,7 +22,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes/latest/proj.ckpt \
+    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
     --model.n_prototypes_per_label 5 \
     --model.n_prototypes null
 
