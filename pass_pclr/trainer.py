@@ -584,7 +584,7 @@ class PredictionWriter(BasePredictionWriter):
                 for k in target_names:
                     batch_label_prob: torch.Tensor = batch_probs[k]
                     probs[k].append(batch_label_prob.numpy())
-            to_save = np.stack([np.concat(v) for v in probs.values()]).T
+            to_save = np.stack([np.concatenate(v) for v in probs.values()]).T
             log_dir: str = trainer.log_dir  # type: ignore
             suffix = ""
             if trainer.global_rank != 0:
