@@ -4,7 +4,6 @@ from ..defines import CONV_T, PROT_T, RESNET_T
 from ._base_classifier import BaseClassifier
 from ._prototype_classifier import PrototypeClassifier
 from .encoders import PrototypeEncoderWithAssignment
-from .layers import MultiInputLinear
 
 
 class PrototypeAssigner(BaseClassifier):
@@ -80,14 +79,15 @@ class PrototypeAssigner(BaseClassifier):
 
         # load weights from current state dict into PrototypeClassifier model
         sd = self.state_dict()
-        for name, param in model.named_parameters():
+        new_sd = dict()
+        for name in model.state_dict().keys():
             if name == "encoder.prototypes":
                 encoder: PrototypeEncoderWithAssignment = self.encoder  # type: ignore
                 assignments = encoder.get_assignments(hard=True)  # (L, K, P)
                 indices = assignments.argmax(dim=-1)  # (L, K)
                 indices = indices.view(-1)  # (L * K,) - contiguous k blocks
                 prototypes = encoder.prototypes[indices]
-                param.data.copy_(prototypes)
+                new_sd[name] = prototypes
             elif name == "cls.weight" or name == "cls.bias":
                 # PrototypeAssigner classifier head takes a similarity vector of size n_prototypes_per_label
                 # (the similarities of the selected prototypes for a given label)
@@ -95,14 +95,15 @@ class PrototypeAssigner(BaseClassifier):
                 # these are 2 fundamentally incompatible to convert so just skip the task head
                 # afterall, the classifiers are not used for projection and everything else is frozen for
                 # final classifier training anyways
-                pass
+                continue
             else:
                 if name not in sd:
                     raise ValueError(
                         f"Parameter {name} in PrototypeClassifier not found in PrototypeAssigner state dict"
                     )
-                if sd[name].shape != param.shape:
-                    breakpoint()
-                param.data.copy_(sd[name])
+                new_sd[name] = sd[name]
+        missing_keys, unexpected_keys = model.load_state_dict(new_sd, strict=False)
+        assert len(unexpected_keys) == 0
+        assert set(missing_keys) == set(["cls.weight", "cls.bias"])
 
         return model
