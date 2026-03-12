@@ -39,5 +39,4 @@ python _eval_probs.py \
 --probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 
-ln -s ./train-classifier/latest/probs.npy \
-$RUN_DIR/$EXP_NAME/probs.npy
+cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
