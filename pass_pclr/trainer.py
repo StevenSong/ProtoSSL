@@ -528,7 +528,7 @@ class PredictionWriter(BasePredictionWriter):
                 for k in target_names:
                     batch_label_prob: torch.Tensor = batch_probs[k]
                     probs[k].append(batch_label_prob.numpy())
-            to_save = np.stack([np.concat(v) for v in probs.values()]).T
+            to_save = np.stack([np.concatenate(v) for v in probs.values()]).T
             log_dir: str = trainer.log_dir  # type: ignore
             suffix = ""
             if trainer.global_rank != 0:
@@ -541,7 +541,7 @@ class PredictionWriter(BasePredictionWriter):
             )
             split = pl_module.prediction_split
             assert isinstance(predictions[0], torch.Tensor)  # embeddings
-            embeds = torch.concat(predictions).numpy()  # type: ignore
+            embeds = torch.concatenate(predictions).numpy()  # type: ignore
             log_dir: str = trainer.log_dir  # type: ignore
             np.save(os.path.join(log_dir, f"{split}_embeds.npy"), embeds)
         else:
