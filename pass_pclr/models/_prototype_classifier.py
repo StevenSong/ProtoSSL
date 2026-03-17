@@ -21,6 +21,7 @@ class PrototypeClassifier(BaseClassifier):
         n_prototypes: int,
         n_binary_labels: int,
         pretrained_weights: str | None = None,
+        input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
     ):
@@ -30,6 +31,7 @@ class PrototypeClassifier(BaseClassifier):
                 n_prototypes=n_prototypes,
                 conv_type=conv_type,
                 prototytpe_type=prototype_type,
+                input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
             ),
