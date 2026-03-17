@@ -16,6 +16,8 @@ from pass_pclr.defines import (
     SPLIT_T,
 )
 
+FULL_META = None
+
 
 class HeedbECGDataset(BaseECGDataset):
     def __init__(
@@ -26,23 +28,30 @@ class HeedbECGDataset(BaseECGDataset):
         sampling_rate: int,
     ):
         _path = Path(dataset_path)
-        df = pd.read_csv(
-            _path / "I0001/metadata/metadata.csv",
-            usecols=["BDSPPatientID", "SexDSC", "AgeAtAcquisition", "FileName"],
-        )
-        df["AgeAtAcquisition"] = df["AgeAtAcquisition"] / 365.2425
-        df = df[(df["AgeAtAcquisition"] >= 18) & (df["SexDSC"].notna())]
-        df = df.rename(
-            columns={
-                "BDSPPatientID": "patient_id",
-                "SexDSC": "sex",
-                "AgeAtAcquisition": "age",
-                "FileName": "fpath",
-            }
-        )
-        df.index.name = "ecg_id"
-        df["year"] = df["fpath"].str[1:].str.split("/").str[1].astype(int)
-        df = df.reset_index()[["ecg_id", "patient_id", "age", "sex", "year", "fpath"]]
+        global FULL_META
+        if FULL_META is None:
+            df = pd.read_csv(
+                _path / "I0001/metadata/metadata.csv",
+                usecols=["BDSPPatientID", "SexDSC", "AgeAtAcquisition", "FileName"],
+            )
+            df["AgeAtAcquisition"] = df["AgeAtAcquisition"] / 365.2425
+            df = df[(df["AgeAtAcquisition"] >= 18) & (df["SexDSC"].notna())]
+            df = df.rename(
+                columns={
+                    "BDSPPatientID": "patient_id",
+                    "SexDSC": "sex",
+                    "AgeAtAcquisition": "age",
+                    "FileName": "fpath",
+                }
+            )
+            df.index.name = "ecg_id"
+            df["year"] = df["fpath"].str[1:].str.split("/").str[1].astype(int)
+            df = df.reset_index()[
+                ["ecg_id", "patient_id", "age", "sex", "year", "fpath"]
+            ]
+            FULL_META = df.copy()
+        else:
+            df = FULL_META.copy()
 
         if split == "train":
             mask = ~df["year"].isin([2021, 2022])
