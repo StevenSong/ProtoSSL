@@ -6,6 +6,7 @@ SIM_MAX = 1e6
 STAGE_T = Literal[
     "learn-prototypes",
     "learn-prototypes-supervised",
+    "learn-prototype-assignments",
     "project-prototypes",
     "project-prototypes-supervised",
     "compute-embeddings",
@@ -167,7 +168,6 @@ PTBXL_TARGETS = [
     "PSVT",
     "TRIGU",
 ]
-
 
 # CinC Georgia per-lead stats derived over train set at 500 Hz source freq
 CINC_LOWERS = [

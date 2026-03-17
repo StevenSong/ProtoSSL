@@ -16,7 +16,9 @@ for suffix in "${SUFFIXES[@]}"; do
     cache_id=$(submit_job "$suffix" 0-run-cache-data.sh)
     echo $cache_id
 
-    submit_job "$suffix" 1-1-run-proto-from-scratch.sh "--dependency=afterok:$cache_id"
+    pfs_id=$(submit_job "$suffix" 1-1-run-proto-from-scratch.sh "--dependency=afterok:$cache_id")
+    echo $pfs_id
+    submit_job "$suffix" 1-2-run-proto-from-scratch-logreg.sh "--dependency=afterok:$cache_id,$pfs_id"
 
     submit_job "$suffix" 2-1-run-pass-heedb-pip.sh "--dependency=afterok:$cache_id"
     pit_id=$(submit_job "$suffix" 2-2-run-pass-heedb-pit.sh "--dependency=afterok:$cache_id")
@@ -24,6 +26,11 @@ for suffix in "${SUFFIXES[@]}"; do
 
     submit_job "$suffix" 2-3-run-pass-heedb-pip-logreg.sh "--dependency=afterok:$cache_id"
     submit_job "$suffix" 2-4-run-pass-heedb-pit-logreg.sh "--dependency=afterok:$cache_id,$pit_id"
+
+    pit_assign_id=$(submit_job "$suffix" 2-5-run-pass-heedb-pit-assign.sh "--dependency=afterok:$cache_id")
+    echo $pit_assign_id
+
+    submit_job "$suffix" 2-6-run-pass-heedb-pit-assign-logreg.sh "--dependency=afterok:$cache_id,$pit_assign_id"
 
     # other echonext specific things
     submit_job "$suffix" echonext/run-tabular-logreg.sh

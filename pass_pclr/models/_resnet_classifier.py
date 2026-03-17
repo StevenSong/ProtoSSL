@@ -8,10 +8,6 @@ class ResNetClassifier(BaseClassifier):
     def allow_extra_keys(self) -> list[str]:
         return []
 
-    @property
-    def allow_missing_keys(self) -> list[str]:
-        return []
-
     def __init__(
         self,
         *,  # enforce kwargs

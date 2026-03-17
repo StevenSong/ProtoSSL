@@ -48,6 +48,7 @@ class PrototypeProjector(PretrainedMixin, nn.Module):
         return [
             "proj.weight", "proj.bias", "log_temperature", # from PrototypeContraster
             "cls.weight", "cls.bias", # from PrototypeSupervisor
+            "_alpha_raw", "_l1_ratio_raw", # from PrototypeClassier (cast from PrototypeAssigner)
         ]
         # fmt: on
 
