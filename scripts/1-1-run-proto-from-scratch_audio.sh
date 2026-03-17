@@ -1,5 +1,13 @@
 #!/bin/bash
 
+#SBATCH --cpus-per-task=4
+#SBATCH --mem-per-gpu=40gb
+#SBATCH --gpus-per-node=8
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
+#SBATCH --partition=gpuq
+#SBATCH --time=00-23:59:59
+
 set -e
 
 # set these env vars prior to executing this script
@@ -19,7 +27,16 @@ python -m pass_pclr.trainer \
     --config $REPO_ROOT/configs/proto-supervised.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH
+    --data.dataset_path $DATASET_PATH \
+    --data.batch_size 8 \
+    --data.sampling_rate 16000 \
+    --model.init_args.resnet_type resnet18 \
+    --model.init_args.conv_type 1D \
+    --model.init_args.input_channels 1 \
+    --model.init_args.prototype_type partial \
+    --model.init_args.partial_len 16000 \
+    --model.init_args.partial_overlap 0.5 \
+    --model.init_args.n_prototypes_per_label 5
 
 python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes-supervised \
@@ -27,6 +44,15 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
+    --data.batch_size 8 \
+    --data.sampling_rate 16000 \
+    --model.init_args.resnet_type resnet18 \
+    --model.init_args.conv_type 1D \
+    --model.init_args.input_channels 1 \
+    --model.init_args.prototype_type partial \
+    --model.init_args.partial_len 16000 \
+    --model.init_args.partial_overlap 0.5 \
+    --model.init_args.n_prototypes_per_label 5 \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
 
 python -m pass_pclr.trainer \
@@ -35,11 +61,20 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
+    --data.batch_size 8 \
+    --data.sampling_rate 16000 \
+    --model.init_args.resnet_type resnet18 \
+    --model.init_args.conv_type 1D \
+    --model.init_args.input_channels 1 \
+    --model.init_args.prototype_type partial \
+    --model.init_args.partial_len 16000 \
+    --model.init_args.partial_overlap 0.5 \
+    --model.init_args.n_prototypes_per_label 5 \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
 
 python _eval_probs.py \
---dataset-path $DATASET_PATH \
---probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
---output-path $RUN_DIR/$EXP_NAME
+    --dataset-path $DATASET_PATH \
+    --probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
+    --output-path $RUN_DIR/$EXP_NAME
 
 cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy

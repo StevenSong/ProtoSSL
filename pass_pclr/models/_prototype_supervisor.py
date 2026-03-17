@@ -18,6 +18,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         label_weights: torch.Tensor,
         label_cooccurrence: torch.Tensor,
         pretrained_weights: str | None = None,
+        input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
     ):
@@ -31,6 +32,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
             n_prototypes=self.n_binary_labels * n_prototypes_per_label,
             conv_type=conv_type,
             prototytpe_type=prototype_type,
+            input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,
         )

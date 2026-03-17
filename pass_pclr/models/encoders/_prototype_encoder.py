@@ -20,12 +20,13 @@ class PrototypeEncoder(BaseEncoder):
         conv_type: CONV_T,
         prototytpe_type: PROT_T,
         n_prototypes: int,
+        input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
     ):
         super().__init__()
         if conv_type == "1D":
-            self.resnet = ResNet1D(resnet_type=resnet_type)
+            self.resnet = ResNet1D(resnet_type=resnet_type, input_channels=input_channels)
         elif conv_type == "2D":
             self.resnet = ResNet2D(resnet_type=resnet_type)
         else:

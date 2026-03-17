@@ -187,6 +187,7 @@ class LitModel(LightningModule):
         label_weights: torch.Tensor | None = None,
         label_cooccurrence: torch.Tensor | None = None,
         pretrained_weights: str | None = None,
+        input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
     ):
@@ -217,6 +218,7 @@ class LitModel(LightningModule):
                 prototype_type=prototype_type,
                 n_prototypes=n_prototypes,
                 pretrained_weights=pretrained_weights,
+                input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
             )
@@ -239,6 +241,7 @@ class LitModel(LightningModule):
                 label_weights=label_weights,
                 label_cooccurrence=label_cooccurrence,
                 pretrained_weights=pretrained_weights,
+                input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
             )
@@ -290,6 +293,7 @@ class LitModel(LightningModule):
                 prototype_type=prototype_type,
                 n_prototypes=_n_prototypes,
                 pretrained_weights=pretrained_weights,
+                input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
             )
@@ -306,6 +310,7 @@ class LitModel(LightningModule):
                     n_prototypes=_n_prototypes,
                     n_binary_labels=len(label_names),
                     pretrained_weights=pretrained_weights,
+                    input_channels=input_channels,
                     partial_len=partial_len,
                     partial_overlap=partial_overlap,
                 )
@@ -314,6 +319,7 @@ class LitModel(LightningModule):
                     resnet_type=resnet_type,
                     conv_type=conv_type,
                     n_binary_labels=len(label_names),
+                    input_channels=input_channels,
                     pretrained_weights=pretrained_weights,
                 )
             else:
@@ -597,7 +603,7 @@ class PredictionWriter(BasePredictionWriter):
             )
             split = pl_module.prediction_split
             assert isinstance(predictions[0], torch.Tensor)  # embeddings
-            embeds = torch.concat(predictions).numpy()  # type: ignore
+            embeds = torch.concatenate(predictions).numpy()  # type: ignore
             log_dir: str = trainer.log_dir  # type: ignore
             np.save(os.path.join(log_dir, f"{split}_embeds.npy"), embeds)
         else:

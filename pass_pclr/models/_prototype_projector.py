@@ -19,6 +19,7 @@ class PrototypeProjector(PretrainedMixin, nn.Module):
         prototype_type: PROT_T,
         n_prototypes: int,
         pretrained_weights: str | None = None,
+        input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
     ):
@@ -28,6 +29,7 @@ class PrototypeProjector(PretrainedMixin, nn.Module):
             n_prototypes=n_prototypes,
             conv_type=conv_type,
             prototytpe_type=prototype_type,
+            input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,
         )
