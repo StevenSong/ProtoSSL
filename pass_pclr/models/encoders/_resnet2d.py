@@ -11,10 +11,15 @@ class ResNet2D(BaseEncoder):
         self,
         *,  # enforce kwargs
         resnet_type: RESNET_T,
-        input_channels: int = 1,
+        input_channels: int = 12,
     ):
         super().__init__()
-        self.input_channels = input_channels
+
+        # NOTE: input_channels is the number of channels in the 1D signal
+        # e.g. (12, 1000) for a 10 second signal with 12 channels
+        # this version of ResNet2D does 2D convolutions over an artificial single channel
+        # e.g. (1, 12, 1000) - see NOTE's for artificial 2D input channel
+        # and instead modifies the initial conv kernel to span the entire width of the 1D channels
         match resnet_type:
             case "resnet18":
                 self._make_layers(BasicBlock, [2, 2, 2, 2], input_channels)
@@ -34,9 +39,12 @@ class ResNet2D(BaseEncoder):
         # Taken from ProtoECGNet - backbones.ResNet2D
         # Modify first convolution layer to accept (1, 12, time) input instead of RGB (3, H, W)
         self.conv1 = nn.Conv2d(
-            input_channels,
+            1,  # NOTE artificial 2D input channel
             self.inplanes,
-            kernel_size=(12, 7),
+            kernel_size=(
+                input_channels,  # NOTE span the actual input channels of the 1D signal
+                7,
+            ),
             stride=(1, 2),
             padding=(0, 3),
             bias=False,
@@ -74,7 +82,7 @@ class ResNet2D(BaseEncoder):
         assert (
             x.ndim == 3
         ), f"Input should be 3D (batch, leads, timesteps), got {x.shape}, ResNet2D will expand the shape for you to do 2D convolutions"
-        x = x.unsqueeze(-3).expand(*x.shape[:-2], self.input_channels, *x.shape[-2:])
+        x = x.unsqueeze(-3)  # NOTE: artificial 2D input channel
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
