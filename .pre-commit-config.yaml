@@ -22,3 +22,11 @@ repos:
     hooks:
       - id: isort
         args: ["--profile", "black"]
+  - repo: local
+    hooks:
+      - id: codeowners-coverage
+        name: every file is covered in codeowners
+        entry: python3 .github/hooks/codeowners-coverage.py
+        language: system
+        pass_filenames: false
+        always_run: true
