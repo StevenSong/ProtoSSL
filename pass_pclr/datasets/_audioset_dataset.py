@@ -4,12 +4,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-import torchaudio
 import torch.nn.functional as F
+import torchaudio
 from scipy.signal import resample_poly
 
-from ._base_ecg_dataset import BaseECGDataset
 from pass_pclr.defines import SPLIT_T
+
+from ._base_ecg_dataset import BaseECGDataset
 
 
 class StreamingAudioWaveforms:
@@ -70,6 +71,7 @@ class StreamingAudioWaveforms:
     @property
     def shape(self) -> tuple[int, ...]:
         return (len(self.wav_paths), 1, self.target_len)
+
 
 class AudioSetDataset(BaseECGDataset):
     def __init__(
