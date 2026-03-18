@@ -26,11 +26,12 @@ class PrototypeEncoder(BaseEncoder):
     ):
         super().__init__()
         if conv_type == "1D":
-            self.resnet = ResNet1D(resnet_type=resnet_type, input_channels=input_channels)
+            resnet_cls = ResNet1D
         elif conv_type == "2D":
-            self.resnet = ResNet2D(resnet_type=resnet_type)
+            resnet_cls = ResNet2D
         else:
             raise ValueError(f"Unknown conv_type={conv_type}")
+        self.resnet = resnet_cls(resnet_type=resnet_type, input_channels=input_channels)
         self.prototypes = nn.Parameter(
             torch.randn(n_prototypes, self.resnet.emb_dim),
             requires_grad=True,

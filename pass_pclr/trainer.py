@@ -265,6 +265,7 @@ class LitModel(LightningModule):
                 n_prototypes_per_label=n_prototypes_per_label,
                 n_binary_labels=len(label_names),
                 pretrained_weights=pretrained_weights,
+                input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
             )

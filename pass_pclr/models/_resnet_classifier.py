@@ -18,16 +18,13 @@ class ResNetClassifier(BaseClassifier):
         pretrained_weights: str | None = None,
     ):
         if conv_type == "1D":
-            resnet_cls = ResNet1D(
-                resnet_type=resnet_type,
-                input_channels=input_channels,
-            )
+            resnet_cls = ResNet1D
         elif conv_type == "2D":
-            resnet_cls = ResNet2D(resnet_type=resnet_type)
+            resnet_cls = ResNet2D
         else:
             raise ValueError(f"Unknown conv_type={conv_type}")
         super().__init__(
-            encoder=resnet_cls,
+            encoder=resnet_cls(resnet_type=resnet_type, input_channels=input_channels),
             n_binary_labels=n_binary_labels,
             pretrained_weights=pretrained_weights,
         )

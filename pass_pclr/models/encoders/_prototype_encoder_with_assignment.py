@@ -16,6 +16,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         n_prototypes: int,
         n_prototypes_per_label: int,
         n_labels: int,
+        input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
     ):
@@ -24,6 +25,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
             conv_type=conv_type,
             prototytpe_type=prototytpe_type,
             n_prototypes=n_prototypes,
+            input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,
         )
