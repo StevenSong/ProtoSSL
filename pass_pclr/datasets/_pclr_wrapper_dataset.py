@@ -3,7 +3,7 @@ import torch
 from scipy.sparse import csr_matrix
 from torch.utils.data import Dataset
 
-from pass_pclr.datasets import BaseECGDataset
+from . import BaseECGDataset
 
 
 class PCLRWrapperDataset(Dataset):

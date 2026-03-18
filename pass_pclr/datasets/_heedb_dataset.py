@@ -3,14 +3,15 @@ from pathlib import Path
 import pandas as pd
 import torch
 
-from pass_pclr.datasets import BaseECGDataset, StreamingECGWaveforms
-from pass_pclr.defines import (
+from ..defines import (
     HEEDB_CLIPPED_MEANS,
     HEEDB_CLIPPED_STDS,
     HEEDB_LOWERS,
     HEEDB_UPPERS,
     SPLIT_T,
 )
+from . import BaseECGDataset
+from .streaming_loaders import StreamingECGWaveforms
 
 
 class HeedbECGDataset(BaseECGDataset):

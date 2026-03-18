@@ -8,8 +8,7 @@ import torch
 from scipy.signal import resample_poly
 from wfdb import rdsamp
 
-from pass_pclr.datasets import BaseECGDataset, load_cached_data
-from pass_pclr.defines import (
+from ..defines import (
     PTBXL_CLIPPED_MEANS,
     PTBXL_CLIPPED_STDS,
     PTBXL_LOWERS,
@@ -17,6 +16,7 @@ from pass_pclr.defines import (
     PTBXL_UPPERS,
     SPLIT_T,
 )
+from . import BaseECGDataset, load_cached_data
 
 VAL_FOLD = 9
 TEST_FOLD = 10
