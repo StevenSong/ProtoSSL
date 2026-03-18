@@ -39,3 +39,20 @@ python -m pass_pclr.trainer \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt \
     --data.num_workers 8 \
     --data.prefetch_factor 4
+
+python -m pass_pclr.trainer \
+    --pipeline-stage train-classifier \
+    --config $REPO_ROOT/configs/proto-supervised.yaml \
+    --trainer.logger.save_dir $RUN_DIR \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $PRETRAIN_DATASET \
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt \
+    --data.num_workers 8 \
+    --data.prefetch_factor 4
+
+python _eval_probs.py \
+--dataset-path $PRETRAIN_DATASET \
+--probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
+
+cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
