@@ -17,7 +17,7 @@ function submit_job() {
 
     local fname="${2%.sh}"
 
-    local job_id=$(sbatch -p a100 --gpus=1 \
+    local job_id=$(sbatch -w kg35-nvl01 --gpus=1 \
     --time=0 --cpus-per-task=12 --mem=200g --ntasks=1 \
     --export=ALL,DATASET_PATH=$BASE_DATASET_PATH$1,RUN_DIR=$BASE_RUN_DIR$1,REPO_ROOT=$REPO_ROOT \
     --output slurm-logs/$fname$1-%j.out $3 --parsable _slurm_wrapper.sh $2)
