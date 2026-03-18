@@ -20,6 +20,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         init_log_temp: float = 0.07,
         learnable_temp: bool = True,
         pretrained_weights: str | None = None,
+        input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
     ):
@@ -29,6 +30,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
             n_prototypes=n_prototypes,
             conv_type=conv_type,
             prototytpe_type=prototype_type,
+            input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,
         )

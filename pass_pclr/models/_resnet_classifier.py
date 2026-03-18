@@ -14,6 +14,7 @@ class ResNetClassifier(BaseClassifier):
         resnet_type: RESNET_T,
         conv_type: CONV_T,
         n_binary_labels: int,
+        input_channels: int = 12,
         pretrained_weights: str | None = None,
     ):
         if conv_type == "1D":
@@ -23,7 +24,7 @@ class ResNetClassifier(BaseClassifier):
         else:
             raise ValueError(f"Unknown conv_type={conv_type}")
         super().__init__(
-            encoder=resnet_cls(resnet_type=resnet_type),
+            encoder=resnet_cls(resnet_type=resnet_type, input_channels=input_channels),
             n_binary_labels=n_binary_labels,
             pretrained_weights=pretrained_weights,
         )

@@ -34,6 +34,7 @@ class PrototypeAssigner(BaseClassifier):
         n_prototypes_per_label: int,
         n_binary_labels: int,
         pretrained_weights: str | None = None,
+        input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
     ):
@@ -53,6 +54,7 @@ class PrototypeAssigner(BaseClassifier):
                 n_labels=n_binary_labels,
                 conv_type=conv_type,
                 prototytpe_type=prototype_type,
+                input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
             ),
