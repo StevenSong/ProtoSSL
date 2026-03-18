@@ -41,8 +41,8 @@ def main():
         n_prototypes=32,
         n_binary_labels=y.shape[1],
         input_channels=1,
-        partial_len=16000,      # 1 second at 16 kHz
-        partial_overlap=0.5,    # 50% overlap
+        partial_len=16000,  # 1 second at 16 kHz
+        partial_overlap=0.5,  # 50% overlap
     )
 
     model.eval()
