@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
+
 from pass_pclr.datasets import infer_dataset_class_from_path
 from pass_pclr.models import ResNetClassifier
 
