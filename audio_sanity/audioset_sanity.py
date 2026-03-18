@@ -1,3 +1,15 @@
+import torchaudio
+from pathlib import Path
+
+wav_dir = Path("/gpfs/data/bbj-lab/data/audioset/audioset/audioset_train/train_wav")
+
+files = list(wav_dir.glob("*.wav"))[:10]
+
+for f in files:
+    info = torchaudio.info(str(f))
+    print(f.name, info.sample_rate, info.num_frames)
+
+
 from pass_pclr.datasets import infer_dataset_class_from_path
 
 dataset_path = "/gpfs/data/bbj-lab/data/audioset/audioset"
@@ -9,13 +21,13 @@ print("n_label_names:", None if label_names is None else len(label_names))
 ds_train = DatasetCls(
     dataset_path=dataset_path,
     split="train",
-    sampling_rate=16000,
+    sampling_rate=32000,
 )
 
 ds_val = DatasetCls(
     dataset_path=dataset_path,
     split="val",
-    sampling_rate=16000,
+    sampling_rate=32000,
 )
 
 print("len(train):", len(ds_train))

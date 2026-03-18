@@ -7,7 +7,7 @@ DatasetCls, _ = infer_dataset_class_from_path(dataset_path)
 ds_train = DatasetCls(
     dataset_path=dataset_path,
     split="train",
-    sampling_rate=16000,
+    sampling_rate=32000,
 )
 
 loader = DataLoader(

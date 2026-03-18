@@ -29,12 +29,12 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --data.batch_size 8 \
-    --data.sampling_rate 16000 \
+    --data.sampling_rate 32000 \
     --model.init_args.resnet_type resnet18 \
     --model.init_args.conv_type 1D \
     --model.init_args.input_channels 1 \
     --model.init_args.prototype_type partial \
-    --model.init_args.partial_len 16000 \
+    --model.init_args.partial_len 3200 \
     --model.init_args.partial_overlap 0.5 \
     --model.init_args.n_prototypes_per_label 5
 
@@ -45,12 +45,12 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --data.batch_size 8 \
-    --data.sampling_rate 16000 \
+    --data.sampling_rate 32000 \
     --model.init_args.resnet_type resnet18 \
     --model.init_args.conv_type 1D \
     --model.init_args.input_channels 1 \
     --model.init_args.prototype_type partial \
-    --model.init_args.partial_len 16000 \
+    --model.init_args.partial_len 3200 \
     --model.init_args.partial_overlap 0.5 \
     --model.init_args.n_prototypes_per_label 5 \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
@@ -62,12 +62,12 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --data.batch_size 8 \
-    --data.sampling_rate 16000 \
+    --data.sampling_rate 32000 \
     --model.init_args.resnet_type resnet18 \
     --model.init_args.conv_type 1D \
     --model.init_args.input_channels 1 \
     --model.init_args.prototype_type partial \
-    --model.init_args.partial_len 16000 \
+    --model.init_args.partial_len 3200 \
     --model.init_args.partial_overlap 0.5 \
     --model.init_args.n_prototypes_per_label 5 \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt

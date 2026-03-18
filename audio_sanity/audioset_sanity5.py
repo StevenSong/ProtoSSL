@@ -15,7 +15,7 @@ def main():
     ds_train = DatasetCls(
         dataset_path=dataset_path,
         split="train",
-        sampling_rate=16000,
+        sampling_rate=32000,
     )
     print("Dataset length:", len(ds_train))
 
@@ -41,7 +41,7 @@ def main():
         n_prototypes=32,
         n_binary_labels=y.shape[1],
         input_channels=1,
-        partial_len=16000,      # 1 second at 16 kHz
+        partial_len=32000,      # 1 second at 16 kHz
         partial_overlap=0.5,    # 50% overlap
     )
 
