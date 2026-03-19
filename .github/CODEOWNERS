@@ -47,9 +47,7 @@ pass_pclr/models/layers/__init__.py @StevenSong
 pass_pclr/models/layers/_multi_input_linear.py @StevenSong
 pass_pclr/trainer.py @StevenSong
 plot/_plot_utils.py @StevenSong
-plot/curves-cinc.ipynb @StevenSong
-plot/curves-echonext.ipynb @StevenSong
-plot/curves-ptbxl.ipynb @StevenSong
+plot/curves.ipynb @StevenSong
 plot/metadata_plots.ipynb @StevenSong
 plot/prototypes.ipynb @StevenSong
 plot/visualize-prototypes.ipynb @StevenSong
@@ -78,6 +76,10 @@ scripts/3-3-run-prosup-heedb-pip-logreg.sh @StevenSong
 scripts/3-4-run-prosup-heedb-pit-logreg.sh @StevenSong
 scripts/3-5-run-prosup-heedb-pit-assign.sh @StevenSong
 scripts/3-6-run-prosup-heedb-pit-assign-logreg.sh @StevenSong
+scripts/3-7-run-prosup-heedb-pip-then-pit.sh @StevenSong
+scripts/3-8-run-prosup-heedb-pip-then-pit-logreg.sh @StevenSong
+scripts/3-9-run-prosup-heedb-pip-then-pit-assign.sh @StevenSong
+scripts/3-10-run-prosup-heedb-pip-then-pit-assign-logreg.sh @StevenSong
 scripts/echonext/_tabular_logreg.py @StevenSong
 scripts/echonext/run-columbia-minimodel.sh @StevenSong
 scripts/echonext/run-tabular-logreg.sh @StevenSong

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source /opt/gpudata/steven/miniforge3/etc/profile.d/conda.sh
+# assumes submitting context has exported CONDA_PREFIX
+source "$CONDA_PREFIX/etc/profile.d/conda.sh"
 conda activate ecg
 # echo WOULD RUN:
 # echo $1
