@@ -44,6 +44,13 @@ for suffix in "${SUFFIXES[@]}"; do
 
     submit_job "$suffix" 3-6-run-prosup-heedb-pit-assign-logreg.sh "--dependency=afterok:$cache_id,$pit_assign_id"
 
+    pit_id=$(submit_job "$suffix" 3-7-run-prosup-heedb-pip-then-pit.sh "--dependency=afterok:$cache_id")
+    echo $pit_id
+    submit_job "$suffix" 3-8-run-prosup-heedb-pip-then-pit-logreg.sh "--dependency=afterok:$cache_id,$pit_id"
+    pit_assign_id=$(submit_job "$suffix" 3-9-run-prosup-heedb-pip-then-pit-assign.sh "--dependency=afterok:$cache_id")
+    echo $pit_assign_id
+    submit_job "$suffix" 3-10-run-prosup-heedb-pip-then-pit-assign-logreg.sh "--dependency=afterok:$cache_id,$pit_assign_id"
+
     # other echonext specific things
     submit_job "$suffix" echonext/run-tabular-logreg.sh
 done
