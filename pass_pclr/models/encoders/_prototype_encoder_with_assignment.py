@@ -18,6 +18,8 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         n_labels: int,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        prototype_h: int | None = None,
+        prototype_w: int | None = None,
     ):
         super().__init__(
             resnet_type=resnet_type,
@@ -26,6 +28,8 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
             n_prototypes=n_prototypes,
             partial_len=partial_len,
             partial_overlap=partial_overlap,
+            prototype_h=prototype_h,
+            prototype_w=prototype_w,
         )
         self.assignment_weights = nn.Parameter(
             torch.randn(n_labels, n_prototypes_per_label, n_prototypes),

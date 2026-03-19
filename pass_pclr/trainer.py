@@ -190,6 +190,9 @@ class LitModel(LightningModule):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        prototype_h: int | None = None,
+        prototype_w: int | None = None,
+        audio_backbone_name: str | None = None,
     ):
         super().__init__()
         self.lr = None
@@ -221,6 +224,9 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
+                audio_backbone_name=audio_backbone_name,
             )
         elif pipeline_stage == "learn-prototypes-supervised":
             if (
@@ -244,6 +250,9 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
+                audio_backbone_name=audio_backbone_name,
             )
         elif pipeline_stage == "learn-prototype-assignments":
             if (
@@ -267,6 +276,9 @@ class LitModel(LightningModule):
                 pretrained_weights=pretrained_weights,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
+                audio_backbone_name=audio_backbone_name,
             )
         elif (
             pipeline_stage == "project-prototypes"
@@ -296,6 +308,9 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
+                audio_backbone_name=audio_backbone_name,
             )
         elif pipeline_stage == "train-classifier":
             if (
@@ -313,6 +328,9 @@ class LitModel(LightningModule):
                     input_channels=input_channels,
                     partial_len=partial_len,
                     partial_overlap=partial_overlap,
+                    prototype_h=prototype_h,
+                    prototype_w=prototype_w,
+                    audio_backbone_name=audio_backbone_name,
                 )
             elif _n_prototypes is None and label_names is not None:
                 self.model = ResNetClassifier(
@@ -321,6 +339,7 @@ class LitModel(LightningModule):
                     n_binary_labels=len(label_names),
                     input_channels=input_channels,
                     pretrained_weights=pretrained_weights,
+                    audio_backbone_name=audio_backbone_name,
                 )
             else:
                 raise ValueError(

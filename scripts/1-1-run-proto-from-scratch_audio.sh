@@ -31,12 +31,15 @@ python -m pass_pclr.trainer \
     --data.batch_size 8 \
     --data.sampling_rate 32000 \
     --model.init_args.resnet_type resnet18 \
-    --model.init_args.conv_type 1D \
+    --model.init_args.conv_type HTSAT \
     --model.init_args.input_channels 1 \
     --model.init_args.prototype_type partial \
     --model.init_args.partial_len 3200 \
     --model.init_args.partial_overlap 0.5 \
-    --model.init_args.n_prototypes_per_label 5
+    --model.init_args.n_prototypes_per_label 5 \
+    --model.init_args.prototype_h 2 \
+    --model.init_args.prototype_w 2 
+
 
 python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes-supervised \
@@ -47,13 +50,15 @@ python -m pass_pclr.trainer \
     --data.batch_size 8 \
     --data.sampling_rate 32000 \
     --model.init_args.resnet_type resnet18 \
-    --model.init_args.conv_type 1D \
+    --model.init_args.conv_type HTSAT \
     --model.init_args.input_channels 1 \
     --model.init_args.prototype_type partial \
     --model.init_args.partial_len 3200 \
     --model.init_args.partial_overlap 0.5 \
     --model.init_args.n_prototypes_per_label 5 \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt \
+    --model.init_args.prototype_h 2 \
+    --model.init_args.prototype_w 2 
 
 python -m pass_pclr.trainer \
     --pipeline-stage train-classifier \
@@ -64,13 +69,15 @@ python -m pass_pclr.trainer \
     --data.batch_size 8 \
     --data.sampling_rate 32000 \
     --model.init_args.resnet_type resnet18 \
-    --model.init_args.conv_type 1D \
+    --model.init_args.conv_type HTSAT \
     --model.init_args.input_channels 1 \
     --model.init_args.prototype_type partial \
     --model.init_args.partial_len 3200 \
     --model.init_args.partial_overlap 0.5 \
     --model.init_args.n_prototypes_per_label 5 \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt \
+    --model.init_args.prototype_h 1 \
+    --model.init_args.prototype_w 1 
 
 python _eval_probs.py \
     --dataset-path $DATASET_PATH \

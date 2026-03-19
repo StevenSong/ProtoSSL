@@ -5,7 +5,6 @@ from ._base_classifier import BaseClassifier
 from ._prototype_classifier import PrototypeClassifier
 from .encoders import PrototypeEncoderWithAssignment
 
-
 class PrototypeAssigner(BaseClassifier):
     @property
     def allow_extra_keys(self) -> list[str]:
@@ -27,6 +26,9 @@ class PrototypeAssigner(BaseClassifier):
         pretrained_weights: str | None = None,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        prototype_h: int | None = None,
+        prototype_w: int | None = None,
+        audio_backbone_name: str | None = None,
     ):
         self.resnet_type = resnet_type
         self.conv_type = conv_type
@@ -46,6 +48,9 @@ class PrototypeAssigner(BaseClassifier):
                 prototytpe_type=prototype_type,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
+                audio_backbone_name=audio_backbone_name,
             ),
             n_binary_labels=n_binary_labels,
             pretrained_weights=pretrained_weights,
@@ -75,6 +80,8 @@ class PrototypeAssigner(BaseClassifier):
             n_binary_labels=self.n_binary_labels,
             partial_len=self.partial_len,
             partial_overlap=self.partial_overlap,
+            rototype_h=self.prototype_h,
+            prototype_w=self.prototype_w,
         )
 
         # load weights from current state dict into PrototypeClassifier model
