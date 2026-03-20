@@ -22,13 +22,13 @@ cd $REPO_ROOT/scripts
 # experiment parameters
 EXP_NAME="proto-from-scratch"
 
-python -m pass_pclr.trainer \
+srun python -m pass_pclr.trainer \
     --pipeline-stage learn-prototypes-supervised \
     --config $REPO_ROOT/configs/proto-supervised.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --data.batch_size 8 \
+    --data.batch_size 4 \
     --data.sampling_rate 32000 \
     --model.init_args.resnet_type resnet18 \
     --model.init_args.conv_type PANNS \
@@ -42,13 +42,13 @@ python -m pass_pclr.trainer \
     --model.init_args.audio_backbone_name Cnn14 
 
 
-python -m pass_pclr.trainer \
+srun python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes-supervised \
     --config $REPO_ROOT/configs/proto-supervised.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --data.batch_size 8 \
+    --data.batch_size 4 \
     --data.sampling_rate 32000 \
     --model.init_args.resnet_type resnet18 \
     --model.init_args.conv_type PANNS \
@@ -62,13 +62,13 @@ python -m pass_pclr.trainer \
     --model.init_args.prototype_w 1 \
     --model.init_args.audio_backbone_name Cnn14 
 
-python -m pass_pclr.trainer \
+srun python -m pass_pclr.trainer \
     --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/proto-supervised.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --data.batch_size 8 \
+    --data.batch_size 4 \
     --data.sampling_rate 32000 \
     --model.init_args.resnet_type resnet18 \
     --model.init_args.conv_type PANNS \
@@ -82,7 +82,7 @@ python -m pass_pclr.trainer \
     --model.init_args.prototype_w 1 \
     --model.init_args.audio_backbone_name Cnn14 
 
-python _eval_probs.py \
+srun python _eval_probs.py \
     --dataset-path $DATASET_PATH \
     --probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
     --output-path $RUN_DIR/$EXP_NAME

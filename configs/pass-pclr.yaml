@@ -1,7 +1,8 @@
 # lightning.pytorch==2.6.0
 seed_everything: 42
 trainer:
-  devices: 1
+  devices: -1
+  strategy: "ddp_find_unused_parameters_true"
   precision: 32
   logger:
     class_path: pass_pclr.lightning_utils.StrictWandbLogger
