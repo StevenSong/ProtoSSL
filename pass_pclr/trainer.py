@@ -7,6 +7,7 @@ import torch
 from lightning import LightningDataModule, LightningModule
 from lightning.pytorch.callbacks import BasePredictionWriter
 from lightning.pytorch.cli import LightningCLI
+from lightning.pytorch.strategies import DDPStrategy, SingleDeviceStrategy
 from torch.utils.data import DataLoader
 
 from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
@@ -501,7 +502,9 @@ class LitModel(LightningModule):
     ) -> torch.Tensor:
         for k, v in losses.items():
             if log:
-                self.log(f"{stage}_{k}_loss", v, batch_size=batch_size)
+                self.log(
+                    f"{stage}_{k}_loss", v, batch_size=batch_size, sync_dist=sync_dist
+                )
         loss = torch.stack(list(losses.values())).mean()
         if log:
             self.log(f"{stage}_loss", loss, batch_size=batch_size, sync_dist=sync_dist)
@@ -580,6 +583,8 @@ class PredictionWriter(BasePredictionWriter):
                 os.path.join(trainer.log_dir, "projection_metadata.csv"),  # type: ignore
                 index=False,
             )
+            to_save = None  # type: ignore
+            save_name = None
         elif (
             pipeline_stage == "train-classifier"
             or pipeline_stage == "learn-prototype-assignments"
@@ -592,11 +597,7 @@ class PredictionWriter(BasePredictionWriter):
                     batch_label_prob: torch.Tensor = batch_probs[k]
                     probs[k].append(batch_label_prob.numpy())
             to_save = np.stack([np.concatenate(v) for v in probs.values()]).T
-            log_dir: str = trainer.log_dir  # type: ignore
-            suffix = ""
-            if trainer.global_rank != 0:
-                suffix = f"_rank_{trainer.global_rank}"
-            np.save(os.path.join(log_dir, f"probs{suffix}.npy"), to_save)
+            save_name = "probs.npy"
         elif pipeline_stage == "compute-embeddings":
             assert (
                 hasattr(pl_module, "prediction_split")
@@ -604,13 +605,39 @@ class PredictionWriter(BasePredictionWriter):
             )
             split = pl_module.prediction_split
             assert isinstance(predictions[0], torch.Tensor)  # embeddings
-            embeds = torch.concatenate(predictions).numpy()  # type: ignore
-            log_dir: str = trainer.log_dir  # type: ignore
-            np.save(os.path.join(log_dir, f"{split}_embeds.npy"), embeds)
+            to_save = torch.concatenate(predictions).numpy()  # type: ignore
+            save_name = f"{split}_embeds.npy"
         else:
             raise ValueError(
                 f"Unknown how to handle predictions for pipeline_stage={pipeline_stage}"
             )
+
+        # nothing to save or save handled separately
+        if to_save is None:
+            return
+
+        # NOTE: currently only single device and DDP strategies have been validated
+        # saving (potentially distributed) predictions
+
+        # batch_indices is a singleton list of a list of lists
+        # e.g. [[[0, 2], [1, 3]]], where there are 4 samples and 2 batches of 2 samples each
+        assert len(batch_indices) == 1  # do other strategies return different idxs?
+        flat_idxs = np.asarray([x for xs in batch_indices[0] for x in xs])
+
+        gathered_to_save = [None] * torch.distributed.get_world_size()
+        gathered_flat_idxs = [None] * torch.distributed.get_world_size()
+        torch.distributed.all_gather_object(gathered_to_save, to_save)
+        torch.distributed.all_gather_object(gathered_flat_idxs, flat_idxs)
+        torch.distributed.barrier()
+        to_save: np.ndarray = np.concatenate(gathered_to_save)  # type: ignore
+        flat_idxs: np.ndarray = np.concatenate(gathered_flat_idxs)  # type: ignore
+        sort_mask = flat_idxs.argsort()
+        to_save = to_save[sort_mask]
+
+        if trainer.global_rank != 0:
+            return
+        log_dir: str = trainer.log_dir  # type: ignore
+        np.save(os.path.join(log_dir, save_name), to_save)  # type: ignore
 
 
 class LitCLI(LightningCLI):
@@ -645,6 +672,12 @@ class LitCLI(LightningCLI):
 
 def run():
     cli = LitCLI(run=False)
+    if not isinstance(cli.trainer.strategy, (DDPStrategy, SingleDeviceStrategy)):
+        # NOTE: to implement support for other distributed startegies, should check
+        # the places noted in this GH issue: https://github.com/StevenSong/ecg-prototype-fm/issues/63
+        raise ValueError(
+            f"Only single device or DDP training strategies are supported, got: {cli.trainer.strategy}"
+        )
     pipeline_stage: STAGE_T = cli.config.pipeline_stage
 
     # NOTE all model/data validation should happen in their respective modules above
@@ -694,7 +727,6 @@ def run():
         cli.trainer.predict(
             model=cli.model,
             datamodule=cli.datamodule,
-            ckpt_path=os.path.join(cli.trainer.log_dir, "best.ckpt"),  # type: ignore
         )
         if pipeline_stage == "learn-prototype-assignments":
             # at the end of predict with `learn-prototype-assignments`, LitModel
