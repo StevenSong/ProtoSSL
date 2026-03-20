@@ -7,4 +7,11 @@ conda activate ecg
 # echo $1
 # echo "DATASET_PATH=$DATASET_PATH"
 # echo "RUN_DIR=$RUN_DIR"
+
+# Override python to use srun when submitted via this wrapper
+python() { srun python "$@"; }
+python3() { srun python3 "$@"; }
+export -f python
+export -f python3
+
 bash $1
