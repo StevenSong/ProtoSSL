@@ -30,7 +30,7 @@ class PrototypeProjector(PretrainedMixin, nn.Module):
             resnet_type=resnet_type,
             n_prototypes=n_prototypes,
             conv_type=conv_type,
-            prototytpe_type=prototype_type,
+            prototype_type=prototype_type,
             input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,

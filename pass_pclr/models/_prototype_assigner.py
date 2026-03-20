@@ -45,7 +45,7 @@ class PrototypeAssigner(BaseClassifier):
                 n_prototypes_per_label=n_prototypes_per_label,
                 n_labels=n_binary_labels,
                 conv_type=conv_type,
-                prototytpe_type=prototype_type,
+                prototype_type=prototype_type,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
                 prototype_h=prototype_h,

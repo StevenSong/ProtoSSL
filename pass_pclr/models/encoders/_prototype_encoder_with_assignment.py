@@ -12,7 +12,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         *,  # enforce kwargs
         resnet_type: RESNET_T,
         conv_type: CONV_T,
-        prototytpe_type: PROT_T,
+        prototype_type: PROT_T,
         n_prototypes: int,
         n_prototypes_per_label: int,
         n_labels: int,
@@ -24,7 +24,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         super().__init__(
             resnet_type=resnet_type,
             conv_type=conv_type,
-            prototytpe_type=prototytpe_type,
+            prototype_type=prototype_type,
             n_prototypes=n_prototypes,
             partial_len=partial_len,
             partial_overlap=partial_overlap,

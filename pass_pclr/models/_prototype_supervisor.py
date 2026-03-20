@@ -33,7 +33,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
             resnet_type=resnet_type,
             n_prototypes=self.n_binary_labels * n_prototypes_per_label,
             conv_type=conv_type,
-            prototytpe_type=prototype_type,
+            prototype_type=prototype_type,
             input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,

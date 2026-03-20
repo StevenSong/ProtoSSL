@@ -62,7 +62,7 @@ class PrototypeEncoder(BaseEncoder):
         *,  # enforce kwargs
         resnet_type: RESNET_T,
         conv_type: CONV_T,
-        prototytpe_type: PROT_T,
+        prototype_type: PROT_T,
         n_prototypes: int,
         input_channels: int = 12,
         partial_len: int | None = None,
@@ -73,7 +73,7 @@ class PrototypeEncoder(BaseEncoder):
     ):
         super().__init__()
         self.conv_type = conv_type
-        self.prototype_type = prototytpe_type
+        self.prototype_type = prototype_type
 
         if conv_type == "1D":
             self.resnet = ResNet1D(resnet_type=resnet_type, input_channels=input_channels)
