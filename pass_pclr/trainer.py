@@ -351,15 +351,12 @@ class LitModel(LightningModule):
             if _n_prototypes is None:
                 raise ValueError("Could not determine number of prototypes")
             # placeholder tensor values for the prediction writer to access, mostly to help with type checking
-            self.prototype_sims = [torch.as_tensor(-SIM_MAX)] * _n_prototypes
-            self.prototype_embs = [torch.empty(0)] * _n_prototypes
-            self.prototype_ids = [
-                (
-                    torch.as_tensor(-1),  # patient_id
-                    torch.as_tensor(-1),  # ecg_id
-                    torch.as_tensor(-1),  # chunk_idx
-                )
-            ] * _n_prototypes
+            self.prototype_sims = torch.ones((_n_prototypes,)) * -SIM_MAX
+            self.prototype_embs = torch.empty(
+                (_n_prototypes, self.model.encoder.resnet.emb_dim)  # type: ignore
+            )
+            # each row is patient_id, ecg_id, chunk_idx
+            self.prototype_ids = torch.empty((_n_prototypes, 3), dtype=torch.long)
 
     def _common_step(
         self,
@@ -425,25 +422,31 @@ class LitModel(LightningModule):
                 embs,  # (B, chunks, d_emb)
                 chunks,  # (B, n_prototypes) - which chunks resulted in the prototype sims?
             ) = self.model.get_last_embs_and_chunks()
+
+            # move things off gpu
+            sims, embs, chunks = (
+                sims.detach().cpu(),
+                embs.detach().cpu(),
+                chunks.detach().cpu(),
+            )
+            patient_ids, ecg_ids = batch["patient_id"].cpu(), batch["ecg_id"].cpu()
+
+            # find max sim
             for prot_idx, curr_sim in enumerate(self.prototype_sims):
                 prot_sims = sims[:, prot_idx]
                 candidates = (prot_sims > curr_sim).argwhere().squeeze(1)
                 if candidates.shape[0] == 0:
                     # none in batch are more similar to any of the prototypes
                     continue
-                batch_idx = candidates[0]
+                # get the candidate in batch that is the most similar
+                batch_idx = candidates[prot_sims[candidates].argmax()]
                 chunk_idx = chunks[batch_idx, prot_idx]
-                _id = (
-                    batch["patient_id"][batch_idx],
-                    batch["ecg_id"][batch_idx],
-                    chunk_idx,
-                )
-                _emb = embs[batch_idx, chunk_idx]
-                _sim = prot_sims[batch_idx]
 
-                self.prototype_sims[prot_idx] = _sim
-                self.prototype_embs[prot_idx] = _emb
-                self.prototype_ids[prot_idx] = _id
+                self.prototype_embs[prot_idx] = embs[batch_idx, chunk_idx]
+                self.prototype_sims[prot_idx] = prot_sims[batch_idx]
+                self.prototype_ids[prot_idx, 0] = patient_ids[batch_idx]
+                self.prototype_ids[prot_idx, 1] = ecg_ids[batch_idx]
+                self.prototype_ids[prot_idx, 2] = chunk_idx
         elif pipeline_stage == "compute-embeddings":
             assert isinstance(self.model, PrototypeProjector)
             if stage != "predict":
@@ -526,6 +529,45 @@ class LitModel(LightningModule):
         _, preds = self._common_step(batch=batch, stage="predict", log=False)
         return preds
 
+    def on_predict_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+        pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
+        if (
+            pipeline_stage == "project-prototypes"
+            or pipeline_stage == "project-prototypes-supervised"
+        ):
+            assert isinstance(self.model, PrototypeProjector)
+
+            # sync projected prototypes across distributed ranks
+            # NOTE: for speed, we only run this once (in the last batch)
+            # it would be cleaner to put this in on_predict, however the
+            # prediction writer's on_predict_end hook fires before the model's
+            # and we shouldn't really rely on enforcing peer callbacks' order
+            if (
+                len(self.trainer.predict_dataloaders) == batch_idx + 1  # type: ignore
+                and torch.distributed.is_available()
+                and torch.distributed.is_initialized()
+            ):
+                world_size = torch.distributed.get_world_size()
+                # fmt: off
+                gathered_embs = [None for _ in range(world_size)]
+                gathered_sims = [None for _ in range(world_size)]
+                gathered_ids = [None for _ in range(world_size)]
+                torch.distributed.all_gather_object(gathered_embs, self.prototype_embs)
+                torch.distributed.all_gather_object(gathered_sims, self.prototype_sims)
+                torch.distributed.all_gather_object(gathered_ids, self.prototype_ids)
+                gathered_embs = torch.stack(gathered_embs) # type: ignore
+                gathered_sims = torch.stack(gathered_sims) # type: ignore
+                gathered_ids = torch.stack(gathered_ids) # type: ignore
+                torch.distributed.barrier()
+                # fmt: on
+
+                _, idxs = gathered_sims.max(dim=0)  # (P,)
+                for p in range(len(idxs)):
+                    idx = idxs[p]  # for proto p, rank with max sim
+                    self.prototype_embs[p] = gathered_embs[idx][p]  # type: ignore
+                    self.prototype_sims[p] = gathered_sims[idx][p]  # type: ignore
+                    self.prototype_ids[p] = gathered_ids[idx][p]  # type: ignore
+
     def on_predict_end(self):
         # if we've hijacked predict to do prototype projection, need to set
         # the prototypes to the projected samples - metadata is saved by
@@ -536,10 +578,13 @@ class LitModel(LightningModule):
             or pipeline_stage == "project-prototypes-supervised"
         ):
             assert isinstance(self.model, PrototypeProjector)
-            # save prototypes to model parameter
+
+            # save projected prototypes to model parameter
             with torch.no_grad():
-                self.model.encoder.prototypes.copy_(torch.stack(self.prototype_embs))
+                self.model.encoder.prototypes.copy_(self.prototype_embs)
         elif pipeline_stage == "learn-prototype-assignments":
+            # for distributed settings, shouldn't matter if all ranks do this conversion
+            # save_checkpoint after this conversion is only effective in the main run function on rank 0
             with torch.no_grad():
                 assert isinstance(self.model, PrototypeAssigner)
                 self.model = self.model.convert_to_proto_classifier()
@@ -565,24 +610,22 @@ class PredictionWriter(BasePredictionWriter):
             assert hasattr(pl_module, "prototype_ids")
             # predictions are all None (see LitModel above)
             # pl_module has prototype projection metadata to save
-            n_prototypes = len(pl_module.prototype_sims)  # type: ignore
-            pids = [pid for pid, _, _ in pl_module.prototype_ids]  # type: ignore
-            eids = [eid for _, eid, _ in pl_module.prototype_ids]  # type: ignore
-            cids = [cid for _, _, cid in pl_module.prototype_ids]  # type: ignore
             meta = pd.DataFrame.from_dict(
                 {
-                    "prototype_id": np.arange(n_prototypes),
-                    "patient_id": torch.stack(pids).tolist(),
-                    "ecg_id": torch.stack(eids).tolist(),
-                    "chunk_idx": torch.stack(cids).tolist(),
-                    "emb_sim": torch.stack(pl_module.prototype_sims).tolist(),  # type: ignore
+                    "prototype_id": np.arange(len(pl_module.prototype_sims)),  # type: ignore
+                    "patient_id": pl_module.prototype_ids[:, 0].tolist(),  # type: ignore
+                    "ecg_id": pl_module.prototype_ids[:, 1].tolist(),  # type: ignore
+                    "chunk_idx": pl_module.prototype_ids[:, 2].tolist(),  # type: ignore
+                    "emb_sim": pl_module.prototype_sims.tolist(),  # type: ignore
                 },
                 orient="columns",
             )
-            meta.to_csv(
-                os.path.join(trainer.log_dir, "projection_metadata.csv"),  # type: ignore
-                index=False,
-            )
+            # after gathering data to save, only save on rank 0
+            if trainer.global_rank == 0:
+                meta.to_csv(
+                    os.path.join(trainer.log_dir, "projection_metadata.csv"),  # type: ignore
+                    index=False,
+                )
             to_save = None  # type: ignore
             save_name = None
         elif (
@@ -624,16 +667,19 @@ class PredictionWriter(BasePredictionWriter):
         assert len(batch_indices) == 1  # do other strategies return different idxs?
         flat_idxs = np.asarray([x for xs in batch_indices[0] for x in xs])
 
-        gathered_to_save = [None] * torch.distributed.get_world_size()
-        gathered_flat_idxs = [None] * torch.distributed.get_world_size()
-        torch.distributed.all_gather_object(gathered_to_save, to_save)
-        torch.distributed.all_gather_object(gathered_flat_idxs, flat_idxs)
-        torch.distributed.barrier()
-        to_save: np.ndarray = np.concatenate(gathered_to_save)  # type: ignore
-        flat_idxs: np.ndarray = np.concatenate(gathered_flat_idxs)  # type: ignore
-        sort_mask = flat_idxs.argsort()
-        to_save = to_save[sort_mask]
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            world_size = torch.distributed.get_world_size()
+            gathered_to_save = [None] * world_size
+            gathered_flat_idxs = [None] * world_size
+            torch.distributed.all_gather_object(gathered_to_save, to_save)
+            torch.distributed.all_gather_object(gathered_flat_idxs, flat_idxs)
+            torch.distributed.barrier()
+            to_save: np.ndarray = np.concatenate(gathered_to_save)  # type: ignore
+            flat_idxs: np.ndarray = np.concatenate(gathered_flat_idxs)  # type: ignore
+            sort_mask = flat_idxs.argsort()
+            to_save = to_save[sort_mask]
 
+        # after gathering data to save, only save on rank 0
         if trainer.global_rank != 0:
             return
         log_dir: str = trainer.log_dir  # type: ignore
