@@ -31,4 +31,23 @@ for suffix in "${SUFFIXES[@]}"; do
     echo $pit_assign_id
 
     submit_job "$suffix" 2-6-run-pass-heedb-pit-assign-logreg.sh "--dependency=afterok:$cache_id,$pit_assign_id"
+
+    submit_job "$suffix" 3-1-run-prosup-heedb-pip.sh "--dependency=afterok:$cache_id"
+    pit_id=$(submit_job "$suffix" 3-2-run-prosup-heedb-pit.sh "--dependency=afterok:$cache_id")
+    echo $pit_id
+
+    submit_job "$suffix" 3-3-run-prosup-heedb-pip-logreg.sh "--dependency=afterok:$cache_id"
+    submit_job "$suffix" 3-4-run-prosup-heedb-pit-logreg.sh "--dependency=afterok:$cache_id,$pit_id"
+
+    pit_assign_id=$(submit_job "$suffix" 3-5-run-prosup-heedb-pit-assign.sh "--dependency=afterok:$cache_id")
+    echo $pit_assign_id
+
+    submit_job "$suffix" 3-6-run-prosup-heedb-pit-assign-logreg.sh "--dependency=afterok:$cache_id,$pit_assign_id"
+
+    pit_id=$(submit_job "$suffix" 3-7-run-prosup-heedb-pip-then-pit.sh "--dependency=afterok:$cache_id")
+    echo $pit_id
+    submit_job "$suffix" 3-8-run-prosup-heedb-pip-then-pit-logreg.sh "--dependency=afterok:$cache_id,$pit_id"
+    pit_assign_id=$(submit_job "$suffix" 3-9-run-prosup-heedb-pip-then-pit-assign.sh "--dependency=afterok:$cache_id")
+    echo $pit_assign_id
+    submit_job "$suffix" 3-10-run-prosup-heedb-pip-then-pit-assign-logreg.sh "--dependency=afterok:$cache_id,$pit_assign_id"
 done

@@ -8,7 +8,16 @@ from .encoders import PrototypeEncoderWithAssignment
 class PrototypeAssigner(BaseClassifier):
     @property
     def allow_extra_keys(self) -> list[str]:
-        return ["proj.weight", "proj.bias", "log_temperature"]
+        return [
+            # fmt: off
+            # from PrototypeContraster (learn-prototypes)
+            "proj.weight", "proj.bias", "log_temperature",
+            # from PrototypeSupervisor (learn-prototypes-supervised)
+            # NOTE: PrototypeAssigner's encoder uses per-label embeddings
+            # and uses a MultiInputLinear instead of a single multitask head
+            "cls.bias", "cls.weight",
+            # fmt: on
+        ]
 
     @property
     def _allow_missing_keys(self) -> list[str]:
@@ -24,6 +33,7 @@ class PrototypeAssigner(BaseClassifier):
         n_prototypes_per_label: int,
         n_binary_labels: int,
         pretrained_weights: str | None = None,
+        input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
         prototype_h: int | None = None,
