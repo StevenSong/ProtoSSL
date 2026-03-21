@@ -539,7 +539,7 @@ class LitModel(LightningModule):
 
             # sync projected prototypes across distributed ranks
             # NOTE: for speed, we only run this once (in the last batch)
-            # it would be cleaner to put this in on_predict, however the
+            # it would be cleaner to put this in on_predict_end, however the
             # prediction writer's on_predict_end hook fires before the model's
             # and we shouldn't really rely on enforcing peer callbacks' order
             if (
