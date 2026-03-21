@@ -2,9 +2,9 @@
 
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-gpu=40gb
-#SBATCH --gpus-per-node=4
+#SBATCH --gpus-per-node=2
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
+#SBATCH --ntasks-per-node=2
 #SBATCH --partition=gpuq
 #SBATCH --time=00-23:59:59
 

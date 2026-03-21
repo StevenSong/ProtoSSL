@@ -1,10 +1,38 @@
-import torchaudio
-from pathlib import Path
+import torch
+from torch.utils.data import DataLoader
 
-wav_dir = Path("/gpfs/data/bbj-lab/data/audioset/audioset/audioset_train/train_wav")
+from pass_pclr.datasets import infer_dataset_class_from_path
+from pass_pclr.models import PrototypeClassifier
 
-files = list(wav_dir.glob("*.wav"))[:10]
+dataset_path = "/gpfs/data/bbj-lab/data/audioset/audioset"
+DatasetCls, label_names = infer_dataset_class_from_path(dataset_path)
 
-for f in files:
-    info = torchaudio.info(str(f))
-    print(f.name, info.sample_rate, info.num_frames)
+ds = DatasetCls(
+    dataset_path=dataset_path,
+    split="train",
+    sampling_rate=32000,
+)
+
+loader = DataLoader(ds, batch_size=2, shuffle=True, num_workers=0)
+batch = next(iter(loader))
+
+model = PrototypeClassifier(
+    resnet_type="resnet18",   # ignored by HTSAT path
+    conv_type="HTSAT",
+    prototype_type="partial",
+    n_prototypes=32,
+    n_binary_labels=batch["label"].shape[1],
+    input_channels=1,
+    prototype_h=1,
+    prototype_w=1,
+)
+
+x = batch["waveform"]
+y = batch["label"]
+
+losses, probs = model(x, y)
+print("x:", x.shape)
+print("losses:", losses.shape)
+print("probs:", probs.shape)
+print("NaN losses:", torch.isnan(losses).any().item())
+print("NaN probs:", torch.isnan(probs).any().item())

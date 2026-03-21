@@ -43,7 +43,7 @@ def main():
     model = PrototypeClassifier(
         resnet_type="resnet18",   # ignored by PANNS path, but required by signature
         conv_type="PANNS",
-        audio_backbone_name="Wavegram_Logmel_Cnn14", #Cnn14 #ResNet38
+        audio_backbone_name="Cnn14", #Cnn14 #ResNet38 #Wavegram_Logmel_Cnn14
         prototype_type="partial",
         n_prototypes=32,
         n_binary_labels=y.shape[1],
