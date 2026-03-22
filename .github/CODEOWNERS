@@ -25,6 +25,7 @@ pass_pclr/datasets/_base_ecg_dataset.py @StevenSong
 pass_pclr/datasets/_cinc_dataset.py @StevenSong
 pass_pclr/datasets/_echonext_dataset.py @StevenSong
 pass_pclr/datasets/_heedb_dataset.py @StevenSong
+pass_pclr/datasets/_mimic_dataset.py @StevenSong
 pass_pclr/datasets/_pclr_wrapper_dataset.py @StevenSong
 pass_pclr/datasets/_ptbxl_dataset.py @StevenSong
 pass_pclr/defines.py @StevenSong
