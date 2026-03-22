@@ -91,5 +91,6 @@ scripts/pretrain/run-pass-heedb-pretrain.sh @StevenSong
 scripts/pretrain/run-prosup-heedb-pretrain.sh @StevenSong
 scripts/queue-cinc-experiments.sh @StevenSong
 scripts/queue-echonext-experiments.sh @StevenSong
+scripts/queue-mimic-experiments.sh @StevenSong
 scripts/queue-ptbxl-experiments.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105
