@@ -10,6 +10,7 @@ configs/resnet.yaml @StevenSong
 data-preprocessing/_multilabel_stratified_sampling.py @StevenSong
 data-preprocessing/create-cinc-georgia-subsets.ipynb @StevenSong
 data-preprocessing/create-echonext-subsets.ipynb @StevenSong
+data-preprocessing/create-mimic-subsets.ipynb @ StevenSong
 data-preprocessing/create-ptbxl-subsets.ipynb @StevenSong
 data-preprocessing/heedb_normalizations/heedb_clipped_means_stds.json @StevenSong
 data-preprocessing/heedb_normalizations/heedb_lowers_uppers.json @StevenSong
@@ -71,6 +72,7 @@ scripts/2-4-run-pass-heedb-pit-logreg.sh @StevenSong
 scripts/2-5-run-pass-heedb-pit-assign.sh @StevenSong
 scripts/2-6-run-pass-heedb-pit-assign-logreg.sh @StevenSong
 scripts/3-1-run-prosup-heedb-pip.sh @StevenSong
+scripts/3-10-run-prosup-heedb-pip-then-pit-assign-logreg.sh @StevenSong
 scripts/3-2-run-prosup-heedb-pit.sh @StevenSong
 scripts/3-3-run-prosup-heedb-pip-logreg.sh @StevenSong
 scripts/3-4-run-prosup-heedb-pit-logreg.sh @StevenSong
@@ -79,7 +81,6 @@ scripts/3-6-run-prosup-heedb-pit-assign-logreg.sh @StevenSong
 scripts/3-7-run-prosup-heedb-pip-then-pit.sh @StevenSong
 scripts/3-8-run-prosup-heedb-pip-then-pit-logreg.sh @StevenSong
 scripts/3-9-run-prosup-heedb-pip-then-pit-assign.sh @StevenSong
-scripts/3-10-run-prosup-heedb-pip-then-pit-assign-logreg.sh @StevenSong
 scripts/echonext/_tabular_logreg.py @StevenSong
 scripts/echonext/run-columbia-minimodel.sh @StevenSong
 scripts/echonext/run-tabular-logreg.sh @StevenSong
