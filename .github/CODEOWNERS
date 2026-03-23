@@ -10,7 +10,7 @@ configs/resnet.yaml @StevenSong
 data-preprocessing/_multilabel_stratified_sampling.py @StevenSong
 data-preprocessing/create-cinc-georgia-subsets.ipynb @StevenSong
 data-preprocessing/create-echonext-subsets.ipynb @StevenSong
-data-preprocessing/create-mimic-subsets.ipynb @ StevenSong
+data-preprocessing/create-mimic-subsets.ipynb @StevenSong
 data-preprocessing/create-ptbxl-subsets.ipynb @StevenSong
 data-preprocessing/create-zzu-subsets.ipynb @StevenSong
 data-preprocessing/heedb_normalizations/heedb_clipped_means_stds.json @StevenSong
