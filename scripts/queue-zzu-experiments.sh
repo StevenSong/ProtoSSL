@@ -4,8 +4,8 @@ set -e
 
 SUFFIXES=("" "-4k" "-2k" "-1k" "-512" "-256")
 
-export BASE_DATASET_PATH=/opt/gpudata/ecg/mimic-iv-ecg
-export BASE_RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs/runs-mimic
+export BASE_DATASET_PATH=/opt/gpudata/ecg/zzu-pecg
+export BASE_RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs/runs-zzu
 export REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 
 source _submit_job.sh
