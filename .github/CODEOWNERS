@@ -95,4 +95,5 @@ scripts/queue-cinc-experiments.sh @StevenSong
 scripts/queue-echonext-experiments.sh @StevenSong
 scripts/queue-mimic-experiments.sh @StevenSong
 scripts/queue-ptbxl-experiments.sh @StevenSong
+scripts/queue-zzu-experiments.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105

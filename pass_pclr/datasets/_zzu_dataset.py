@@ -63,7 +63,15 @@ def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:
     df.loc[val_mask, "split"] = "val"
     df.loc[test_mask, "split"] = "test"
 
+    # do some cleanup
     df["fpath"] = _path / "Child_ecg" / df["Filename"]
+
+    # convert string IDs to numerical IDs:
+    # all patient IDs are 6 digits, all ECG IDs are patient ID + 2 digits
+    df["ECG_ID"] = df["ECG_ID"].str.replace("[^0-9]", "", regex=True)
+    df["ECG_ID"] = ("1" + df["ECG_ID"]).astype(int)
+    df["Patient_ID"] = df["Patient_ID"].str.replace("[^0-9]", "", regex=True)
+    df["Patient_ID"] = ("1" + df["Patient_ID"]).astype(int)
 
     return df
 
@@ -94,7 +102,7 @@ class ZzuECGDataset(BaseECGDataset):
 
             # pad to even length (memory inefficient but simpler)
             max_timesteps = df["Sampling_point"].max()
-            for i, f in enumerate(df["fpath"]):
+            for i, f in df["fpath"].items():
                 signal, meta = rdsamp(f)
                 assert signal is not None
                 assert not np.isnan(signal).any()
@@ -111,7 +119,7 @@ class ZzuECGDataset(BaseECGDataset):
                     signal,
                     ((pad_before, pad_after), (0, 0)),
                     mode="constant",
-                    constant_values=0,
+                    constant_values=np.nan,
                 )
                 data.append(signal)
             X = np.array(data)  # (N, max_timesteps, 12)
@@ -126,6 +134,9 @@ class ZzuECGDataset(BaseECGDataset):
             # clip and normalize using stats derived over train set
             X = np.clip(X, ZZU_LOWERS, ZZU_UPPERS)
             X = (X - ZZU_CLIPPED_MEANS) / ZZU_CLIPPED_STDS
+
+            # fill nans after norm
+            X[np.isnan(X)] = 0
 
             # downsample to target frequency
             if sampling_rate != source_freq:
