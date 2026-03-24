@@ -30,6 +30,9 @@ def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:
     df["Patient_ID"] = df["Patient_ID"].str.replace("[^0-9]", "", regex=True)
     df["Patient_ID"] = ("1" + df["Patient_ID"]).astype(int)
 
+    for label, sublabels in ZZU_TARGETS.items():
+        df[label] = df[sublabels].max(axis=1)  # make coarse labels
+
     return df
 
 
@@ -46,7 +49,9 @@ class ZzuECGDataset(BaseECGDataset):
 
         self.patient_ids = torch.as_tensor(df["Patient_ID"].to_numpy())
         self.ecg_ids = torch.as_tensor(df["ECG_ID"].to_numpy())
-        self.labels = torch.as_tensor(df[ZZU_TARGETS].to_numpy(), dtype=torch.long)
+        self.labels = torch.as_tensor(
+            df[list(ZZU_TARGETS)].to_numpy(), dtype=torch.long
+        )
 
         # ZZU pECG waveforms are variable length!
         # so we'll pad and center crop to get 10 second recordings
