@@ -17,53 +17,10 @@ from pass_pclr.defines import (
     ZZU_UPPERS,
 )
 
-TRAIN_VAL_SPLIT_DATE = "2023"
-VAL_TEST_SPLIT_DATE = "2023-08"
-
 
 def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:
     _path = Path(dataset_path)
-    df = pd.read_csv(_path / "AttributesDictionary.csv")
-    df = (
-        df[df["Lead"] == 12]
-        .sort_values(["Patient_ID", "ECG_ID"])
-        .reset_index(drop=True)
-    )
-
-    # derive labels
-    # create a long table of idx --> icd code, where idx can appear multiple time
-    dxs = df["ICD-10 code"].str.split(";").explode()
-    # convert to dict of icd code --> list[idx]
-    dx_idxs = {icd.strip("'"): list(group.index) for icd, group in dxs.groupby(dxs)}
-
-    # convert to wide
-    for label, icds in ZZU_TARGETS.items():
-        df[label] = 0
-        for icd in icds:
-            df.loc[dx_idxs[icd], label] = 1
-
-    # create intrinsic data splits based on time
-    # require first ECG per patient in val/test
-    assert (df.sort_values(["Patient_ID", "ECG_ID"]).index == df.index).all()
-    first_ecg_mask = ~df.duplicated("Patient_ID", keep="first")
-
-    train_mask = df["Acquisition_date"] < TRAIN_VAL_SPLIT_DATE
-    val_mask = (
-        df["Acquisition_date"].between(TRAIN_VAL_SPLIT_DATE, VAL_TEST_SPLIT_DATE)
-        & first_ecg_mask
-    )
-    test_mask = (df["Acquisition_date"] > VAL_TEST_SPLIT_DATE) & first_ecg_mask
-
-    # check that all coarse grained labels present in val/test
-    assert (df.loc[val_mask, list(ZZU_TARGETS)].sum() > 0).all()
-    assert (df.loc[test_mask, list(ZZU_TARGETS)].sum() > 0).all()
-
-    df["split"] = "no_split"
-    df.loc[train_mask, "split"] = "train"
-    df.loc[val_mask, "split"] = "val"
-    df.loc[test_mask, "split"] = "test"
-
-    # do some cleanup
+    df = pd.read_csv(_path / "labels.csv")
     df["fpath"] = _path / "Child_ecg" / df["Filename"]
 
     # convert string IDs to numerical IDs:
@@ -89,9 +46,7 @@ class ZzuECGDataset(BaseECGDataset):
 
         self.patient_ids = torch.as_tensor(df["Patient_ID"].to_numpy())
         self.ecg_ids = torch.as_tensor(df["ECG_ID"].to_numpy())
-        self.labels = torch.as_tensor(
-            df[list(ZZU_TARGETS)].to_numpy(), dtype=torch.long
-        )
+        self.labels = torch.as_tensor(df[ZZU_TARGETS].to_numpy(), dtype=torch.long)
 
         # ZZU pECG waveforms are variable length!
         # so we'll pad and center crop to get 10 second recordings
