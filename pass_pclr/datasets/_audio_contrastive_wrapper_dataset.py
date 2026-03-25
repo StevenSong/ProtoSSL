@@ -24,30 +24,24 @@ class AudioContrastiveWrapperDataset(Dataset):
             )
 
     def __getitem__(self, i: int) -> dict[str, torch.Tensor]:
-        base = self.ds[i]
-        x_full_1 = base["x"]
+        base1 = self.ds[i]
 
         ret = {
-            "patient_id": base["patient_id"],
+            "patient_id": base1["patient_id"],
         }
 
-        # COLA: two independently sampled temporal crops/views from the same clip
         if self.pair_mode in {"cola", "cola+clar"}:
-            x1 = self.ds.sample_view(i, clip_seconds=self.cola_view_seconds)
-            x2 = self.ds.sample_view(i, clip_seconds=self.cola_view_seconds)
-            ret["x1"] = x1
-            ret["x2"] = x2
+            ret["x1"] = self.ds.sample_view(i, clip_seconds=self.cola_view_seconds)
+            ret["x2"] = self.ds.sample_view(i, clip_seconds=self.cola_view_seconds)
 
-        # CLAR: same full clip, two independent augmentations
         if self.pair_mode in {"clar", "cola+clar"}:
-            x_full_2 = self.ds[i]["x"]
-
-            ret["x1_clar"] = x_full_1
-            ret["x2_clar"] = x_full_2
+            base2 = self.ds[i]
+            ret["x1_clar"] = base1["waveform"]
+            ret["x2_clar"] = base2["waveform"]
 
             if self.pair_mode == "clar":
-                ret["x1"] = x_full_1
-                ret["x2"] = x_full_2
+                ret["x1"] = ret["x1_clar"]
+                ret["x2"] = ret["x2_clar"]
 
         return ret
 

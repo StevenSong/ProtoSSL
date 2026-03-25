@@ -2,9 +2,9 @@
 
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-gpu=40gb
-#SBATCH --gpus-per-node=2
+#SBATCH --gpus-per-node=1
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=2
+#SBATCH --ntasks-per-node=1
 #SBATCH --partition=gpuq
 #SBATCH --time=00-23:59:59
 
@@ -20,7 +20,7 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="HTSAT"
+EXP_NAME="PANNS"
 
 srun python -m pass_pclr.trainer \
     --config $REPO_ROOT/configs/resnet.yaml \
@@ -32,7 +32,7 @@ srun python -m pass_pclr.trainer \
     --model.conv_type PANNS \
     --model.input_channels 1 \
     --model.resnet_type resnet18 \
-    --model.audio_backbone_name Wavegram_Logmel_Cnn14
+    --model.audio_backbone_name Cnn14
 
 srun python _eval_probs.py \
     --dataset-path $DATASET_PATH \

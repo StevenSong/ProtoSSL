@@ -47,10 +47,10 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         )
 
         # these values were taken from ProtoECGNet experiments
-        self.lam_clst = 0.004
-        self.lam_sep = 0.0004
-        self.lam_cntrst = 300.0
-        self.lam_div = 250.0
+        self.lam_clst = 0.004 #0.8
+        self.lam_sep = 0.0004 #0.08 
+        self.lam_cntrst = 0 #for audio, remove co-occurrence loss
+        self.lam_div = 300 #100
 
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
@@ -114,6 +114,16 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         pos_weighted_sims = (pos_cooc * inter_prot_sims).sum()
         neg_weighted_sims = (neg_cooc * inter_prot_sims).sum()
         cntrst_loss = (pos_weighted_sims - neg_weighted_sims) / n_prot**0.5
+
+        #Print statements (remove later) ############################################################
+
+        print(f"BCE loss: {bce_loss}")
+        print(f"Clst loss: {self.lam_clst * clst_loss}")
+        print(f"Sep loss: {self.lam_sep * sep_loss}")
+        print(f"Div loss: {self.lam_div * div_loss}")
+        print(f"Cntrst loss: {self.lam_cntrst * cntrst_loss}")
+
+        #############################################################################################
 
         return (
             bce_loss

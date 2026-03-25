@@ -25,8 +25,24 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         prototype_h: int | None = None,
         prototype_w: int | None = None,
         audio_backbone_name: str | None = None,
+        contrastive_pair_mode: str = "pclr",
+        cola_loss_weight: float = 1.0,
+        clar_loss_weight: float = 1.0,
+        koleo_loss_weight: float = 1.0,
     ):
         super().__init__()
+        valid_modes = {"pclr", "cola", "clar", "cola+clar"}
+        if contrastive_pair_mode not in valid_modes:
+            raise ValueError(
+                f"Unknown contrastive_pair_mode={contrastive_pair_mode}. "
+                f"Expected one of {sorted(valid_modes)}"
+            )
+
+        if cola_loss_weight < 0 or clar_loss_weight < 0:
+            raise ValueError("cola_loss_weight and clar_loss_weight must be nonnegative.")
+        if koleo_loss_weight < 0:
+            raise ValueError("koleo_loss_weight must be nonnegative.")
+
         self.encoder = PrototypeEncoder(
             resnet_type=resnet_type,
             n_prototypes=n_prototypes,
@@ -50,10 +66,14 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
             torch.ones([]) * np.log(1 / init_log_temp),
             requires_grad=learnable_temp,
         )
+        self.contrastive_pair_mode = contrastive_pair_mode
+        self.cola_loss_weight = cola_loss_weight
+        self.clar_loss_weight = clar_loss_weight
+        self.koleo_loss_weight = koleo_loss_weight
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
-
-    def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
+    
+    def _project_pair(self, x1: torch.Tensor, x2: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         assert x1.shape == x2.shape
 
         # compute prototype similarity scores
@@ -72,10 +92,43 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         x1 = self.proj(x1)  # (B, H), H = proj_dim
         x2 = self.proj(x2)  # (B, H)
 
-        # compute losses
-        simclr_loss = self._simclr_loss(x1, x2)
+        return x1, x2
+
+    def forward(
+        self,
+        x1: torch.Tensor,
+        x2: torch.Tensor,
+        x1_clar: torch.Tensor | None = None,
+        x2_clar: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        if self.contrastive_pair_mode in {"pclr", "cola", "clar"}:
+            z1, z2 = self._project_pair(x1, x2)
+            simclr_loss = self._simclr_loss(z1, z2)
+
+        elif self.contrastive_pair_mode == "cola+clar":
+            if x1_clar is None or x2_clar is None:
+                raise ValueError("contrastive_pair_mode='cola+clar' requires x1_clar and x2_clar.")
+
+            z1_cola, z2_cola = self._project_pair(x1, x2)
+            loss_cola = self._simclr_loss(z1_cola, z2_cola)
+
+            z1_clar_proj, z2_clar_proj = self._project_pair(x1_clar, x2_clar)
+            loss_clar = self._simclr_loss(z1_clar_proj, z2_clar_proj)
+
+            total_weight = self.cola_loss_weight + self.clar_loss_weight
+            if total_weight <= 0:
+                raise ValueError("For 'cola+clar', cola_loss_weight + clar_loss_weight must be > 0.")
+
+            simclr_loss = (
+                self.cola_loss_weight * loss_cola
+                + self.clar_loss_weight * loss_clar
+            ) / total_weight
+
+        else:
+            raise ValueError(f"Unknown contrastive_pair_mode {self.contrastive_pair_mode}")
+
         koleo_loss = self._koleo_loss(self.encoder.prototypes)
-        return simclr_loss + koleo_loss
+        return simclr_loss + self.koleo_loss_weight * koleo_loss
 
     def _simclr_loss(self, x1: torch.Tensor, x2: torch.Tensor):
         # simclr training objective from: https://arxiv.org/pdf/2002.05709

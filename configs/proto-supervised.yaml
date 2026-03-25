@@ -15,7 +15,7 @@ trainer:
       init_args:
         monitor: val_loss
         mode: min
-        patience: 10 # check reduce lr on plateau
+        patience: 20 # check reduce lr on plateau
     - class_path: lightning.pytorch.callbacks.LearningRateMonitor
       init_args:
         logging_interval: epoch
@@ -43,7 +43,7 @@ model:
     resnet_type: resnet18
     conv_type: 2D
     prototype_type: partial
-    partial_len: 100 # 1-second @ 100 Hz
+    partial_len: 32000 # 1-second @ 100 Hz
     partial_overlap: 0.5
     n_prototypes_per_label: 5
     # pretrained_weights: /path/to/weights

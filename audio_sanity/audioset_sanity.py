@@ -42,3 +42,14 @@ print("label dtype:", item["label"].dtype)
 print("n positive labels in sample 0:", item["label"].sum().item())
 print("patient_id:", item["patient_id"])
 print("ecg_id:", item["ecg_id"])
+# ds = AudioSetDataset(
+#     dataset_path=DATASET_PATH,
+#     split="train",
+#     sampling_rate=32000,
+# )
+
+# item = ds[0]
+# print(item["waveform"].shape)          # expect (1, 64, n_frames_for_10s)
+
+# x_short = ds.sample_view(0, clip_seconds=5.0)
+# print(x_short.shape)                   # expect (1, 64, n_frames_for_5s)

@@ -11,6 +11,7 @@ from lightning.pytorch.strategies import DDPStrategy, SingleDeviceStrategy
 from torch.utils.data import DataLoader
 
 from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
+from .datasets._audio_contrastive_wrapper_dataset import AudioContrastiveWrapperDataset
 from .defines import CONV_T, PROT_T, RESNET_T, SIM_MAX, STAGE_T
 from .lightning_utils import check_final_link
 from .models import (
@@ -35,6 +36,8 @@ class LitData(LightningDataModule):
         num_workers: int,
         sampling_rate: int = 100,
         prefetch_factor: int | None = None,
+        contrastive_pair_mode: str = "pclr",
+        cola_view_seconds: float | None = None,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -61,7 +64,9 @@ class LitData(LightningDataModule):
         dataset_path: str = self.hparams.dataset_path  # type: ignore
         sampling_rate: int = self.hparams.sampling_rate  # type: ignore
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
-        wrap_pclr = pipeline_stage == "learn-prototypes"
+
+        wrap_contrastive = pipeline_stage == "learn-prototypes"
+        is_audio_dataset = "audio" in self.ds_cls.__name__.lower()
 
         if stage == "fit":
             if not hasattr(self, "train_ds"):
@@ -72,16 +77,30 @@ class LitData(LightningDataModule):
                 )
             else:
                 assert self.train_ds is not None, "Not sure how train_ds is None"
-            if wrap_pclr:
-                self.train_ds = PCLRWrapperDataset(self.train_ds)  # type: ignore
+            if wrap_contrastive:
+                if is_audio_dataset:
+                    self.train_ds = AudioContrastiveWrapperDataset(
+                        self.train_ds,  # type: ignore
+                        pair_mode=self.hparams.contrastive_pair_mode,  # type: ignore
+                        cola_view_seconds=self.hparams.cola_view_seconds,  # type: ignore
+                    )
+                else:
+                    self.train_ds = PCLRWrapperDataset(self.train_ds)  # type: ignore
         if stage in ["fit", "validate"]:
             val_ds = self.ds_cls(
                 dataset_path=dataset_path,
                 split="val",
                 sampling_rate=sampling_rate,
             )
-            if wrap_pclr:
-                val_ds = PCLRWrapperDataset(val_ds)
+            if wrap_contrastive:
+                if is_audio_dataset:
+                    val_ds = AudioContrastiveWrapperDataset(
+                        val_ds,  # type: ignore
+                        pair_mode=self.hparams.contrastive_pair_mode,  # type: ignore
+                        cola_view_seconds=self.hparams.cola_view_seconds,  # type: ignore
+                    )
+                else:
+                    val_ds = PCLRWrapperDataset(val_ds)
             self.val_ds = val_ds
         if stage in ["test", "predict"]:
             test_ds = self.ds_cls(
@@ -89,8 +108,8 @@ class LitData(LightningDataModule):
                 split="test",
                 sampling_rate=sampling_rate,
             )
-            if wrap_pclr:
-                raise ValueError("Should not use PCLR dataset with test/predict stage")
+            if wrap_contrastive:
+                raise ValueError("Should not use contrastive wrapper dataset with test/predict stage")
             self.test_ds = test_ds
 
     def train_dataloader(self):
@@ -194,6 +213,10 @@ class LitModel(LightningModule):
         prototype_h: int | None = None,
         prototype_w: int | None = None,
         audio_backbone_name: str | None = None,
+        contrastive_pair_mode: str = "pclr",
+        cola_loss_weight: float = 1.0,
+        clar_loss_weight: float = 1.0,
+        koleo_loss_weight: float = 1.0,
     ):
         super().__init__()
         self.lr = None
@@ -228,6 +251,10 @@ class LitModel(LightningModule):
                 prototype_h=prototype_h,
                 prototype_w=prototype_w,
                 audio_backbone_name=audio_backbone_name,
+                contrastive_pair_mode=contrastive_pair_mode,
+                cola_loss_weight=cola_loss_weight,
+                clar_loss_weight=clar_loss_weight,
+                koleo_loss_weight=koleo_loss_weight,
             )
         elif pipeline_stage == "learn-prototypes-supervised":
             if (
@@ -399,8 +426,20 @@ class LitModel(LightningModule):
                 raise ValueError(
                     f"Cannot use _common_step with pipeline_stage=learn-prototypes and (lightning) stage={stage}"
                 )
+
             preds = None
-            loss = self.model(batch["x1"], batch["x2"])
+            contrastive_pair_mode = self.hparams.contrastive_pair_mode  # type: ignore
+
+            if contrastive_pair_mode == "cola+clar":
+                loss = self.model(
+                    batch["x1"],
+                    batch["x2"],
+                    batch["x1_clar"],
+                    batch["x2_clar"],
+                )
+            else:
+                loss = self.model(batch["x1"], batch["x2"])
+
             if log:
                 self.log(
                     f"{stage}_loss", loss, batch_size=batch_size, sync_dist=sync_dist

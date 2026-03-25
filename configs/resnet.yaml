@@ -15,7 +15,7 @@ trainer:
       init_args:
         monitor: val_loss
         mode: min
-        patience: 10 # check reduce lr on plateau
+        patience: 20 # check reduce lr on plateau
     - class_path: lightning.pytorch.callbacks.LearningRateMonitor
       init_args:
         logging_interval: epoch
@@ -36,7 +36,7 @@ lr_scheduler:
   class_path: lightning.pytorch.cli.ReduceLROnPlateau
   init_args:
     monitor: val_loss
-    patience: 3 # check early stopping
+    patience: 10 # check early stopping
 model:
   class_path: LitModel
   init_args:

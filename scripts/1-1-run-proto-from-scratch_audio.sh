@@ -2,9 +2,9 @@
 
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-gpu=40gb
-#SBATCH --gpus-per-node=2
+#SBATCH --gpus-per-node=1
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=2
+#SBATCH --ntasks-per-node=1
 #SBATCH --partition=gpuq
 #SBATCH --time=00-23:59:59
 
@@ -34,7 +34,7 @@ srun python -m pass_pclr.trainer \
     --model.init_args.conv_type PANNS \
     --model.init_args.input_channels 1 \
     --model.init_args.prototype_type partial \
-    --model.init_args.partial_len 3200 \
+    --model.init_args.partial_len 32000 \
     --model.init_args.partial_overlap 0.5 \
     --model.init_args.n_prototypes_per_label 5 \
     --model.init_args.prototype_h 1 \
@@ -54,7 +54,7 @@ srun python -m pass_pclr.trainer \
     --model.init_args.conv_type PANNS \
     --model.init_args.input_channels 1 \
     --model.init_args.prototype_type partial \
-    --model.init_args.partial_len 3200 \
+    --model.init_args.partial_len 32000 \
     --model.init_args.partial_overlap 0.5 \
     --model.init_args.n_prototypes_per_label 5 \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt \
@@ -74,7 +74,7 @@ srun python -m pass_pclr.trainer \
     --model.init_args.conv_type PANNS \
     --model.init_args.input_channels 1 \
     --model.init_args.prototype_type partial \
-    --model.init_args.partial_len 3200 \
+    --model.init_args.partial_len 32000 \
     --model.init_args.partial_overlap 0.5 \
     --model.init_args.n_prototypes_per_label 5 \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt \

@@ -21,6 +21,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         partial_overlap: float | None = None,
         prototype_h: int | None = None,
         prototype_w: int | None = None,
+        audio_backbone_name: str | None = None,
     ):
         super().__init__(
             resnet_type=resnet_type,
@@ -32,6 +33,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
             partial_overlap=partial_overlap,
             prototype_h=prototype_h,
             prototype_w=prototype_w,
+            audio_backbone_name=audio_backbone_name,
         )
         self.assignment_weights = nn.Parameter(
             torch.randn(n_labels, n_prototypes_per_label, n_prototypes),

@@ -90,7 +90,7 @@ class PrototypeAssigner(BaseClassifier):
             n_binary_labels=self.n_binary_labels,
             partial_len=self.partial_len,
             partial_overlap=self.partial_overlap,
-            rototype_h=self.prototype_h,
+            prototype_h=self.prototype_h,
             prototype_w=self.prototype_w,
         )
 
