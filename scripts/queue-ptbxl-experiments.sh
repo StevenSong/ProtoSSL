@@ -50,4 +50,6 @@ for suffix in "${SUFFIXES[@]}"; do
     pit_assign_id=$(submit_job "$suffix" 3-9-run-prosup-heedb-pip-then-pit-assign.sh "--dependency=afterok:$cache_id")
     echo $pit_assign_id
     submit_job "$suffix" 3-10-run-prosup-heedb-pip-then-pit-assign-logreg.sh "--dependency=afterok:$cache_id,$pit_assign_id"
+
+    submit_job "$suffix" 4-1-run-ecgfounder-logreg.sh "--dependency=afterok:$cache_id"
 done

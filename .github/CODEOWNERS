@@ -17,6 +17,7 @@ data-preprocessing/heedb_normalizations/heedb_clipped_means_stds.json @StevenSon
 data-preprocessing/heedb_normalizations/heedb_lowers_uppers.json @StevenSong
 env.yaml @StevenSong
 external/PierreElias-IntroECG @StevenSong
+external/PKUDigitalHealth-ECGFounder @StevenSong
 hf-token-plugin.py @StevenSong
 LICENSE @StevenSong
 pass_pclr/__init__.py @StevenSong
@@ -84,6 +85,8 @@ scripts/3-6-run-prosup-heedb-pit-assign-logreg.sh @StevenSong
 scripts/3-7-run-prosup-heedb-pip-then-pit.sh @StevenSong
 scripts/3-8-run-prosup-heedb-pip-then-pit-logreg.sh @StevenSong
 scripts/3-9-run-prosup-heedb-pip-then-pit-assign.sh @StevenSong
+scripts/4-1-run-ecgfounder-logreg.sh @StevenSong
+scripts/ecgfounder/_compute_ecgfounder_embeddings.py @StevenSong
 scripts/echonext/_tabular_logreg.py @StevenSong
 scripts/echonext/run-columbia-minimodel.sh @StevenSong
 scripts/echonext/run-tabular-logreg.sh @StevenSong
