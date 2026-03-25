@@ -14,6 +14,7 @@ cd $REPO_ROOT/scripts
 # experiment parameters
 EXP_NAME="pass-heedb-pit-assign"
 PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-fm/outputs/pass-pretrain-heedb"
+PPL=5
 
 # this version relies on learning prototype assignments relative to the target task
 python -m pass_pclr.trainer \
@@ -23,7 +24,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt \
-    --model.n_prototypes_per_label 5
+    --model.n_prototypes_per_label $PPL
 
 # then project
 python -m pass_pclr.trainer \
@@ -33,7 +34,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt \
-    --model.n_prototypes_per_label 5 \
+    --model.n_prototypes_per_label $PPL \
     --model.n_prototypes null
 
 # then train classifier
@@ -44,7 +45,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt \
-    --model.n_prototypes_per_label 5 \
+    --model.n_prototypes_per_label $PPL \
     --model.n_prototypes null
 
 python _eval_probs.py \

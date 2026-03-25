@@ -469,3 +469,93 @@ MIMIC_TARGETS = [
     "End stage renal disease",
     "Sepsis",
 ]
+
+# ZZU pECG per-lead stats derived over train set at 500 Hz source freq
+ZZU_LOWERS = [
+    -2.8008612643701682,
+    -2.1152392348036946,
+    -2.4414172643337753,
+    -2.2929805121823996,
+    -3.0741882683329482,
+    -2.6933736676741966,
+    -5.090139173477186,
+    -6.156239658756647,
+    -8.429676501375795,
+    -10.42224473497397,
+    -11.929369646985323,
+    -14.53916863555818,
+]
+ZZU_UPPERS = [
+    2.163916617029562,
+    2.2499983110452484,
+    2.7792158039080377,
+    3.201090215558847,
+    2.5216346709515265,
+    2.798844485112746,
+    5.425784505231657,
+    6.042912024398049,
+    8.492134261329207,
+    10.265774777333752,
+    10.867253423029718,
+    14.171795022134338,
+]
+ZZU_CLIPPED_MEANS = [
+    -0.0013679018609906077,
+    -0.0004889197157289315,
+    0.00046497843830563815,
+    0.0018617750932268986,
+    -0.0010837062741233204,
+    -2.3854654208494932e-05,
+    0.0006445171771870657,
+    0.0004387153240180643,
+    0.00041329635277406295,
+    1.6114009032258954e-07,
+    -0.0023656232128513696,
+    -0.0003273657511773475,
+]
+ZZU_CLIPPED_STDS = [
+    0.20298876608183924,
+    0.23819226129908155,
+    0.21670658684409644,
+    0.22203024371800906,
+    0.19369965216399146,
+    0.2279147627981033,
+    0.38292517042472257,
+    0.5199290694320402,
+    0.6164917169416195,
+    0.705890774694337,
+    0.7387926616753369,
+    0.9100670292584405,
+]
+
+ZZU_TARGETS = {
+    # NOTE: labels from Table 2: https://www.nature.com/articles/s41597-025-05225-z
+    # the non-standard/customized ICD codes from ZZU pECG authors
+    "Myocarditis": [
+        "Fulminant myocarditis",
+        "Viral myocarditis",
+        "Acute myocarditis",
+        "_Myocarditis",
+    ],
+    "Cardiomyopathy": [
+        "Dilated cardiomypoathy",
+        "Hypertrophic cardiomyopathy",
+        "_Cardiomyopathy",
+        "Noncompaction of the ventricular myocardium",
+    ],
+    "Kawasaki disease": [
+        "_Kawasaki disease",
+    ],
+    "Congenital heart disease": [
+        "Ventricular septal defect",
+        "Atrial septal defect",
+        "Atrial septal defect (Foramen ovale)",
+        "Atrial septal defect (Ostium secundum defect)",
+        "Atrioventricular septal defect",
+        "Tetralogy of Fallot",
+        "Stenosis of right ventricular outflow tract",
+        "Patent ductus arteriosus",
+        "Pulmonary stenosis",
+        "Pulmonary valve stenosis",
+    ],
+}
