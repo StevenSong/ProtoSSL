@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..defines import (
@@ -17,10 +18,12 @@ from ..defines import (
 from ._base_ecg_dataset import (
     BaseECGDataset,
     StreamingECGWaveforms,
+    load_cached_data,
     validate_label_subset,
 )
 
 FULL_META = None
+HIGH_MEMORY = os.environ.get("HIGH_MEMORY", None) is not None
 
 
 class HeedbECGDataset(BaseECGDataset):
@@ -74,14 +77,47 @@ class HeedbECGDataset(BaseECGDataset):
         self._df = df
 
         wfdb_paths = [_path / "I0001/WFDB" / f[1:] for f in df["fpath"]]
-        self.waveforms = StreamingECGWaveforms(
+        streaming_ecgs = StreamingECGWaveforms(
             wfdb_paths=wfdb_paths,
             sampling_rate=sampling_rate,
             per_lead_lowerbound=HEEDB_LOWERS,
             per_lead_upperbound=HEEDB_UPPERS,
             per_lead_mean=HEEDB_CLIPPED_MEANS,
             per_lead_std=HEEDB_CLIPPED_STDS,
+            verbose=not HIGH_MEMORY,
         )
+
+        if not HIGH_MEMORY:
+            self.waveforms = streaming_ecgs
+        else:
+
+            def load_transform_data_fn() -> torch.Tensor:
+                print("WARNING:")
+                print(
+                    "WARNING: ABOUT TO LOAD ENTIRE HEEDB WAVEFORM MATRIX INTO MEMORY TO CACHE"
+                )
+                print(
+                    "WARNING: THIS USES A DATALOADER AND SHOULD NOT BE DONE INSIDE A TRAINING JOB"
+                )
+                print("WARNING:")
+                dl = DataLoader(
+                    streaming_ecgs,  # type: ignore
+                    batch_size=512,
+                    num_workers=8,
+                    prefetch_factor=4,
+                )
+                data = []
+                for batch in tqdm(dl):
+                    data.append(batch)
+                X = torch.concatenate(data)
+                return X
+
+            self.waveforms = load_cached_data(
+                load_transform_data_fn=load_transform_data_fn,
+                dataset_path=dataset_path,
+                split=split,
+                sampling_rate=sampling_rate,
+            )
 
         assert self.patient_ids.shape[0] == self.waveforms.shape[0]
         assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]

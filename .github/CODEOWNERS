@@ -88,6 +88,7 @@ scripts/3-9-run-prosup-heedb-pip-then-pit-assign.sh @StevenSong
 scripts/echonext/_tabular_logreg.py @StevenSong
 scripts/echonext/run-columbia-minimodel.sh @StevenSong
 scripts/echonext/run-tabular-logreg.sh @StevenSong
+scripts/pretrain/_cache_heedb.py @StevenSong
 scripts/pretrain/_compute_heedb_normalizations.py @StevenSong
 scripts/pretrain/run-heedb-normalizations.sh @StevenSong
 scripts/pretrain/run-pass-heedb-pretrain.sh @StevenSong

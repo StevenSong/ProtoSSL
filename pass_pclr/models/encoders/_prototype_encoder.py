@@ -56,7 +56,7 @@ class PrototypeEncoder(BaseEncoder):
             x_resnet = self.resnet(x)  # (B, E)
             x = self.sim_fn(x_resnet, self.prototypes)  # (B, P)
             idxs = torch.zeros_like(x, dtype=torch.long)  # (B, P)
-        if self.prototype_type == "partial":
+        elif self.prototype_type == "partial":
             # x has shape (B, L, T), we will chunk along T axis according to partial_len/overlap
             step = int(self.partial_len * (1 - self.partial_overlap))
             x = x.unfold(2, self.partial_len, step)  # (B, L, num_chunks, partial_len)

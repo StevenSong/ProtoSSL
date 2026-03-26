@@ -49,6 +49,7 @@ def load_cached_data(
         # cache data
         torch.save(X, cache_file)
         print(f"Dataset cached to {cache_file}")
+        del X
 
     # load cached data
     X = torch.load(cache_file)
@@ -77,6 +78,7 @@ class StreamingECGWaveforms:
         per_lead_upperbound: list[float],
         per_lead_mean: list[float],
         per_lead_std: list[float],
+        verbose: bool = True,
     ):
         self.wfdb_paths = wfdb_paths
         self.sampling_rate = sampling_rate
@@ -84,9 +86,12 @@ class StreamingECGWaveforms:
         self.per_lead_upperbound = per_lead_upperbound
         self.per_lead_mean = per_lead_mean
         self.per_lead_std = per_lead_std
-        print("===============StreamingECGWaveforms===============")
-        print("Using streaming ECG waveforms, will load and transform data on the fly")
-        print("===================================================")
+        if verbose:
+            print("===============StreamingECGWaveforms===============")
+            print(
+                "Using streaming ECG waveforms, will load and transform data on the fly"
+            )
+            print("===================================================")
 
     def __getitem__(self, i: int) -> torch.Tensor:
         fpath = self.wfdb_paths[i]
@@ -122,6 +127,9 @@ class StreamingECGWaveforms:
     @property
     def shape(self) -> tuple[int, ...]:
         return (len(self.wfdb_paths), self.sampling_rate * 10)
+
+    def __len__(self) -> int:
+        return len(self.wfdb_paths)
 
 
 class BaseECGDataset(Dataset, ABC):

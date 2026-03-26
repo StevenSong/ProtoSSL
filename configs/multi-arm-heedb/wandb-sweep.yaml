@@ -11,6 +11,15 @@ parameters:
     distribution: int_uniform
     min: 5
     max: 25
+early_terminate:
+  # val_loss is configured to log/step every 1/4 train epoch
+  # this hyperband config gives the step brackets [8, 4, 2]
+  # so the prune happens at 1/2, 1, and 2 train epochs
+  # (1 train epoch takes ~1 hour)
+  type: hyperband
+  s: 3
+  eta: 2
+  max_iter: 16
 command:
   - ${env}
   - python
