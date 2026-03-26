@@ -7,8 +7,7 @@ import torch
 from scipy.signal import resample_poly
 from wfdb import rdsamp
 
-from pass_pclr.datasets import BaseECGDataset, load_cached_data
-from pass_pclr.defines import (
+from ..defines import (
     SPLIT_T,
     ZZU_CLIPPED_MEANS,
     ZZU_CLIPPED_STDS,
@@ -16,6 +15,7 @@ from pass_pclr.defines import (
     ZZU_TARGETS,
     ZZU_UPPERS,
 )
+from ._base_ecg_dataset import BaseECGDataset, load_cached_data
 
 
 def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:

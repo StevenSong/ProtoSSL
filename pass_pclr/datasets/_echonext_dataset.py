@@ -6,8 +6,8 @@ import pandas as pd
 import torch
 from scipy.signal import resample_poly
 
-from pass_pclr.datasets import BaseECGDataset, load_cached_data
-from pass_pclr.defines import ECHONEXT_TARGETS, SPLIT_T
+from ..defines import ECHONEXT_TARGETS, SPLIT_T
+from ._base_ecg_dataset import BaseECGDataset, load_cached_data
 
 
 class EchoNextECGDataset(BaseECGDataset):

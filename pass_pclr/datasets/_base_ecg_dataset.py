@@ -57,6 +57,16 @@ def load_cached_data(
     return X
 
 
+def validate_label_subset(
+    label_subset: list[str],
+    labels: list[str],
+):
+    _labels = set(labels)
+    for label in label_subset:
+        if label not in _labels:
+            raise ValueError(f"'{label}' is not in the current label set")
+
+
 class StreamingECGWaveforms:
     def __init__(
         self,

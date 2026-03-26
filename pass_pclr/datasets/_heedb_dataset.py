@@ -6,18 +6,18 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from pass_pclr.datasets import (
-    BaseECGDataset,
-    StreamingECGWaveforms,
-    validate_label_subset,
-)
-from pass_pclr.defines import (
+from ..defines import (
     HEEDB_CLIPPED_MEANS,
     HEEDB_CLIPPED_STDS,
     HEEDB_LOWERS,
     HEEDB_TARGETS,
     HEEDB_UPPERS,
     SPLIT_T,
+)
+from ._base_ecg_dataset import (
+    BaseECGDataset,
+    StreamingECGWaveforms,
+    validate_label_subset,
 )
 
 FULL_META = None

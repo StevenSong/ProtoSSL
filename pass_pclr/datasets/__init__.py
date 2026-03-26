@@ -12,7 +12,12 @@ from ..defines import (
     ZZU_TARGETS,
 )
 from ._audioset_dataset import AudioSetDataset
-from ._base_ecg_dataset import BaseECGDataset, StreamingECGWaveforms, load_cached_data
+from ._base_ecg_dataset import (
+    BaseECGDataset,
+    StreamingECGWaveforms,
+    load_cached_data,
+    validate_label_subset,
+)
 from ._cinc_dataset import CincECGDataset
 from ._echonext_dataset import EchoNextECGDataset
 from ._heedb_dataset import HeedbECGDataset, get_heedb_labels
@@ -20,16 +25,6 @@ from ._mimic_dataset import MimicECGDataset
 from ._pclr_wrapper_dataset import PCLRWrapperDataset
 from ._ptbxl_dataset import PtbxlECGDataset, get_ptbxl_labels
 from ._zzu_dataset import ZzuECGDataset
-
-
-def validate_label_subset(
-    label_subset: list[str],
-    labels: list[str],
-):
-    _labels = set(labels)
-    for label in label_subset:
-        if label not in _labels:
-            raise ValueError(f"'{label}' is not in the current label set")
 
 
 def infer_dataset_class_from_path(
