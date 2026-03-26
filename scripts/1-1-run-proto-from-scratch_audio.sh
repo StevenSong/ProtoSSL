@@ -39,7 +39,8 @@ srun python -m pass_pclr.trainer \
     --model.init_args.n_prototypes_per_label 5 \
     --model.init_args.prototype_h 1 \
     --model.init_args.prototype_w 1 \
-    --model.init_args.audio_backbone_name Cnn14 
+    --model.init_args.audio_backbone_name Cnn14 \
+    --resume-from-checkpoint /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/results_audioset_5protos/proto-from-scratch/learn-prototypes-supervised/v1-yqahwwnb/best.ckpt
 
 
 srun python -m pass_pclr.trainer \

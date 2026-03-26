@@ -46,11 +46,11 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
             out_features=self.n_binary_labels * 2,
         )
 
-        # these values were taken from ProtoECGNet experiments
-        self.lam_clst = 0.004 #0.8
-        self.lam_sep = 0.0004 #0.08 
+        # these values were taken from ProtoECGNet non-contrastive experiments; same as ProtoPNet, NEJM AI EEG paper, etc.
+        self.lam_clst = 0.8
+        self.lam_sep = 0.08 
         self.lam_cntrst = 0 #for audio, remove co-occurrence loss
-        self.lam_div = 300 #100
+        self.lam_div = 100
 
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)

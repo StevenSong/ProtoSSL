@@ -751,6 +751,7 @@ class LitCLI(LightningCLI):
             choices=get_args(STAGE_T),
             required=True,
         )
+        parser.add_argument("--resume-from-checkpoint", type=str, default=None)
         parser.link_arguments("pipeline_stage", "data.init_args.pipeline_stage")
         parser.link_arguments("pipeline_stage", "model.init_args.pipeline_stage")
         parser.link_arguments(
@@ -783,6 +784,7 @@ def run():
             f"Only single device or DDP training strategies are supported, got: {cli.trainer.strategy}"
         )
     pipeline_stage: STAGE_T = cli.config.pipeline_stage
+    resume_ckpt = getattr(cli.config, "resume_from_checkpoint", None)
 
     # NOTE all model/data validation should happen in their respective modules above
     # Assume at this point, we have the correct models/datasets for the given stage
@@ -793,6 +795,7 @@ def run():
         cli.trainer.fit(
             model=cli.model,
             datamodule=cli.datamodule,
+            ckpt_path=resume_ckpt,
         )
     elif (
         pipeline_stage == "project-prototypes"
@@ -827,6 +830,7 @@ def run():
         cli.trainer.fit(
             model=cli.model,
             datamodule=cli.datamodule,
+            ckpt_path=resume_ckpt,
         )
         cli.trainer.predict(
             model=cli.model,

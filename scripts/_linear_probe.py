@@ -37,7 +37,13 @@ def main(
     ds_cls, label_names = infer_dataset_class_from_path(dataset_path)
     assert label_names is not None
 
-    train_ds = ds_cls(dataset_path=dataset_path, split="train", sampling_rate=100)
+    if "audioset" in dataset_path.lower():
+        sampling_rate = 32000
+        print("Using audio sampling rate")
+    else: 
+        sampling_rate = 100
+        print("Using ECG sampling rate")
+    train_ds = ds_cls(dataset_path=dataset_path, split="train", sampling_rate=sampling_rate)
 
     assert train_ds.labels is not None
     train_targets = train_ds.labels.numpy()
