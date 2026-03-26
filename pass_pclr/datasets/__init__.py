@@ -22,6 +22,16 @@ from ._ptbxl_dataset import PtbxlECGDataset, get_ptbxl_labels
 from ._zzu_dataset import ZzuECGDataset
 
 
+def validate_label_subset(
+    label_subset: list[str],
+    labels: list[str],
+):
+    _labels = set(labels)
+    for label in label_subset:
+        if label not in _labels:
+            raise ValueError(f"'{label}' is not in the current label set")
+
+
 def infer_dataset_class_from_path(
     dataset_path: str,
 ) -> tuple[

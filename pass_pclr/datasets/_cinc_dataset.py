@@ -25,7 +25,12 @@ class CincECGDataset(BaseECGDataset):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
+        if label_subset is not None:
+            raise NotImplementedError(
+                f"label_subset not yet supported for {type(self.__name__)}"
+            )
         _path = Path(dataset_path)
         df = pd.read_csv(_path / "georgia.csv")
         df = df[df["split"] == split]

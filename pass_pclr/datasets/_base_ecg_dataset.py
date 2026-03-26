@@ -129,6 +129,7 @@ class BaseECGDataset(Dataset, ABC):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
         """
         :param dataset_path: path to dataset directory
@@ -137,6 +138,8 @@ class BaseECGDataset(Dataset, ABC):
         :type split: str
         :param sampling_rate: target sampling rate to sample waveform at
         :type split: int
+        :param label_subset: optional subset of labels to use
+        :type split: list[str] | None
         """
         pass
 

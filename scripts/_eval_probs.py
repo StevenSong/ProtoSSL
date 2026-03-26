@@ -15,6 +15,7 @@ def parse_args():
     parser.add_argument("--dataset-path", required=True)
     parser.add_argument("--probs-npy", required=True)
     parser.add_argument("--output-path", required=True)
+    parser.add_argument("--label-subset", nargs="+")
     args = parser.parse_args()
     return args
 
@@ -24,12 +25,14 @@ def main(
     dataset_path: str,
     probs_npy: str,
     output_path: str,
+    label_subset: list[str] | None = None,
 ):
     ds_cls, label_names = infer_dataset_class_from_path(dataset_path)
     test_ds = ds_cls(
         dataset_path=dataset_path,
         split="test",
         sampling_rate=100,
+        label_subset=label_subset,
     )
     assert test_ds.labels is not None and label_names is not None
 
@@ -92,4 +95,5 @@ if __name__ == "__main__":
         dataset_path=args.dataset_path,
         probs_npy=args.probs_npy,
         output_path=args.output_path,
+        label_subset=args.label_subset,
     )

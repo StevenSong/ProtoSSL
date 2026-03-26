@@ -80,7 +80,12 @@ class AudioSetDataset(BaseECGDataset):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
+        if label_subset is not None:
+            raise NotImplementedError(
+                f"label_subset not yet supported for {type(self.__name__)}"
+            )
         _path = Path(dataset_path)
 
         class_csv = _path / "audioset_train" / "class_labels_indices.csv"

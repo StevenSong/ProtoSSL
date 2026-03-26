@@ -22,6 +22,7 @@ def parse_args():
     parser.add_argument("--embedding-pca", type=int)
     parser.add_argument("--balance-class-weight", action="store_true")
     parser.add_argument("--output-path", required=True)
+    parser.add_argument("--label-subset", nargs="+")
     args = parser.parse_args()
     return args
 
@@ -33,11 +34,17 @@ def main(
     embedding_pca: int | None = None,
     balance_class_weight: bool,
     output_path: str,
+    label_subset: list[str] | None = None,
 ):
     ds_cls, label_names = infer_dataset_class_from_path(dataset_path)
     assert label_names is not None
 
-    train_ds = ds_cls(dataset_path=dataset_path, split="train", sampling_rate=100)
+    train_ds = ds_cls(
+        dataset_path=dataset_path,
+        split="train",
+        sampling_rate=100,
+        label_subset=label_subset,
+    )
 
     assert train_ds.labels is not None
     train_targets = train_ds.labels.numpy()
@@ -89,4 +96,5 @@ if __name__ == "__main__":
         embedding_pca=args.embedding_pca,
         balance_class_weight=args.balance_class_weight,
         output_path=args.output_path,
+        label_subset=args.label_subset,
     )

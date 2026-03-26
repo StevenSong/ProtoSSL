@@ -6,7 +6,11 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from pass_pclr.datasets import BaseECGDataset, StreamingECGWaveforms
+from pass_pclr.datasets import (
+    BaseECGDataset,
+    StreamingECGWaveforms,
+    validate_label_subset,
+)
 from pass_pclr.defines import (
     HEEDB_CLIPPED_MEANS,
     HEEDB_CLIPPED_STDS,
@@ -26,6 +30,7 @@ class HeedbECGDataset(BaseECGDataset):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
         _path = Path(dataset_path)
         global FULL_META
@@ -65,7 +70,7 @@ class HeedbECGDataset(BaseECGDataset):
         df = df[mask].reset_index(drop=True)
         self.patient_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.ecg_ids = torch.as_tensor(df["ecg_id"].to_numpy())
-        self.labels = torch.as_tensor(get_heedb_labels(dataset_path, df))
+        self.labels = torch.as_tensor(get_heedb_labels(dataset_path, df, label_subset))
         self._df = df
 
         wfdb_paths = [_path / "I0001/WFDB" / f[1:] for f in df["fpath"]]
@@ -86,8 +91,16 @@ class HeedbECGDataset(BaseECGDataset):
 FNAME_TO_CODE = None
 
 
-def get_heedb_labels(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
+def get_heedb_labels(
+    heedb_path: str,
+    meta: pd.DataFrame,
+    label_subset: list[str] | None = None,
+) -> np.ndarray:
     print("=================make_heedb_labels=================")
+    targets = HEEDB_TARGETS
+    if label_subset is not None:
+        validate_label_subset(label_subset, list(HEEDB_TARGETS))
+        targets = {label: HEEDB_TARGETS[label] for label in label_subset}
     global FNAME_TO_CODE
     if FNAME_TO_CODE is None:
         df = pd.read_csv(
@@ -100,10 +113,10 @@ def get_heedb_labels(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
                 df["codes_physician"],
             )
         }
-    code_to_label = {c: k for k, cs in HEEDB_TARGETS.items() for c in cs}
-    label_to_idx = {k: i for i, k in enumerate(HEEDB_TARGETS)}
+    code_to_label = {c: k for k, cs in targets.items() for c in cs}
+    label_to_idx = {k: i for i, k in enumerate(targets)}
 
-    data = np.zeros((len(meta), len(HEEDB_TARGETS)), dtype=np.long)
+    data = np.zeros((len(meta), len(targets)), dtype=np.long)
     count = 0
     for meta_idx, fname in enumerate(
         tqdm(meta["fpath"], desc="Converting code string to labels")

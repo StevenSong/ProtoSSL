@@ -43,7 +43,12 @@ class ZzuECGDataset(BaseECGDataset):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
+        if label_subset is not None:
+            raise NotImplementedError(
+                f"label_subset not yet supported for {type(self.__name__)}"
+            )
         df = get_zzu_dataframe(dataset_path)
         df = df[df["split"] == split]
 
