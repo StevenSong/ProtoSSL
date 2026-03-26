@@ -4,6 +4,7 @@
 .pre-commit-config.yaml @StevenSong
 .secrets.baseline @StevenSong
 audio_sanity/ @sahilsethi0105
+configs/multi-arm-heedb @StevenSong
 configs/pass-pclr.yaml @StevenSong
 configs/proto-supervised.yaml @StevenSong
 configs/resnet.yaml @StevenSong
