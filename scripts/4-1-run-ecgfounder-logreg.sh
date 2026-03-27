@@ -15,7 +15,6 @@ cd $REPO_ROOT/scripts
 EXP_NAME="ecgfounder-logreg"
 
 python ecgfounder/_compute_ecgfounder_embeddings.py \
---ecgfounder-repo $REPO_ROOT/external/PKUDigitalHealth-ECGFounder \
 --dataset-path $DATASET_PATH \
 --output-path $RUN_DIR/$EXP_NAME
 

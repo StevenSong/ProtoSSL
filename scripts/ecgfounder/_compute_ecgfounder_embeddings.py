@@ -1,22 +1,20 @@
 import argparse
 import os
-import sys
 
 import numpy as np
 import torch
-import torch.nn as nn
 from torch.hub import load_state_dict_from_url
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from pass_pclr.datasets import infer_dataset_class_from_path
+from pass_pclr.models.encoders import Net1D
 
 CHECKPOINT_URL = "https://huggingface.co/PKUDigitalHealth/ECGFounder/resolve/main/12_lead_ECGFounder.pth"
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ecgfounder-repo", required=True)
     parser.add_argument("--dataset-path", required=True)
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--batch-size", type=int, default=512)
@@ -26,51 +24,33 @@ def parse_args():
 
 def main(
     *,  # enforce kwargs
-    ecgfounder_repo: str,
     dataset_path: str,
     output_path: str,
     batch_size: int = 512,
 ):
-    sys.path.append(ecgfounder_repo)
-    from net1d import Net1D  # type: ignore
-
     # init parameters taken from ECGFounder/ptbxl_eval.py
-    model = Net1D(
-        in_channels=12,
-        base_filters=64,
-        ratio=1,
-        filter_list=[64, 160, 160, 400, 400, 1024, 1024],
-        m_blocks_list=[2, 2, 2, 3, 3, 4, 4],
-        kernel_size=16,
-        stride=2,
-        groups_width=16,
-        verbose=False,
-        use_bn=False,
-        use_do=False,
-        n_classes=150,
-    )
+    encoder = Net1D()
 
     # load pretrained weights
     sd = load_state_dict_from_url(
         url=CHECKPOINT_URL,
-        model_dir=os.path.join(
-            ecgfounder_repo, "checkpoint"
-        ),  # local save to prevent redownloading on subsequent run
+        model_dir="ecgfounder-checkpoint",  # local save to reuse
         map_location="cpu",
         weights_only=False,  # NOTE: this incurs risk of unpickling something malicious
     )["state_dict"]
 
-    model.load_state_dict(sd)
+    # not using classification head
+    del sd["dense.weight"]
+    del sd["dense.bias"]
 
-    # remove classification head so we just get the embeddings
-    model.dense = nn.Identity()
+    encoder.load_state_dict(sd)
 
     # freeze model
-    for param in model.parameters():
+    for param in encoder.parameters():
         param.requires_grad = False
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = model.eval().to(device)
+    encoder = encoder.eval().to(device)
 
     # based on dataset implementation in ECGFounder/ptbxl_eval.py
     # the only transformation is normalization and resampling
@@ -94,7 +74,7 @@ def main(
         for dl, embs in [(train_dl, train_embs), (test_dl, test_embs)]:
             for batch in tqdm(dl):
                 x = batch["waveform"].to(device)
-                batch_embs = model(x).detach().to("cpu").numpy()
+                batch_embs = encoder(x).detach().to("cpu").numpy()
                 embs.append(batch_embs)
     train_embs = np.concatenate(train_embs)
     test_embs = np.concatenate(test_embs)
@@ -107,7 +87,6 @@ def main(
 if __name__ == "__main__":
     args = parse_args()
     main(
-        ecgfounder_repo=args.ecgfounder_repo,
         dataset_path=args.dataset_path,
         output_path=args.output_path,
         batch_size=args.batch_size,

@@ -1,6 +1,3 @@
 [submodule "external/PierreElias-IntroECG"]
 	path = external/PierreElias-IntroECG
 	url = git@github.com:StevenSong/IntroECG.git
-[submodule "external/PKUDigitalHealth-ECGFounder"]
-	path = external/PKUDigitalHealth-ECGFounder
-	url = git@github.com:StevenSong/ECGFounder.git
