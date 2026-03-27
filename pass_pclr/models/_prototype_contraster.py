@@ -48,7 +48,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
 
-    def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
+    def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> dict[str, torch.Tensor]:
         assert x1.shape == x2.shape
 
         # compute prototype similarity scores
@@ -70,7 +70,10 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         # compute losses
         simclr_loss = self._simclr_loss(x1, x2)
         koleo_loss = self._koleo_loss(self.encoder.prototypes)
-        return simclr_loss + koleo_loss
+        return {
+            "SimCLR": simclr_loss,
+            "KoLeo": koleo_loss,
+        }
 
     def _simclr_loss(self, x1: torch.Tensor, x2: torch.Tensor):
         # simclr training objective from: https://arxiv.org/pdf/2002.05709

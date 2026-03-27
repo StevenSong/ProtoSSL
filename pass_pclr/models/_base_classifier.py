@@ -78,13 +78,17 @@ class BaseClassifier(PretrainedMixin, nn.Module):
             # regularization inspired by sklearn logreg parameters:
             # https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
 
-            # l1_ratio = sigmoid(l1_ratio_raw) so sigmoid(0) = 0.5
+            # l1_ratio = sigmoid(l1_ratio_raw)
             # ensures l1_ratio is always [0-1]
-            self._l1_ratio_raw = nn.Parameter(torch.zeros(n_binary_labels))
+            self._l1_ratio_raw = nn.Parameter(
+                torch.logit(torch.ones(n_binary_labels) * 0.15),
+                requires_grad=False,  # fixed regularization parameters
+            )
             # alpha = exp(alpha_raw)
             # ensures alpha is always positive
             self._alpha_raw = nn.Parameter(
-                torch.log(torch.ones(n_binary_labels) * 0.01)
+                torch.log(torch.ones(n_binary_labels) * 1e-4),
+                requires_grad=False,  # fixed regularization parameters
             )
 
         # assumes no other submodules are initialized in subclasses
@@ -138,7 +142,7 @@ class BaseClassifier(PretrainedMixin, nn.Module):
 
     # TODO: consider refactoring this method which makes the model intrinsically
     # tied to our trainer, maybe the return of losses above should be a dict?
-    def static_losses(self) -> torch.Tensor | None:
+    def static_losses(self) -> dict[str, torch.Tensor] | None:
         # because the classifier returns a per-task loss, if a subclass has loss
         # components which do not depend on the inputs, they should implement this
         # method which will be called after the main input-dependent forward

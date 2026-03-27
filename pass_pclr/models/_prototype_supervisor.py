@@ -47,10 +47,16 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         self.lam_cntrst = 300.0
         self.lam_div = 250.0
 
+        # original ProtoPNet coefficients
+        # self.lam_clst = 0.8
+        # self.lam_sep = 0.08
+        # self.lam_cntrst = 100.0
+        # self.lam_div = 0.0
+
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> dict[str, torch.Tensor]:
         # from ProtoECGNet: https://arxiv.org/pdf/2504.08713
 
         sims: torch.Tensor = self.encoder(x)  # (B, P)
@@ -110,13 +116,13 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         neg_weighted_sims = (neg_cooc * inter_prot_sims).sum()
         cntrst_loss = (pos_weighted_sims - neg_weighted_sims) / n_prot**0.5
 
-        return (
-            bce_loss
-            + self.lam_clst * clst_loss
-            + self.lam_sep * sep_loss
-            + self.lam_div * div_loss
-            + self.lam_cntrst * cntrst_loss
-        )
+        return {
+            "BCE": bce_loss,
+            "Clustering": self.lam_clst * clst_loss,
+            "Separation": self.lam_sep * sep_loss,
+            "Diversity": self.lam_div * div_loss,
+            "Contrastive": self.lam_cntrst * cntrst_loss,
+        }
 
     @property
     def allow_extra_keys(self) -> list[str]:

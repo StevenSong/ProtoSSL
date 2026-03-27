@@ -62,7 +62,7 @@ class PrototypeAssigner(BaseClassifier):
             pretrained_weights=pretrained_weights,
         )
 
-    def static_losses(self) -> torch.Tensor | None:
+    def static_losses(self) -> dict[str, torch.Tensor] | None:
         # for each label, the prototype assignment slots should pick separate
         # prototypes, so probability distributions should be orthogonal
         x = self.encoder.get_assignments()  # type: ignore - (L, K, P)
@@ -75,7 +75,7 @@ class PrototypeAssigner(BaseClassifier):
         mask = torch.eye(K, device=x.device)  # (K, K) - diag are 1s
         mask = 1 - mask.expand(L, -1, -1)  # (L, K, K) - diag are 0s
 
-        return (gram * mask).pow(2).mean()
+        return {"Prototype_Orthogonality": (gram * mask).pow(2).mean()}
 
     def convert_to_proto_classifier(self) -> PrototypeClassifier:
         model = PrototypeClassifier(

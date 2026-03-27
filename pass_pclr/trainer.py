@@ -381,11 +381,14 @@ class LitModel(LightningModule):
                     f"Cannot use _common_step with pipeline_stage=learn-prototypes and (lightning) stage={stage}"
                 )
             preds = None
-            loss = self.model(batch["x1"], batch["x2"])
-            if log:
-                self.log(
-                    f"{stage}_loss", loss, batch_size=batch_size, sync_dist=sync_dist
-                )
+            loss_terms = self.model(batch["x1"], batch["x2"])
+            loss = self._log_and_composite_losses(
+                stage=stage,
+                losses=loss_terms,
+                batch_size=batch_size,
+                log=log,
+                sync_dist=sync_dist,
+            )
         elif pipeline_stage == "learn-prototypes-supervised":
             assert isinstance(self.model, PrototypeSupervisor)
             if stage not in ["train", "val"]:
@@ -393,11 +396,14 @@ class LitModel(LightningModule):
                     f"Cannot use _common_step with pipeline_stage=learn-prototypes-supervised and (lightning) stage={stage}"
                 )
             preds = None
-            loss = self.model(batch["waveform"], batch["label"])
-            if log:
-                self.log(
-                    f"{stage}_loss", loss, batch_size=batch_size, sync_dist=sync_dist
-                )
+            loss_terms = self.model(batch["waveform"], batch["label"])
+            loss = self._log_and_composite_losses(
+                stage=stage,
+                losses=loss_terms,
+                batch_size=batch_size,
+                log=log,
+                sync_dist=sync_dist,
+            )
         elif (
             pipeline_stage == "project-prototypes"
             or pipeline_stage == "project-prototypes-supervised"
@@ -479,7 +485,7 @@ class LitModel(LightningModule):
             # TODO: consider refactoring this, otherwise the model losses are intrinsically tied to this trainer
             static_loss = self.model.static_losses()
             if static_loss is not None:
-                losses["static_loss"] = static_loss
+                losses |= static_loss
 
             loss = self._log_and_composite_losses(
                 stage=stage,
