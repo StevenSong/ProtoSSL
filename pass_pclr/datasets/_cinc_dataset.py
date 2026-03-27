@@ -7,8 +7,7 @@ import torch
 from scipy.signal import resample_poly
 from wfdb import rdsamp
 
-from pass_pclr.datasets import BaseECGDataset, load_cached_data
-from pass_pclr.defines import (
+from ..defines import (
     CINC_CLIPPED_MEANS,
     CINC_CLIPPED_STDS,
     CINC_LOWERS,
@@ -16,6 +15,7 @@ from pass_pclr.defines import (
     CINC_UPPERS,
     SPLIT_T,
 )
+from ._base_ecg_dataset import BaseECGDataset, load_cached_data
 
 
 class CincECGDataset(BaseECGDataset):

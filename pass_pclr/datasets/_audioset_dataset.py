@@ -8,8 +8,7 @@ import torch.nn.functional as F
 import torchaudio
 from scipy.signal import resample_poly
 
-from pass_pclr.defines import SPLIT_T
-
+from ..defines import SPLIT_T
 from ._base_ecg_dataset import BaseECGDataset
 
 
