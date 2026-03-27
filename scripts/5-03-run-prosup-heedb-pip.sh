@@ -12,11 +12,31 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="prosup-heedb-pit-assign-logreg"
-PRETRAIN_RUN="$RUN_DIR/prosup-heedb-pit-assign"
-PPL=5
+EXP_NAME="prosup-heedb-pip"
+PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-fm/outputs/prosup-pretrain-heedb"
 
-# this version relies on samples projected in the transfer dataset
+# this version relies on samples projected in the pretraining dataset
+python -m pass_pclr.trainer \
+    --pipeline-stage train-classifier \
+    --config $REPO_ROOT/configs/pass-pclr.yaml \
+    --trainer.logger.save_dir $RUN_DIR \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $DATASET_PATH \
+    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
+    --model.n_prototypes 100 # from 5 per label for 20 heedb labels
+
+python _eval_probs.py \
+--dataset-path $DATASET_PATH \
+--probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
+
+cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
+
+# now do logreg
+PRETRAIN_RUN="$RUN_DIR/$EXP_NAME"
+EXP_NAME="$EXP_NAME-logreg"
+
+# this version relies on samples projected in the pretraining dataset
 python -m pass_pclr.trainer \
     --pipeline-stage compute-embeddings \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
@@ -24,8 +44,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
-    --model.n_prototypes_per_label $PPL \
-    --model.n_prototypes null
+    --model.n_prototypes 100 # from 5 per label for 20 heedb labels
 
 python _linear_probe.py \
 --dataset-path $DATASET_PATH \
