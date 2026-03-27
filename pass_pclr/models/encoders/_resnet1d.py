@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from ...defines import RESNET_T
+from ...defines import BACKBONE_T
 from ._base_encoder import BaseEncoder
 
 
@@ -88,11 +88,11 @@ class ResNet1D(BaseEncoder):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         input_channels: int = 12,
     ):
         super().__init__()
-        match resnet_type:
+        match backbone_type:
             case "resnet18":
                 self._make_layers(BasicBlock1D, [2, 2, 2, 2], input_channels)
             case "resnet34":
@@ -104,7 +104,7 @@ class ResNet1D(BaseEncoder):
             case "resnet152":
                 self._make_layers(Bottleneck1D, [3, 8, 36, 3], input_channels)
             case _:
-                raise ValueError(f"Uknown resnet_type: {resnet_type}")
+                raise ValueError(f"Uknown backbone_type: {backbone_type}")
 
     def _make_layers(self, block, layers, input_channels):
         self.inplanes = 64

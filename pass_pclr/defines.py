@@ -13,7 +13,14 @@ STAGE_T = Literal[
     "train-classifier",
 ]
 SPLIT_T = Literal["train", "val", "test"]
-RESNET_T = Literal["resnet18", "resnet34", "resnet50", "resnet101", "resnet152"]
+BACKBONE_T = Literal[
+    "resnet18",
+    "resnet34",
+    "resnet50",
+    "resnet101",
+    "resnet152",
+    "net1d",
+]
 CONV_T = Literal["1D", "2D"]
 PROT_T = Literal["global", "partial"]
 

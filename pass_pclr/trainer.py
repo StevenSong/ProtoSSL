@@ -11,16 +11,16 @@ from lightning.pytorch.strategies import DDPStrategy, SingleDeviceStrategy
 from torch.utils.data import DataLoader
 
 from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
-from .defines import CONV_T, PROT_T, RESNET_T, SIM_MAX, STAGE_T
+from .defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX, STAGE_T
 from .lightning_utils import check_final_link
 from .models import (
     BaseClassifier,
+    BlackboxClassifier,
     PrototypeAssigner,
     PrototypeClassifier,
     PrototypeContraster,
     PrototypeProjector,
     PrototypeSupervisor,
-    ResNetClassifier,
 )
 
 torch.set_float32_matmul_precision("medium")
@@ -178,7 +178,7 @@ def compute_n_prototypes(
 class LitModel(LightningModule):
     def __init__(
         self,
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         pipeline_stage: STAGE_T,
         prototype_type: PROT_T | None = None,
@@ -214,7 +214,7 @@ class LitModel(LightningModule):
                 label_cooccurrence=label_cooccurrence,
             )
             self.model = PrototypeContraster(
-                resnet_type=resnet_type,
+                backbone_type=backbone_type,
                 conv_type=conv_type,
                 prototype_type=prototype_type,
                 n_prototypes=n_prototypes,
@@ -235,7 +235,7 @@ class LitModel(LightningModule):
                     "n_prototypes_per_label AND prototype_type AND label_weights AND label_cooccurrence"
                 )
             self.model = PrototypeSupervisor(
-                resnet_type=resnet_type,
+                backbone_type=backbone_type,
                 conv_type=conv_type,
                 prototype_type=prototype_type,
                 n_prototypes_per_label=n_prototypes_per_label,
@@ -259,7 +259,7 @@ class LitModel(LightningModule):
                 )
             # TODO should PrototypeAssigner require pretrained_weights?
             self.model = PrototypeAssigner(
-                resnet_type=resnet_type,
+                backbone_type=backbone_type,
                 conv_type=conv_type,
                 prototype_type=prototype_type,
                 n_prototypes=n_prototypes,
@@ -290,7 +290,7 @@ class LitModel(LightningModule):
                 label_cooccurrence=label_cooccurrence,
             )
             self.model = PrototypeProjector(
-                resnet_type=resnet_type,
+                backbone_type=backbone_type,
                 conv_type=conv_type,
                 prototype_type=prototype_type,
                 n_prototypes=_n_prototypes,
@@ -306,7 +306,7 @@ class LitModel(LightningModule):
                 and prototype_type is not None
             ):
                 self.model = PrototypeClassifier(
-                    resnet_type=resnet_type,
+                    backbone_type=backbone_type,
                     conv_type=conv_type,
                     prototype_type=prototype_type,
                     n_prototypes=_n_prototypes,
@@ -317,8 +317,8 @@ class LitModel(LightningModule):
                     partial_overlap=partial_overlap,
                 )
             elif _n_prototypes is None and label_names is not None:
-                self.model = ResNetClassifier(
-                    resnet_type=resnet_type,
+                self.model = BlackboxClassifier(
+                    backbone_type=backbone_type,
                     conv_type=conv_type,
                     n_binary_labels=len(label_names),
                     input_channels=input_channels,
@@ -353,7 +353,7 @@ class LitModel(LightningModule):
             # placeholder tensor values for the prediction writer to access, mostly to help with type checking
             self.prototype_sims = torch.ones((_n_prototypes,)) * -SIM_MAX
             self.prototype_embs = torch.empty(
-                (_n_prototypes, self.model.encoder.resnet.emb_dim)  # type: ignore
+                (_n_prototypes, self.model.encoder.backbone.emb_dim)  # type: ignore
             )
             # each row is patient_id, ecg_id, chunk_idx
             self.prototype_ids = torch.empty((_n_prototypes, 3), dtype=torch.long)

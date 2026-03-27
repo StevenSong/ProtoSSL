@@ -15,7 +15,7 @@ cd $REPO_ROOT/scripts
 EXP_NAME="blackbox-from-scratch"
 
 python -m pass_pclr.trainer \
-    --config $REPO_ROOT/configs/resnet.yaml \
+    --config $REPO_ROOT/configs/blackbox.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH

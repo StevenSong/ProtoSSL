@@ -1,4 +1,4 @@
-from ..defines import CONV_T, PROT_T, RESNET_T
+from ..defines import BACKBONE_T, CONV_T, PROT_T
 from ._base_classifier import BaseClassifier
 from .encoders import PrototypeEncoder
 
@@ -11,7 +11,7 @@ class PrototypeClassifier(BaseClassifier):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         prototype_type: PROT_T,
         n_prototypes: int,
@@ -23,7 +23,7 @@ class PrototypeClassifier(BaseClassifier):
     ):
         super().__init__(
             encoder=PrototypeEncoder(
-                resnet_type=resnet_type,
+                backbone_type=backbone_type,
                 n_prototypes=n_prototypes,
                 conv_type=conv_type,
                 prototytpe_type=prototype_type,

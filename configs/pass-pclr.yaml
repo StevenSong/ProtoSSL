@@ -39,7 +39,7 @@ lr_scheduler:
 model:
   class_path: LitModel
   init_args:
-    resnet_type: resnet18
+    backbone_type: resnet18
     conv_type: 2D
     prototype_type: partial
     partial_len: 100 # 1-second @ 100 Hz

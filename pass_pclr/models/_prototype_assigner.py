@@ -1,6 +1,6 @@
 import torch
 
-from ..defines import CONV_T, PROT_T, RESNET_T
+from ..defines import BACKBONE_T, CONV_T, PROT_T
 from ._base_classifier import BaseClassifier
 from ._prototype_classifier import PrototypeClassifier
 from .encoders import PrototypeEncoderWithAssignment
@@ -27,7 +27,7 @@ class PrototypeAssigner(BaseClassifier):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         prototype_type: PROT_T,
         n_prototypes: int,
@@ -38,7 +38,7 @@ class PrototypeAssigner(BaseClassifier):
         partial_len: int | None = None,
         partial_overlap: float | None = None,
     ):
-        self.resnet_type = resnet_type
+        self.backbone_type = backbone_type
         self.conv_type = conv_type
         self.prototype_type = prototype_type
         self.n_prototypes = n_prototypes
@@ -48,7 +48,7 @@ class PrototypeAssigner(BaseClassifier):
         self.partial_overlap = partial_overlap
         super().__init__(
             encoder=PrototypeEncoderWithAssignment(
-                resnet_type=resnet_type,
+                backbone_type=backbone_type,
                 n_prototypes=n_prototypes,
                 n_prototypes_per_label=n_prototypes_per_label,
                 n_labels=n_binary_labels,
@@ -79,7 +79,7 @@ class PrototypeAssigner(BaseClassifier):
 
     def convert_to_proto_classifier(self) -> PrototypeClassifier:
         model = PrototypeClassifier(
-            resnet_type=self.resnet_type,  # type: ignore
+            backbone_type=self.backbone_type,  # type: ignore
             conv_type=self.conv_type,  # type: ignore
             prototype_type=self.prototype_type,  # type: ignore
             n_prototypes=self.n_prototypes_per_label * self.n_binary_labels,

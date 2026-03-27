@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..defines import CONV_T, PROT_T, RESNET_T, SIM_MAX
+from ..defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX
 from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
 
@@ -11,7 +11,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         prototype_type: PROT_T,
         n_prototypes_per_label: int,
@@ -28,7 +28,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         self.register_buffer("label_weights", label_weights, persistent=False)
         self.register_buffer("label_cooccurrence", label_cooccurrence, persistent=False)
         self.encoder = PrototypeEncoder(
-            resnet_type=resnet_type,
+            backbone_type=backbone_type,
             n_prototypes=self.n_binary_labels * n_prototypes_per_label,
             conv_type=conv_type,
             prototytpe_type=prototype_type,

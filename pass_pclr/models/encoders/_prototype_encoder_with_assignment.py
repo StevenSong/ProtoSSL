@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ...defines import CONV_T, PROT_T, RESNET_T
+from ...defines import BACKBONE_T, CONV_T, PROT_T
 from ._prototype_encoder import PrototypeEncoder
 
 
@@ -10,7 +10,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         prototytpe_type: PROT_T,
         n_prototypes: int,
@@ -21,7 +21,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         partial_overlap: float | None = None,
     ):
         super().__init__(
-            resnet_type=resnet_type,
+            backbone_type=backbone_type,
             conv_type=conv_type,
             prototytpe_type=prototytpe_type,
             n_prototypes=n_prototypes,

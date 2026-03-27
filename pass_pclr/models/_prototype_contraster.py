@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..defines import CONV_T, PROT_T, RESNET_T
+from ..defines import BACKBONE_T, CONV_T, PROT_T
 from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
 
@@ -12,7 +12,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         prototype_type: PROT_T,
         n_prototypes: int,
@@ -26,7 +26,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
     ):
         super().__init__()
         self.encoder = PrototypeEncoder(
-            resnet_type=resnet_type,
+            backbone_type=backbone_type,
             n_prototypes=n_prototypes,
             conv_type=conv_type,
             prototytpe_type=prototype_type,

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision.models.resnet import BasicBlock, Bottleneck
 
-from ...defines import RESNET_T
+from ...defines import BACKBONE_T
 from ._base_encoder import BaseEncoder
 
 
@@ -10,7 +10,7 @@ class ResNet2D(BaseEncoder):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         input_channels: int = 12,
     ):
         super().__init__()
@@ -20,7 +20,7 @@ class ResNet2D(BaseEncoder):
         # this version of ResNet2D does 2D convolutions over an artificial single channel
         # e.g. (1, 12, 1000) - see NOTE's for artificial 2D input channel
         # and instead modifies the initial conv kernel to span the entire width of the 1D channels
-        match resnet_type:
+        match backbone_type:
             case "resnet18":
                 self._make_layers(BasicBlock, [2, 2, 2, 2], input_channels)
             case "resnet34":
@@ -32,7 +32,7 @@ class ResNet2D(BaseEncoder):
             case "resnet152":
                 self._make_layers(Bottleneck, [3, 8, 36, 3], input_channels)
             case _:
-                raise ValueError(f"Uknown resnet_type: {resnet_type}")
+                raise ValueError(f"Uknown backbone_type: {backbone_type}")
 
     def _make_layers(self, block, layers, input_channels):
         self.inplanes = 64
