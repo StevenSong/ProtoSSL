@@ -68,14 +68,14 @@ scripts/0-run-cache-data.sh @StevenSong
 scripts/1-run-blackbox-from-scratch.sh @StevenSong
 scripts/2-run-proto-from-scratch.sh @StevenSong
 scripts/3-run-pass-heedb-pit-assign.sh @StevenSong
-scripts/4-1-run-ecgfounder-logreg.sh @StevenSong
-scripts/5-01-run-pass-heedb-pip.sh @StevenSong
-scripts/5-02-run-pass-heedb-pit.sh @StevenSong
-scripts/5-03-run-prosup-heedb-pip.sh @StevenSong
-scripts/5-04-run-prosup-heedb-pit.sh @StevenSong
-scripts/5-05-run-prosup-heedb-pit-assign.sh @StevenSong
-scripts/5-06-run-prosup-heedb-pip-then-pit.sh @StevenSong
-scripts/5-07-run-prosup-heedb-pip-then-pit-assign.sh @StevenSong
+scripts/4-run-prosup-heedb-pip-then-pit-assign.sh @StevenSong
+scripts/5-1-run-ecgfounder-logreg.sh @StevenSong
+scripts/9-01-run-pass-heedb-pip.sh @StevenSong
+scripts/9-02-run-pass-heedb-pit.sh @StevenSong
+scripts/9-03-run-prosup-heedb-pip.sh @StevenSong
+scripts/9-04-run-prosup-heedb-pit.sh @StevenSong
+scripts/9-05-run-prosup-heedb-pit-assign.sh @StevenSong
+scripts/9-06-run-prosup-heedb-pip-then-pit.sh @StevenSong
 scripts/queue-ablations.sh @StevenSong
 scripts/audio-1-1-run-proto-from-scratch.sh
 scripts/ecgfounder/_compute_ecgfounder_embeddings.py @StevenSong
