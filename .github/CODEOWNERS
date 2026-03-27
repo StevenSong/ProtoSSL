@@ -43,6 +43,7 @@ pass_pclr/models/_prototype_supervisor.py @StevenSong
 pass_pclr/models/_resnet_classifier.py @StevenSong
 pass_pclr/models/encoders/__init__.py @StevenSong
 pass_pclr/models/encoders/_base_encoder.py @StevenSong
+pass_pclr/models/encoders/_net1d.py @StevenSong
 pass_pclr/models/encoders/_prototype_encoder_with_assignment.py @StevenSong
 pass_pclr/models/encoders/_prototype_encoder.py @StevenSong
 pass_pclr/models/encoders/_resnet1d.py @StevenSong
@@ -84,6 +85,8 @@ scripts/3-6-run-prosup-heedb-pit-assign-logreg.sh @StevenSong
 scripts/3-7-run-prosup-heedb-pip-then-pit.sh @StevenSong
 scripts/3-8-run-prosup-heedb-pip-then-pit-logreg.sh @StevenSong
 scripts/3-9-run-prosup-heedb-pip-then-pit-assign.sh @StevenSong
+scripts/4-1-run-ecgfounder-logreg.sh @StevenSong
+scripts/ecgfounder/_compute_ecgfounder_embeddings.py @StevenSong
 scripts/echonext/_tabular_logreg.py @StevenSong
 scripts/echonext/run-columbia-minimodel.sh @StevenSong
 scripts/echonext/run-tabular-logreg.sh @StevenSong
