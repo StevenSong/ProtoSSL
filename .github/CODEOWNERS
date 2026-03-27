@@ -94,9 +94,5 @@ scripts/pretrain/_compute_heedb_normalizations.py @StevenSong
 scripts/pretrain/run-heedb-normalizations.sh @StevenSong
 scripts/pretrain/run-pass-heedb-pretrain.sh @StevenSong
 scripts/pretrain/run-prosup-heedb-pretrain.sh @StevenSong
-scripts/queue-cinc-experiments.sh @StevenSong
-scripts/queue-echonext-experiments.sh @StevenSong
-scripts/queue-mimic-experiments.sh @StevenSong
-scripts/queue-ptbxl-experiments.sh @StevenSong
-scripts/queue-zzu-experiments.sh @StevenSong
+scripts/queue-experiments.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105
