@@ -24,7 +24,7 @@ trainer:
         mode: min
         save_last: True
     - class_path: PredictionWriter
-  max_epochs: 100
+  max_epochs: 1000
   log_every_n_steps: 1
 optimizer:
   class_path: torch.optim.AdamW
@@ -39,8 +39,8 @@ lr_scheduler:
 model:
   class_path: LitModel
   init_args:
-    resnet_type: resnet50
-    # conv_type: 1D|2D
+    resnet_type: resnet18
+    conv_type: 2D
 data:
   class_path: LitData
   init_args:

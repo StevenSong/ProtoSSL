@@ -12,11 +12,10 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="resnet50-2D"
+EXP_NAME="blackbox-from-scratch"
 
 python -m pass_pclr.trainer \
     --config $REPO_ROOT/configs/resnet.yaml \
-    --model.conv_type 2D \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH
