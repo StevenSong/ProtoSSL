@@ -15,6 +15,8 @@ echo "Using RUN_DIR=$RUN_DIR"
 echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
+export HIGH_MEMORY=1
+
 # experiment parameters
 EXP_NAME="pass-pretrain-heedb"
 BACKBONE=resnet18
