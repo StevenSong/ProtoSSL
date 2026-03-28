@@ -15,7 +15,7 @@ from ._audioset_dataset import AudioSetDataset
 from ._base_ecg_dataset import BaseECGDataset, StreamingECGWaveforms, load_cached_data
 from ._cinc_dataset import CincECGDataset
 from ._echonext_dataset import EchoNextECGDataset
-from ._heedb_dataset import HeedbECGDataset, get_heedb_labels
+from ._heedb_dataset import HeedbECGDataset, get_heedb_labels, get_heedb_metadata
 from ._mimic_dataset import MimicECGDataset
 from ._pclr_wrapper_dataset import PCLRWrapperDataset
 from ._ptbxl_dataset import PtbxlECGDataset, get_ptbxl_labels
