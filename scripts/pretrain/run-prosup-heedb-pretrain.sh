@@ -17,11 +17,15 @@ cd $REPO_ROOT/scripts
 
 # experiment parameters
 EXP_NAME="prosup-pretrain-heedb"
+BACKBONE=resnet18
+CONV=2D
 
 # pretrain via label supervised prototype learning
 python -m pass_pclr.trainer \
     --pipeline-stage learn-prototypes-supervised \
-    --config $REPO_ROOT/configs/proto-supervised.yaml \
+    --config $REPO_ROOT/configs/supervised-pretrain.yaml \
+    --model.backbone_type $BACKBONE \
+    --model.conv_type $CONV \
     --trainer.max_epochs 100 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
@@ -32,7 +36,9 @@ python -m pass_pclr.trainer \
 # project in the pretraining dataset
 python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/proto-supervised.yaml \
+    --config $REPO_ROOT/configs/supervised-pretrain.yaml \
+    --model.backbone_type $BACKBONE \
+    --model.conv_type $CONV \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET \
@@ -42,7 +48,9 @@ python -m pass_pclr.trainer \
 
 python -m pass_pclr.trainer \
     --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/proto-supervised.yaml \
+    --config $REPO_ROOT/configs/supervised-pretrain.yaml \
+    --model.backbone_type $BACKBONE \
+    --model.conv_type $CONV \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET \

@@ -6,7 +6,7 @@ trainer:
   logger:
     class_path: pass_pclr.lightning_utils.StrictWandbLogger
     init_args:
-      project: ECG-Prototype-Transfer
+      project: ProtoSSL
       # save_dir: /path/to/runs/
       # name: exp-name
   callbacks:

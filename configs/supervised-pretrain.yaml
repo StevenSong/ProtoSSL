@@ -39,12 +39,12 @@ lr_scheduler:
 model:
   class_path: LitModel
   init_args:
-    backbone_type: resnet18
-    conv_type: 2D
+    # backbone_type: resnet18
+    # conv_type: 2D
     prototype_type: partial
     partial_len: 100 # 1-second @ 100 Hz
     partial_overlap: 0.5
-    n_prototypes_per_label: 5
+    n_prototypes_per_label: 50 # 20 labels in HEEDB to be comparable to unsupervised 1000 prototypes
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
