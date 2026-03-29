@@ -7,8 +7,8 @@ audio_sanity/ @sahilsethi0105
 configs/blackbox.yaml @StevenSong
 configs/pass-pclr.yaml @StevenSong
 configs/proto-supervised.yaml @StevenSong
-configs/supervised-pretrain.yaml @StevenSong
-configs/unsupervised-pretrain.yaml @StevenSong
+configs/pretrain-supervised.yaml @StevenSong
+configs/pretrain-unsupervised.yaml @StevenSong
 data-preprocessing/_multilabel_stratified_sampling.py @StevenSong
 data-preprocessing/create-cinc-georgia-subsets.ipynb @StevenSong
 data-preprocessing/create-echonext-subsets.ipynb @StevenSong

@@ -25,7 +25,7 @@ CONV=2D
 # pretrain via label supervised prototype learning
 python -m pass_pclr.trainer \
     --pipeline-stage learn-prototypes-supervised \
-    --config $REPO_ROOT/configs/supervised-pretrain.yaml \
+    --config $REPO_ROOT/configs/pretrain-supervised.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
     --trainer.max_epochs 100 \
@@ -38,7 +38,7 @@ python -m pass_pclr.trainer \
 # project in the pretraining dataset
 python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/supervised-pretrain.yaml \
+    --config $REPO_ROOT/configs/pretrain-supervised.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
     --trainer.logger.save_dir $RUN_DIR \
@@ -50,7 +50,7 @@ python -m pass_pclr.trainer \
 
 python -m pass_pclr.trainer \
     --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/supervised-pretrain.yaml \
+    --config $REPO_ROOT/configs/pretrain-supervised.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
     --trainer.logger.save_dir $RUN_DIR \
