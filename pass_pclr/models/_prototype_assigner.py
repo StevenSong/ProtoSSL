@@ -65,7 +65,9 @@ class PrototypeAssigner(BaseClassifier):
     def static_losses(self) -> dict[str, torch.Tensor] | None:
         # for each label, the prototype assignment slots should pick separate
         # prototypes, so probability distributions should be orthogonal
-        x = self.encoder.get_assignments()  # type: ignore - (L, K, P)
+        x_soft = self.encoder.get_assignments()  # type: ignore - (L, K, P)
+        x_hard = self.encoder.get_assignments(hard=True)  # type: ignore
+        x = x_hard - x_soft.detach() + x_soft
         L, K, _ = x.shape
 
         # TODO: should we normalize distributions...?

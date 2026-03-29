@@ -191,6 +191,7 @@ class LitModel(LightningModule):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        extra_kwargs: dict = dict(),
     ):
         super().__init__()
         self.lr = None
@@ -222,6 +223,7 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                **extra_kwargs,
             )
         elif pipeline_stage == "learn-prototypes-supervised":
             if (
@@ -245,6 +247,7 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                **extra_kwargs,
             )
         elif pipeline_stage == "learn-prototype-assignments":
             if (
@@ -269,6 +272,7 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                **extra_kwargs,
             )
         elif (
             pipeline_stage == "project-prototypes"
@@ -298,6 +302,7 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                **extra_kwargs,
             )
         elif pipeline_stage == "train-classifier":
             if (
@@ -315,6 +320,7 @@ class LitModel(LightningModule):
                     input_channels=input_channels,
                     partial_len=partial_len,
                     partial_overlap=partial_overlap,
+                    **extra_kwargs,
                 )
             elif _n_prototypes is None and label_names is not None:
                 self.model = BlackboxClassifier(
@@ -323,6 +329,7 @@ class LitModel(LightningModule):
                     n_binary_labels=len(label_names),
                     input_channels=input_channels,
                     pretrained_weights=pretrained_weights,
+                    **extra_kwargs,
                 )
             else:
                 raise ValueError(

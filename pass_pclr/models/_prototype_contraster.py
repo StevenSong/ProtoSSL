@@ -23,6 +23,8 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        do_softmax: bool = True,
+        do_weighted_sum: bool = True,
     ):
         super().__init__()
         self.encoder = PrototypeEncoder(
@@ -34,7 +36,16 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
             partial_len=partial_len,
             partial_overlap=partial_overlap,
         )
-        emb_dim = self.encoder.prototypes.shape[1]
+        self.do_softmax = do_softmax
+        self.do_weighted_sum = do_weighted_sum
+        if do_weighted_sum:
+            # use similarity scores to compute weighted sum of prototypes
+            # prototypes are h-dimensional
+            emb_dim = self.encoder.prototypes.shape[1]
+        else:
+            # inputting similarity scores directly into projection
+            # each similarity vector is length n_prototypes
+            emb_dim = self.encoder.prototypes.shape[0]
         if proj_dim is None:
             proj_dim = emb_dim // 2
         self.proj = nn.Linear(
@@ -55,13 +66,15 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         x1 = self.encoder(x1)  # (B, P), P = n_prototypes
         x2 = self.encoder(x2)  # (B, P)
 
-        # convert scores to probabilities
-        x1 = F.softmax(x1, dim=1)
-        x2 = F.softmax(x2, dim=1)
+        if self.do_softmax:
+            # convert scores to probabilities
+            x1 = F.softmax(x1, dim=1)
+            x2 = F.softmax(x2, dim=1)
 
-        # compute weighted prototypes
-        x1 = x1 @ self.encoder.prototypes  # (B, E), E = emb_dim
-        x2 = x2 @ self.encoder.prototypes  # (B, E)
+        if self.do_weighted_sum:
+            # compute weighted prototypes
+            x1 = x1 @ self.encoder.prototypes  # (B, E), E = emb_dim
+            x2 = x2 @ self.encoder.prototypes  # (B, E)
 
         # projection
         x1 = self.proj(x1)  # (B, H), H = proj_dim
