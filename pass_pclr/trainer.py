@@ -706,6 +706,10 @@ class LitCLI(LightningCLI):
             choices=get_args(STAGE_T),
             required=True,
         )
+        parser.add_argument("--resume-from-checkpoint")
+        parser.link_arguments(
+            "resume_from_checkpoint", "trainer.logger.init_args.resume_from_checkpoint"
+        )
         parser.link_arguments("pipeline_stage", "data.init_args.pipeline_stage")
         parser.link_arguments("pipeline_stage", "model.init_args.pipeline_stage")
         parser.link_arguments(
@@ -730,7 +734,10 @@ class LitCLI(LightningCLI):
 
 
 def run():
-    cli = LitCLI(run=False)
+    cli = LitCLI(
+        run=False,
+        save_config_kwargs={"overwrite": True},  # for resuming checkpoint in same dir
+    )
     if not isinstance(cli.trainer.strategy, (DDPStrategy, SingleDeviceStrategy)):
         # NOTE: to implement support for other distributed startegies, should check
         # the places noted in this GH issue: https://github.com/StevenSong/ecg-prototype-fm/issues/63
@@ -748,6 +755,7 @@ def run():
         cli.trainer.fit(
             model=cli.model,
             datamodule=cli.datamodule,
+            ckpt_path=cli.config.resume_from_checkpoint,
         )
     elif (
         pipeline_stage == "project-prototypes"
@@ -782,6 +790,7 @@ def run():
         cli.trainer.fit(
             model=cli.model,
             datamodule=cli.datamodule,
+            ckpt_path=cli.config.resume_from_checkpoint,
         )
         cli.trainer.predict(
             model=cli.model,
