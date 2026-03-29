@@ -44,7 +44,8 @@ model:
     prototype_type: partial
     partial_len: 100 # 1-second @ 100 Hz
     partial_overlap: 0.5
-    n_prototypes_per_label: 5
+    n_prototypes_per_label: 14
+    # n_prototypes: 1000 # for learn-prototype-assignments
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
@@ -52,4 +53,4 @@ data:
     # dataset_path: /path/to/dataset
     batch_size: 512
     num_workers: 4
-# pipeline_stage: learn-prototypes-supervised|project-prototypes-supervised|compute-embeddings|train-classifier
+# pipeline_stage: learn-prototypes-supervised|learn-prototype-assignments|project-prototypes-supervised|compute-embeddings|train-classifier

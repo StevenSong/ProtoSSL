@@ -12,10 +12,10 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="blackbox-from-scratch"
+EXP_NAME="blackbox-direct"
 
 python -m pass_pclr.trainer \
-    --config $REPO_ROOT/configs/blackbox.yaml \
+    --config $REPO_ROOT/configs/target-blackbox.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH

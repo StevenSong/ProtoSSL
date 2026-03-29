@@ -12,41 +12,36 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="pass-heedb-pit-assign"
-PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-fm/outputs/pass-pretrain-heedb"
-PPL=5
+EXP_NAME="protossl-heedb-pia-5ppl"
+PRETRAIN_RUN="$RUN_DIR/pass-pretrain-heedb"
 
 # this version relies on learning prototype assignments relative to the target task
 python -m pass_pclr.trainer \
     --pipeline-stage learn-prototype-assignments \
-    --config $REPO_ROOT/configs/pass-pclr.yaml \
+    --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
+    --model.n_prototypes 1000 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt \
-    --model.n_prototypes_per_label $PPL
+    --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt
 
 # then project
 python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/pass-pclr.yaml \
+    --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt \
-    --model.n_prototypes_per_label $PPL \
-    --model.n_prototypes null
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
 
 # then train classifier
 python -m pass_pclr.trainer \
     --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/pass-pclr.yaml \
+    --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt \
-    --model.n_prototypes_per_label $PPL \
-    --model.n_prototypes null
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
 
 python _eval_probs.py \
 --dataset-path $DATASET_PATH \
@@ -62,13 +57,11 @@ EXP_NAME="$EXP_NAME-logreg"
 # this version relies on samples projected in the transfer dataset
 python -m pass_pclr.trainer \
     --pipeline-stage compute-embeddings \
-    --config $REPO_ROOT/configs/pass-pclr.yaml \
+    --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
-    --model.n_prototypes_per_label $PPL \
-    --model.n_prototypes null
+    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt
 
 python _linear_probe.py \
 --dataset-path $DATASET_PATH \

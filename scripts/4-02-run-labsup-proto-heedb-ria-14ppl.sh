@@ -12,26 +12,32 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="proto-from-scratch"
+EXP_NAME="labsup-proto-heedb-ria-14ppl"
+PRETRAIN_RUN="$RUN_DIR/prosup-pretrain-heedb"
 
+# this version relies on learning prototype assignments relative to the target task
 python -m pass_pclr.trainer \
-    --pipeline-stage learn-prototypes-supervised \
-    --config $REPO_ROOT/configs/proto-supervised.yaml \
-    --trainer.logger.save_dir $RUN_DIR/ \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH
-
-python -m pass_pclr.trainer \
-    --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/proto-supervised.yaml \
-    --trainer.logger.save_dir $RUN_DIR/ \
+    --pipeline-stage learn-prototype-assignments \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
+    --model.n_prototypes 1000 \
+    --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
+    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt
 
+# then project
+python -m pass_pclr.trainer \
+    --pipeline-stage project-prototypes-supervised \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
+    --trainer.logger.save_dir $RUN_DIR \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $DATASET_PATH \
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
+
+# then train classifier
 python -m pass_pclr.trainer \
     --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/proto-supervised.yaml \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
@@ -48,9 +54,10 @@ cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs
 PRETRAIN_RUN="$RUN_DIR/$EXP_NAME"
 EXP_NAME="$EXP_NAME-logreg"
 
+# this version relies on samples projected in the transfer dataset
 python -m pass_pclr.trainer \
     --pipeline-stage compute-embeddings \
-    --config $REPO_ROOT/configs/proto-supervised.yaml \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \

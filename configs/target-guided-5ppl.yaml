@@ -24,7 +24,7 @@ trainer:
         mode: min
         save_last: True
     - class_path: PredictionWriter
-  # max_epochs: 100 for learn-prototypes, 1000 for train-classifier (default if you don't set it)
+  max_epochs: 1000
   log_every_n_steps: 1
 optimizer:
   class_path: torch.optim.AdamW
@@ -44,7 +44,8 @@ model:
     prototype_type: partial
     partial_len: 100 # 1-second @ 100 Hz
     partial_overlap: 0.5
-    n_prototypes: 128
+    n_prototypes_per_label: 5
+    # n_prototypes: 1000 # for learn-prototype-assignments
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
@@ -52,4 +53,4 @@ data:
     # dataset_path: /path/to/dataset
     batch_size: 512
     num_workers: 4
-# pipeline_stage: learn-prototypes|project-prototypes|compute-embeddings|train-classifier
+# pipeline_stage: learn-prototypes-supervised|learn-prototype-assignments|project-prototypes-supervised|compute-embeddings|train-classifier
