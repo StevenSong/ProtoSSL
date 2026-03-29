@@ -55,13 +55,17 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
             prototype_w=prototype_w,
             audio_backbone_name=audio_backbone_name,
         )
-        emb_dim = self.encoder.prototypes.shape[1]
+        # We now contrast DIRECTLY on prototype activations, so the projection
+        # head should take a length-P activation vector as input.
         if proj_dim is None:
-            proj_dim = emb_dim // 2
-        self.proj = nn.Linear(
-            in_features=emb_dim,
-            out_features=proj_dim,
+            proj_dim = max(128, n_prototypes // 2)
+
+        self.proj = nn.Sequential(
+            nn.Linear(n_prototypes, n_prototypes),
+            nn.ReLU(inplace=True),
+            nn.Linear(n_prototypes, proj_dim),
         )
+
         self.log_temperature = nn.Parameter(
             torch.ones([]) * np.log(1 / init_log_temp),
             requires_grad=learnable_temp,
@@ -73,26 +77,20 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
     
-    def _project_pair(self, x1: torch.Tensor, x2: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def _project_pair(
+        self, x1: torch.Tensor, x2: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         assert x1.shape == x2.shape
 
-        # compute prototype similarity scores
-        x1 = self.encoder(x1)  # (B, P), P = n_prototypes
-        x2 = self.encoder(x2)  # (B, P)
+        # Raw pooled prototype activations/similarities: shape (B, P)
+        a1 = self.encoder(x1)
+        a2 = self.encoder(x2)
 
-        # convert scores to probabilities
-        x1 = F.softmax(x1, dim=1)
-        x2 = F.softmax(x2, dim=1)
+        # Contrast directly on prototype activations via a small projection head.
+        z1 = self.proj(a1)
+        z2 = self.proj(a2)
 
-        # compute weighted prototypes
-        x1 = x1 @ self.encoder.prototypes  # (B, E), E = emb_dim
-        x2 = x2 @ self.encoder.prototypes  # (B, E)
-
-        # projection
-        x1 = self.proj(x1)  # (B, H), H = proj_dim
-        x2 = self.proj(x2)  # (B, H)
-
-        return x1, x2
+        return z1, z2
 
     def forward(
         self,
