@@ -69,3 +69,10 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         # probability that a given prototype belongs to that label-slot?
         # using this, compute weighted prototype assignments for each label-slot
         return torch.einsum("bp,lkp->blk", sims, assignments)  # (B, L, K)
+        
+    def forward_raw_prototypes(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Raw prototype activations before any ProtoPool assignment logic.
+        Needed for ILP/effect-size assignment.
+        """
+        return super().forward(x)  # (B, P)

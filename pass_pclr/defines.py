@@ -12,6 +12,8 @@ STAGE_T = Literal[
     "compute-embeddings",
     "train-classifier",
 ]
+
+ASSIGN_T = Literal["protopool", "ilp_effect_size"]
 SPLIT_T = Literal["train", "val", "test"]
 RESNET_T = Literal["resnet18", "resnet34", "resnet50", "resnet101", "resnet152"]
 CONV_T = Literal["1D", "2D", "HTSAT", "PANNS"]
