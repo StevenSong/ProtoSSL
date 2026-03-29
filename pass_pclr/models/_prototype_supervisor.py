@@ -81,17 +81,21 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         # clustering loss
         # use repeat_interleave as all prototypes for a given label should be contiguous
         pos_mask = y.repeat_interleave(self.n_prototypes_per_label, 1)  # (B, P)
+        has_pos = pos_mask.any(dim=1)  # (B,)
         neg_mask = 1 - pos_mask
+        has_neg = neg_mask.any(dim=1)  # (B,)
         # only consider similarity for prototypes assigned to the sample
         # since we take the max of the valid similarities, mask invalid entries
         # with similarities less than all other similarities
         pos_prot_sims = pos_mask * sims + neg_mask * -SIM_MAX  # (B, P)
         per_sample_max_pos_sim, _ = pos_prot_sims.max(1)  # (B,)
+        per_sample_max_pos_sim = per_sample_max_pos_sim[has_pos]  # (B_p), B_p <= B
         clst_loss = -per_sample_max_pos_sim.mean()
 
         # separation loss
         neg_prot_sims = neg_mask * sims + pos_mask * -SIM_MAX  # (B, P)
         per_sample_max_neg_sim, _ = neg_prot_sims.max(1)  # (B,)
+        per_sample_max_neg_sim = per_sample_max_neg_sim[has_neg]  # (B_n), B_n <= B
         sep_loss = per_sample_max_neg_sim.mean()
 
         # orthogonality loss
