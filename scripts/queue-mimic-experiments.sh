@@ -4,8 +4,8 @@ set -e
 
 SUFFIXES=("" "-32k" "-16k" "-8k" "-4k" "-2k" "-1k" "-512" "-256")
 
-export BASE_DATASET_PATH=/opt/gpudata/ecg/echonext
-export BASE_RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs/runs-echonext
+export BASE_DATASET_PATH=/opt/gpudata/ecg/mimic-iv-ecg
+export BASE_RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs/runs-mimic
 export REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
 
 source _submit_job.sh
@@ -52,9 +52,4 @@ for suffix in "${SUFFIXES[@]}"; do
     submit_job "$suffix" 3-10-run-prosup-heedb-pip-then-pit-assign-logreg.sh "--dependency=afterok:$cache_id,$pit_assign_id"
 
     submit_job "$suffix" 4-1-run-ecgfounder-logreg.sh
-
-    # other echonext specific things
-    submit_job "$suffix" echonext/run-tabular-logreg.sh
 done
-
-submit_job "" echonext/run-columbia-minimodel.sh

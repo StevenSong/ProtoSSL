@@ -10,7 +10,9 @@ configs/resnet.yaml @StevenSong
 data-preprocessing/_multilabel_stratified_sampling.py @StevenSong
 data-preprocessing/create-cinc-georgia-subsets.ipynb @StevenSong
 data-preprocessing/create-echonext-subsets.ipynb @StevenSong
+data-preprocessing/create-mimic-subsets.ipynb @StevenSong
 data-preprocessing/create-ptbxl-subsets.ipynb @StevenSong
+data-preprocessing/create-zzu-subsets.ipynb @StevenSong
 data-preprocessing/heedb_normalizations/heedb_clipped_means_stds.json @StevenSong
 data-preprocessing/heedb_normalizations/heedb_lowers_uppers.json @StevenSong
 env.yaml @StevenSong
@@ -24,8 +26,10 @@ pass_pclr/datasets/_base_ecg_dataset.py @StevenSong
 pass_pclr/datasets/_cinc_dataset.py @StevenSong
 pass_pclr/datasets/_echonext_dataset.py @StevenSong
 pass_pclr/datasets/_heedb_dataset.py @StevenSong
+pass_pclr/datasets/_mimic_dataset.py @StevenSong
 pass_pclr/datasets/_pclr_wrapper_dataset.py @StevenSong
 pass_pclr/datasets/_ptbxl_dataset.py @StevenSong
+pass_pclr/datasets/_zzu_dataset.py @StevenSong
 pass_pclr/defines.py @StevenSong
 pass_pclr/lightning_utils.py @StevenSong
 pass_pclr/models/__init__.py @StevenSong
@@ -39,6 +43,7 @@ pass_pclr/models/_prototype_supervisor.py @StevenSong
 pass_pclr/models/_resnet_classifier.py @StevenSong
 pass_pclr/models/encoders/__init__.py @StevenSong
 pass_pclr/models/encoders/_base_encoder.py @StevenSong
+pass_pclr/models/encoders/_net1d.py @StevenSong
 pass_pclr/models/encoders/_prototype_encoder_with_assignment.py @StevenSong
 pass_pclr/models/encoders/_prototype_encoder.py @StevenSong
 pass_pclr/models/encoders/_resnet1d.py @StevenSong
@@ -71,6 +76,7 @@ scripts/2-4-run-pass-heedb-pit-logreg.sh @StevenSong
 scripts/2-5-run-pass-heedb-pit-assign.sh @StevenSong
 scripts/2-6-run-pass-heedb-pit-assign-logreg.sh @StevenSong
 scripts/3-1-run-prosup-heedb-pip.sh @StevenSong
+scripts/3-10-run-prosup-heedb-pip-then-pit-assign-logreg.sh @StevenSong
 scripts/3-2-run-prosup-heedb-pit.sh @StevenSong
 scripts/3-3-run-prosup-heedb-pip-logreg.sh @StevenSong
 scripts/3-4-run-prosup-heedb-pit-logreg.sh @StevenSong
@@ -79,7 +85,8 @@ scripts/3-6-run-prosup-heedb-pit-assign-logreg.sh @StevenSong
 scripts/3-7-run-prosup-heedb-pip-then-pit.sh @StevenSong
 scripts/3-8-run-prosup-heedb-pip-then-pit-logreg.sh @StevenSong
 scripts/3-9-run-prosup-heedb-pip-then-pit-assign.sh @StevenSong
-scripts/3-10-run-prosup-heedb-pip-then-pit-assign-logreg.sh @StevenSong
+scripts/4-1-run-ecgfounder-logreg.sh @StevenSong
+scripts/ecgfounder/_compute_ecgfounder_embeddings.py @StevenSong
 scripts/echonext/_tabular_logreg.py @StevenSong
 scripts/echonext/run-columbia-minimodel.sh @StevenSong
 scripts/echonext/run-tabular-logreg.sh @StevenSong
@@ -89,5 +96,7 @@ scripts/pretrain/run-pass-heedb-pretrain.sh @StevenSong
 scripts/pretrain/run-prosup-heedb-pretrain.sh @StevenSong
 scripts/queue-cinc-experiments.sh @StevenSong
 scripts/queue-echonext-experiments.sh @StevenSong
+scripts/queue-mimic-experiments.sh @StevenSong
 scripts/queue-ptbxl-experiments.sh @StevenSong
+scripts/queue-zzu-experiments.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105

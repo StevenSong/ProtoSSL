@@ -9,8 +9,8 @@ conda activate ecg
 # echo "RUN_DIR=$RUN_DIR"
 
 # Override python to use srun when submitted via this wrapper
-python() { srun python "$@"; }
-python3() { srun python3 "$@"; }
+python() { srun -u python "$@"; }
+python3() { srun -u python3 "$@"; }
 export -f python
 export -f python3
 

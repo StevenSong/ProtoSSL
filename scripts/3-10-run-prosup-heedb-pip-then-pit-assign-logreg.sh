@@ -14,6 +14,7 @@ cd $REPO_ROOT/scripts
 # experiment parameters
 EXP_NAME="prosup-heedb-pip-then-pit-assign-logreg"
 PRETRAIN_RUN="$RUN_DIR/prosup-heedb-pip-then-pit-assign"
+PPL=5
 
 # this version relies on samples projected in the transfer dataset
 python -m pass_pclr.trainer \
@@ -23,7 +24,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
-    --model.n_prototypes_per_label 5 \
+    --model.n_prototypes_per_label $PPL \
     --model.n_prototypes null
 
 python _linear_probe.py \

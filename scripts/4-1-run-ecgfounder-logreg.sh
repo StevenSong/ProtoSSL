@@ -12,24 +12,15 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="prosup-heedb-pit-assign-logreg"
-PRETRAIN_RUN="$RUN_DIR/prosup-heedb-pit-assign"
-PPL=5
+EXP_NAME="ecgfounder-logreg"
 
-# this version relies on samples projected in the transfer dataset
-python -m pass_pclr.trainer \
-    --pipeline-stage compute-embeddings \
-    --config $REPO_ROOT/configs/pass-pclr.yaml \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
-    --model.n_prototypes_per_label $PPL \
-    --model.n_prototypes null
+python ecgfounder/_compute_ecgfounder_embeddings.py \
+--dataset-path $DATASET_PATH \
+--output-path $RUN_DIR/$EXP_NAME
 
 python _linear_probe.py \
 --dataset-path $DATASET_PATH \
---prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
+--prototype-embeddings $RUN_DIR/$EXP_NAME \
 --output-path $RUN_DIR/$EXP_NAME
 
 python _eval_probs.py \
