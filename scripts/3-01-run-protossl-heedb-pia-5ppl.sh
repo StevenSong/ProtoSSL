@@ -13,7 +13,7 @@ cd $REPO_ROOT/scripts
 
 # experiment parameters
 EXP_NAME="protossl-heedb-pia-5ppl"
-PRETRAIN_RUN="$RUN_DIR/pass-pretrain-heedb"
+PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb"
 
 # this version relies on learning prototype assignments relative to the target task
 python -m pass_pclr.trainer \

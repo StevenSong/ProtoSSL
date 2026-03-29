@@ -13,7 +13,7 @@ cd $REPO_ROOT/scripts
 
 # experiment parameters
 EXP_NAME="labsup-proto-heedb-ria-5ppl"
-PRETRAIN_RUN="$RUN_DIR/prosup-pretrain-heedb"
+PRETRAIN_RUN="$RUN_DIR/../prosup-pretrain-heedb"
 
 # this version relies on learning prototype assignments relative to the target task
 python -m pass_pclr.trainer \

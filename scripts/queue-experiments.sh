@@ -37,7 +37,7 @@ for dataset in "${DATASETS[@]}"; do
 
         cache_id=$(submit_job "$suffix" 0-run-cache-data.sh)
         echo $cache_id
-        submit_job "$suffix" 1-run-blackbox-from-scratch.sh "--dependency=afterok:$cache_id"
+        submit_job "$suffix" 1-run-blackbox-direct.sh "--dependency=afterok:$cache_id"
         submit_job "$suffix" 2-01-run-labsup-proto-direct-5ppl.sh "--dependency=afterok:$cache_id"
         submit_job "$suffix" 2-02-run-labsup-proto-direct-14ppl.sh "--dependency=afterok:$cache_id"
         submit_job "$suffix" 3-01-run-protossl-heedb-pia-5ppl.sh "--dependency=afterok:$cache_id"
