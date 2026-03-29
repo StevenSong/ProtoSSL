@@ -18,9 +18,9 @@ cd $REPO_ROOT/scripts
 export HIGH_MEMORY=1
 
 # experiment parameters
-EXP_NAME="pass-pretrain-heedb-net1d"
-BACKBONE=net1d
-CONV=1D
+EXP_NAME="pass-pretrain-heedb-no-attn"
+BACKBONE=resnet18
+CONV=2D
 
 # pretrain via self supervised prototype learning
 python -m pass_pclr.trainer \
@@ -28,6 +28,7 @@ python -m pass_pclr.trainer \
     --config $REPO_ROOT/configs/unsupervised-pretrain.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
+    --model.extra_kwargs '{"do_softmax": False, "do_weighted_sum": False}' \
     --trainer.max_epochs 100 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \

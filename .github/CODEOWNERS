@@ -87,8 +87,7 @@ scripts/echonext/run-tabular-logreg.sh @StevenSong
 scripts/pretrain/_compute_heedb_normalizations.py @StevenSong
 scripts/pretrain/run-heedb-normalizations.sh @StevenSong
 scripts/pretrain/run-pass-heedb-pretrain.sh @StevenSong
+scripts/pretrain/run-pass-heedb-pretrain-no-attn.sh @StevenSong
 scripts/pretrain/run-prosup-heedb-pretrain.sh @StevenSong
-scripts/pretrain/run-pass-heedb-pretrain-net1d.sh @StevenSong
-scripts/pretrain/run-prosup-heedb-pretrain-net1d.sh @StevenSong
 scripts/queue-experiments.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105
