@@ -32,7 +32,9 @@ srun python -m pass_pclr.trainer \
     --model.conv_type PANNS \
     --model.input_channels 1 \
     --model.resnet_type resnet18 \
-    --model.audio_backbone_name Cnn14
+    --model.audio_backbone_name Cnn14 \
+
+#--resume-from-checkpoint /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/results_audioset_Cnn14/PANNS/train-classifier/v6-w6dec19c/best.ckpt
 
 srun python _eval_probs.py \
     --dataset-path $DATASET_PATH \

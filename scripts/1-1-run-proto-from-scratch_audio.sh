@@ -40,8 +40,8 @@ srun python -m pass_pclr.trainer \
     --model.init_args.prototype_h 1 \
     --model.init_args.prototype_w 1 \
     --model.init_args.audio_backbone_name Cnn14 \
-    --resume-from-checkpoint /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/results_audioset_5protos/proto-from-scratch/learn-prototypes-supervised/v1-yqahwwnb/best.ckpt
 
+# --resume-from-checkpoint /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/results_audioset_5protos/proto-from-scratch/learn-prototypes-supervised/v1-yqahwwnb/best.ckpt
 
 srun python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes-supervised \
@@ -81,7 +81,9 @@ srun python -m pass_pclr.trainer \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt \
     --model.init_args.prototype_h 1 \
     --model.init_args.prototype_w 1 \
-    --model.init_args.audio_backbone_name Cnn14 
+    --model.init_args.audio_backbone_name Cnn14 \
+
+#--resume-from-checkpoint /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/results_audioset_5protos/proto-from-scratch/train-classifier/v1-yb58yv5g/best.ckpt
 
 srun python _eval_probs.py \
     --dataset-path $DATASET_PATH \
