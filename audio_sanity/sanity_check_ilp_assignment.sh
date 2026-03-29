@@ -1,0 +1,21 @@
+python sanity_check_ilp_assignment.py \
+  --dataset-path /gpfs/data/bbj-lab/data/audioset/audioset \
+  --split train \
+  --sampling-rate 32000 \
+  --batch-size 4 \
+  --num-workers 4 \
+  --checkpoint-path /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/results_audioset_proto_contrastive_clar/pass-audioset-ssl-assign/learn-prototypes/v1-uyg7rejy/best.ckpt \
+  --resnet-type resnet18 \
+  --conv-type PANNS \
+  --audio-backbone-name Cnn14 \
+  --prototype-type partial \
+  --input-channels 1 \
+  --partial-len 32000 \
+  --partial-overlap 0.5 \
+  --prototype-h 1 \
+  --prototype-w 1 \
+  --n-prototypes 2635 \
+  --n-prototypes-per-label 5 \
+  --n-min 1 \
+  --balanced-negative-sampling \
+  --output-dir /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/ilp_sanity_outputs
