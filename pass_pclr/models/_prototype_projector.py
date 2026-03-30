@@ -46,7 +46,7 @@ class PrototypeProjector(PretrainedMixin, nn.Module):
     def allow_extra_keys(self) -> list[str]:
         # fmt: off
         return [
-            "proj.weight", "proj.bias", "log_temperature", # from PrototypeContraster
+            "proj.*", "log_temperature", # from PrototypeContraster
             "cls.weight", "cls.bias", # from PrototypeSupervisor
             "_alpha_raw", "_l1_ratio_raw", # from PrototypeClassier (cast from PrototypeAssigner)
         ]

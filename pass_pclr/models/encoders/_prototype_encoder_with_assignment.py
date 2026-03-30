@@ -48,13 +48,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         # with tau=0.5, this makes the effective temperature 5e-4, approaching a one-hot distribution
         # See: https://github.com/gmum/ProtoPool/blob/2bd42882282fd309b3b70faa62a73c3c88cddd56/model.py#L148
         # rather than do this, we rely on the trick below to derive true one-hot assignments with gradients:
-        soft_dist = self.get_assignments()
-        hard_dist = self.get_assignments(hard=True)
-
-        # NOTE: we use a trick to derive one-hot assignments while still having
-        # gradients flow through a soft-assignment probability distribution
-        # See: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gumbel_softmax.html#torch-nn-functional-gumbel-softmax
-        assignments = hard_dist - soft_dist.detach() + soft_dist
+        assignments = self.get_assignments(hard=True)
 
         # assignments has shape (L, K, P), where:
         # L = n_labels, K = n_prototypes_per_label, P = n_prototypes

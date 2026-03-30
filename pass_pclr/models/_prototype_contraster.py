@@ -48,9 +48,10 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
             emb_dim = self.encoder.prototypes.shape[0]
         if proj_dim is None:
             proj_dim = emb_dim // 2
-        self.proj = nn.Linear(
-            in_features=emb_dim,
-            out_features=proj_dim,
+        self.proj = nn.Sequential(
+            nn.Linear(n_prototypes, n_prototypes),
+            nn.ReLU(inplace=True),
+            nn.Linear(n_prototypes, proj_dim),
         )
         self.log_temperature = nn.Parameter(
             torch.ones([]) * np.log(1 / init_log_temp),

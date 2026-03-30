@@ -6,7 +6,7 @@ from .encoders import PrototypeEncoder
 class PrototypeClassifier(BaseClassifier):
     @property
     def allow_extra_keys(self) -> list[str]:
-        return ["proj.weight", "proj.bias", "log_temperature"]
+        return ["proj.*", "log_temperature"]
 
     def __init__(
         self,

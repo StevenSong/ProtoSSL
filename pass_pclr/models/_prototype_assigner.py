@@ -12,7 +12,7 @@ class PrototypeAssigner(BaseClassifier):
         return [
             # fmt: off
             # from PrototypeContraster (learn-prototypes)
-            "proj.weight", "proj.bias", "log_temperature",
+            "proj.*", "log_temperature",
             # from PrototypeSupervisor (learn-prototypes-supervised)
             # NOTE: PrototypeAssigner's encoder uses per-label embeddings
             # and uses a MultiInputLinear instead of a single multitask head
@@ -65,9 +65,7 @@ class PrototypeAssigner(BaseClassifier):
     def static_losses(self) -> dict[str, torch.Tensor] | None:
         # for each label, the prototype assignment slots should pick separate
         # prototypes, so probability distributions should be orthogonal
-        x_soft = self.encoder.get_assignments()  # type: ignore - (L, K, P)
-        x_hard = self.encoder.get_assignments(hard=True)  # type: ignore
-        x = x_hard - x_soft.detach() + x_soft
+        x = self.encoder.get_assignments(hard=True)  # type: ignore - (L, K, P)
         L, K, _ = x.shape
 
         # TODO: should we normalize distributions...?
