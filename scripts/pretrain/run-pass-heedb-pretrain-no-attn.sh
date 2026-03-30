@@ -34,8 +34,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET \
     --data.num_workers 8 \
-    --data.prefetch_factor 4 \
-    --resume-from-checkpoint "/opt/gpudata/steven/ecg-prototype-fm/outputs/pass-pretrain-heedb-no-attn/learn-prototypes/v2-imtgdei2/ProtoSSL/v2-imtgdei2/checkpoints/last.ckpt"
+    --data.prefetch_factor 4
 
 # project in the pretraining dataset
 python -m pass_pclr.trainer \

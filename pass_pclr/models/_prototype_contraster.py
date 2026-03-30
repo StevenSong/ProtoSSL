@@ -49,9 +49,9 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         if proj_dim is None:
             proj_dim = emb_dim // 2
         self.proj = nn.Sequential(
-            nn.Linear(n_prototypes, n_prototypes),
+            nn.Linear(emb_dim, emb_dim),
             nn.ReLU(inplace=True),
-            nn.Linear(n_prototypes, proj_dim),
+            nn.Linear(emb_dim, proj_dim),
         )
         self.log_temperature = nn.Parameter(
             torch.ones([]) * np.log(1 / init_log_temp),
