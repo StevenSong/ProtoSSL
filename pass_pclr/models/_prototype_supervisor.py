@@ -119,13 +119,13 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         neg_weighted_sims = (neg_cooc * inter_prot_sims).sum()
         cntrst_loss = (pos_weighted_sims - neg_weighted_sims) / n_prot**0.5
 
-        #Print statements (remove later) ############################################################
+        #Print statements for debugging ############################################################
 
-        print(f"BCE loss: {bce_loss}")
-        print(f"Clst loss: {self.lam_clst * clst_loss}")
-        print(f"Sep loss: {self.lam_sep * sep_loss}")
-        print(f"Div loss: {self.lam_div * div_loss}")
-        print(f"Cntrst loss: {self.lam_cntrst * cntrst_loss}")
+        # print(f"BCE loss: {bce_loss}")
+        # print(f"Clst loss: {self.lam_clst * clst_loss}")
+        # print(f"Sep loss: {self.lam_sep * sep_loss}")
+        # print(f"Div loss: {self.lam_div * div_loss}")
+        # print(f"Cntrst loss: {self.lam_cntrst * cntrst_loss}")
 
         #############################################################################################
 

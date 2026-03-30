@@ -4,7 +4,7 @@ python sanity_check_ilp_assignment.py \
   --sampling-rate 32000 \
   --batch-size 4 \
   --num-workers 4 \
-  --checkpoint-path /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/results_audioset_proto_contrastive_clar/pass-audioset-ssl-assign/learn-prototypes/v1-uyg7rejy/best.ckpt \
+  --checkpoint-path /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/results_audioset_proto_contrastive_cola/pass-audioset-ssl-assign/learn-prototypes/v1-9awy32ia/best.ckpt \
   --resnet-type resnet18 \
   --conv-type PANNS \
   --audio-backbone-name Cnn14 \
@@ -18,4 +18,4 @@ python sanity_check_ilp_assignment.py \
   --n-prototypes-per-label 5 \
   --n-min 1 \
   --balanced-negative-sampling \
-  --output-dir /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/ilp_sanity_outputs
+  --output-dir /gpfs/data/bbj-lab/users/sethis/ecg-prototype-fm/ilp_sanity_outputs_cola

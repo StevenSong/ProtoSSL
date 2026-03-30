@@ -230,7 +230,6 @@ def main() -> None:
         association_matrix,
         n_prototypes_per_label=args.n_prototypes_per_label,
         valid_class_mask=valid_class_mask,
-        time_limit_s=args.time_limit_s,
     )
 
     selected = result.selected_indices_by_class

@@ -995,8 +995,16 @@ def run():
                     label_names=label_names,
                 )
 
-            ckpt_path = os.path.join(cli.trainer.log_dir, "assigned.ckpt")  # type: ignore
-            cli.trainer.save_checkpoint(ckpt_path, weights_only=False)
+            ckpt_path = os.path.join(cli.trainer.log_dir, "assigned.ckpt")
+            # Save the converted assigned model directly, since this ILP path does not
+            # necessarily have a Lightning model attached to the Trainer.
+            torch.save(
+                {
+                    "state_dict": cli.model.model.state_dict(),
+                },
+                ckpt_path,
+            )
+            print(f"Saved assigned checkpoint to {ckpt_path}")
 
         else:
             raise ValueError(

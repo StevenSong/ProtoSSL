@@ -14,7 +14,7 @@ class PrototypeAssigner(BaseClassifier):
         return [
             # fmt: off
             # from PrototypeContraster (learn-prototypes)
-            "proj.weight", "proj.bias", "log_temperature",
+            "proj.0.weight", "proj.0.bias", "proj.2.weight", "proj.2.bias", "log_temperature",
             # from PrototypeSupervisor (learn-prototypes-supervised)
             # NOTE: PrototypeAssigner's encoder uses per-label embeddings
             # and uses a MultiInputLinear instead of a single multitask head
