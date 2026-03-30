@@ -60,7 +60,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         # NOTE: we use a trick to derive one-hot assignments while still having
         # gradients flow through a soft-assignment probability distribution
         # See: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gumbel_softmax.html#torch-nn-functional-gumbel-softmax
-        assignments = hard_dist - soft_dist.detach() + soft_dist
+        assignments = hard_dist # - soft_dist.detach() + soft_dist
 
         # assignments has shape (L, K, P), where:
         # L = n_labels, K = n_prototypes_per_label, P = n_prototypes
