@@ -33,8 +33,10 @@ class StrictWandbLogger(WandbLogger):
                 .strip(os.path.sep)
                 .split(os.path.sep)[0]
             )
+            kwargs = {"resume": "must"}
         else:
             version = next_version(run_dir)
+            kwargs = {}
         save_dir = os.path.join(run_dir, version)
         self.best_link = os.path.join(save_dir, "best.ckpt")
         self.best_link_warned_once = False  # only used to prevent cluttering stdout for non-symlink checkpointing
@@ -44,6 +46,7 @@ class StrictWandbLogger(WandbLogger):
             name=f"{name}-{pipeline_stage}",
             version=version,
             save_dir=save_dir,
+            **kwargs,
         )
         if resume_from_checkpoint is None:
             if os.path.exists(self.save_dir):  # type: ignore
