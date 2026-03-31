@@ -40,6 +40,7 @@ pass_pclr/models/_base_classifier.py @StevenSong
 pass_pclr/models/_blackbox_classifier.py @StevenSong
 pass_pclr/models/_pretrained_utils.py @StevenSong
 pass_pclr/models/_prototype_assigner.py @StevenSong
+pass_pclr/models/_prototype_ilp_assigner.py @sahilsethi0105
 pass_pclr/models/_prototype_classifier.py @StevenSong
 pass_pclr/models/_prototype_contraster.py @StevenSong
 pass_pclr/models/_prototype_projector.py @StevenSong

@@ -12,6 +12,8 @@ STAGE_T = Literal[
     "compute-embeddings",
     "train-classifier",
 ]
+
+ASSIGN_T = Literal["protopool", "ilp_effect_size"]
 SPLIT_T = Literal["train", "val", "test"]
 BACKBONE_T = Literal[
     "resnet18",
