@@ -15,6 +15,7 @@ echo "Using RUN_DIR=$RUN_DIR"
 echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
+# submit job with 500GB of memory
 export HIGH_MEMORY=1
 
 # experiment parameters
@@ -32,11 +33,9 @@ python -m pass_pclr.trainer \
     --trainer.max_epochs 100 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $PRETRAIN_DATASET \
-    --data.num_workers 8 \
-    --data.prefetch_factor 4
+    --data.dataset_path $PRETRAIN_DATASET
 
-# project in the pretraining dataset
+project in the pretraining dataset
 python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes \
     --config $REPO_ROOT/configs/pretrain-unsupervised.yaml \
@@ -45,9 +44,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes/latest/best.ckpt \
-    --data.num_workers 8 \
-    --data.prefetch_factor 4
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes/latest/best.ckpt
 
 python -m pass_pclr.trainer \
     --pipeline-stage train-classifier \
@@ -57,9 +54,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes/latest/proj.ckpt \
-    --data.num_workers 8 \
-    --data.prefetch_factor 4
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes/latest/proj.ckpt
 
 python _eval_probs.py \
 --dataset-path $PRETRAIN_DATASET \
