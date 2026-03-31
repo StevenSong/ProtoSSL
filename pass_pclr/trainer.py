@@ -109,7 +109,7 @@ class LitData(LightningDataModule):
                     "compute-embeddings",
                 }
             )
-            or not (
+            and not (
                 # no shuffle if getting prototype similarities for linear assignment
                 # (effectively compute-embeddings but a little more direct)
                 pipeline_stage == "learn-prototype-assignments"
