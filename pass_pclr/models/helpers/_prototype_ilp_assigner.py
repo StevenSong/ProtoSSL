@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 import numpy as np
@@ -261,73 +259,3 @@ def solve_assignment_ilp(
         objective_value=float(objective_value),
         valid_class_mask=valid_class_mask,
     )
-
-
-# def compute_controlled_sharing(
-#     M: np.ndarray,  # (P, C)
-#     selected_indices_by_class: np.ndarray,  # (C, K)
-#     *,
-#     delta_M: float = 0.1,
-#     tau_abs: float = 0.5,
-#     s_max: int = 1,
-# ) -> list[set[int]]:
-#     """
-#     Optional post-processing for interpretability only.
-
-#     Returns:
-#         shared[k] = set of additional class ids for prototype k
-
-#     Notes:
-#         - primary membership is determined by `selected_indices_by_class`
-#         - shared memberships do NOT satisfy coverage/accounting in this repo
-#         - downstream projection/classifier code currently does not consume sharing;
-#           this helper is mainly for analysis / metadata
-#     """
-#     M = np.asarray(M, dtype=np.float64)
-#     selected_indices_by_class = np.asarray(selected_indices_by_class, dtype=np.int64)
-
-#     if M.ndim != 2:
-#         raise ValueError(f"M must have shape (P, C), got {M.shape}")
-#     if selected_indices_by_class.ndim != 2:
-#         raise ValueError(
-#             "selected_indices_by_class must have shape (C, K), "
-#             f"got {selected_indices_by_class.shape}"
-#         )
-#     if s_max < 0:
-#         raise ValueError("s_max must be >= 0")
-
-#     P, C = M.shape
-#     primary = np.full(P, -1, dtype=np.int64)
-
-#     for c in range(selected_indices_by_class.shape[0]):
-#         for k in selected_indices_by_class[c]:
-#             if k < 0 or k >= P:
-#                 raise ValueError(f"Prototype index {k} out of bounds for P={P}")
-#             if primary[k] >= 0:
-#                 raise ValueError(
-#                     f"Prototype {k} was assigned to more than one primary class"
-#                 )
-#             primary[k] = c
-
-#     shared = [set() for _ in range(P)]
-#     for k in range(P):
-#         c1 = primary[k]
-#         if c1 < 0:
-#             continue
-
-#         scores = M[k]
-#         order = np.argsort(-scores)
-
-#         added = 0
-#         for c in order:
-#             c = int(c)
-#             if c == c1:
-#                 continue
-
-#             if scores[c] >= scores[c1] - delta_M and scores[c] >= tau_abs:
-#                 shared[k].add(c)
-#                 added += 1
-#                 if added >= s_max:
-#                     break
-
-#     return shared

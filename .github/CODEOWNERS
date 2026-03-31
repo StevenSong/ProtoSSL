@@ -40,7 +40,6 @@ pass_pclr/models/_base_classifier.py @StevenSong
 pass_pclr/models/_blackbox_classifier.py @StevenSong
 pass_pclr/models/_pretrained_utils.py @StevenSong
 pass_pclr/models/_prototype_assigner.py @StevenSong
-pass_pclr/models/_prototype_ilp_assigner.py @sahilsethi0105
 pass_pclr/models/_prototype_classifier.py @StevenSong
 pass_pclr/models/_prototype_contraster.py @StevenSong
 pass_pclr/models/_prototype_projector.py @StevenSong
@@ -52,6 +51,8 @@ pass_pclr/models/encoders/_prototype_encoder_with_assignment.py @StevenSong
 pass_pclr/models/encoders/_prototype_encoder.py @StevenSong
 pass_pclr/models/encoders/_resnet1d.py @StevenSong
 pass_pclr/models/encoders/_resnet2d.py @StevenSong
+pass_pclr/models/helpers/__init__.py @StevenSong
+pass_pclr/models/helpers/_prototype_ilp_assigner.py @sahilsethi0105
 pass_pclr/models/layers/__init__.py @StevenSong
 pass_pclr/models/layers/_multi_input_linear.py @StevenSong
 pass_pclr/trainer.py @StevenSong

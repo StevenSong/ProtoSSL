@@ -3,7 +3,12 @@ import torch
 from ..defines import ASSIGN_T, BACKBONE_T, CONV_T, PROT_T
 from ._base_classifier import BaseClassifier
 from ._prototype_classifier import PrototypeClassifier
-from .encoders import PrototypeEncoderWithAssignment
+from .encoders import PrototypeEncoder, PrototypeEncoderWithAssignment
+from .helpers import (
+    PrototypeILPAssignmentResult,
+    build_association_matrix,
+    solve_assignment_ilp,
+)
 
 
 class PrototypeAssigner(BaseClassifier):
@@ -50,18 +55,28 @@ class PrototypeAssigner(BaseClassifier):
         self.input_channels = input_channels
         self.partial_len = partial_len
         self.partial_overlap = partial_overlap
+        self.lp_indices = None  # set by solve_linear_assignment when assignment_strategy == "ilp_effect_size"
+
+        if assignment_strategy == "protopool":
+            encoder_cls = PrototypeEncoderWithAssignment
+            extra_kwargs = {
+                "n_prototypes_per_label": n_prototypes_per_label,
+                "n_labels": n_binary_labels,
+            }
+        elif assignment_strategy == "ilp_effect_size":
+            encoder_cls = PrototypeEncoder
+            extra_kwargs = dict()
 
         super().__init__(
-            encoder=PrototypeEncoderWithAssignment(
+            encoder=encoder_cls(
                 backbone_type=backbone_type,
                 n_prototypes=n_prototypes,
-                n_prototypes_per_label=n_prototypes_per_label,
-                n_labels=n_binary_labels,
                 conv_type=conv_type,
                 prototytpe_type=prototype_type,
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                **extra_kwargs,
             ),
             n_binary_labels=n_binary_labels,
             pretrained_weights=pretrained_weights,
@@ -69,7 +84,11 @@ class PrototypeAssigner(BaseClassifier):
 
     def static_losses(self) -> dict[str, torch.Tensor] | None:
         # ILP does not train assignment weights, so no static loss
+        # we shouldn't ever reach this point anyways but just in case
         if self.assignment_strategy != "protopool":
+            print(
+                "WARNING: Unexpected call to static_losses in PrototypeAssigner with non-prototpool assignment strategy"
+            )
             return None
 
         # In ProtoPool, for each label, the prototype assignment slots should pick
@@ -85,8 +104,41 @@ class PrototypeAssigner(BaseClassifier):
 
         return {"Prototype_Orthogonality": (gram * mask).pow(2).mean()}
 
-    def _build_proto_classifier_shell(self) -> PrototypeClassifier:
-        return PrototypeClassifier(
+    def solve_linear_assignment(
+        self, similarities: torch.Tensor, labels: torch.Tensor
+    ) -> PrototypeILPAssignmentResult:
+        print("==============solve_linear_assignment==============")
+        print(
+            f"Solving Linear Assignment (assignment_strategy={self.assignment_strategy})"
+        )
+        print("===================================================")
+        assert self.assignment_strategy == "ilp_effect_size"
+
+        association_matrix, valid_class_mask = build_association_matrix(
+            similarities.numpy(),
+            labels.numpy(),
+            n_min=10,
+            trim=0.10,
+            eps=1e-6,
+            n_neg_repeats=1,
+            balanced_negative_sampling=True,
+            random_seed=0,
+        )
+
+        result = solve_assignment_ilp(
+            association_matrix,
+            n_prototypes_per_label=self.n_prototypes_per_label,
+            valid_class_mask=valid_class_mask,
+        )
+
+        self.lp_indices = torch.as_tensor(
+            result.selected_indices_by_class, dtype=torch.long
+        )
+
+        return result
+
+    def convert_to_proto_classifier(self) -> PrototypeClassifier:
+        model = PrototypeClassifier(
             backbone_type=self.backbone_type,  # type: ignore
             conv_type=self.conv_type,  # type: ignore
             prototype_type=self.prototype_type,  # type: ignore
@@ -97,24 +149,16 @@ class PrototypeAssigner(BaseClassifier):
             partial_overlap=self.partial_overlap,
         )
 
-    def convert_to_proto_classifier(self) -> PrototypeClassifier:
-        """
-        Existing ProtoPool conversion path:
-        use hard assignments from encoder.assignment_weights, producing
-        contiguous class blocks of size (n_prototypes_per_label).
-        """
-        model = self._build_proto_classifier_shell()
-
         sd = self.state_dict()
         new_sd = dict()
 
         for name in model.state_dict().keys():
             if name == "encoder.prototypes":
-                encoder: PrototypeEncoderWithAssignment = self.encoder  # type: ignore[assignment]
-                assignments = encoder.get_assignments(hard=True)  # (L, K, P)
-                indices = assignments.argmax(dim=-1)  # (L, K)
-                indices = indices.view(-1)  # (L * K,)
-                prototypes = encoder.prototypes[indices]
+                encoder: PrototypeEncoderWithAssignment = self.encoder  # type: ignore
+                indices = self.get_assignment_indices()
+                prototypes = encoder.prototypes[
+                    indices.to(device=encoder.prototypes.device)
+                ]
                 new_sd[name] = prototypes
             elif name == "cls.weight" or name == "cls.bias":
                 # PrototypeAssigner classifier head takes a similarity vector of size n_prototypes_per_label
@@ -137,77 +181,57 @@ class PrototypeAssigner(BaseClassifier):
 
         return model
 
-    def convert_to_proto_classifier_from_indices(
-        self,
-        indices: torch.Tensor,
-    ) -> PrototypeClassifier:
-        """
-        ILP conversion path.
+    def get_assignment_indices(self) -> torch.Tensor:
+        if self.assignment_strategy == "protopool":
+            # ProtoPool conversion path:
+            # use hard assignments from encoder.assignment_weights
+            assert isinstance(self.encoder, PrototypeEncoderWithAssignment)
+            assignments = self.encoder.get_assignments(hard=True)  # (L, K, P)
+            indices = assignments.argmax(dim=-1)  # (L, K)
+            indices = indices.view(-1)  # (L * K,)
+        elif self.assignment_strategy == "ilp_effect_size":
+            if self.lp_indices is None:
+                raise ValueError(
+                    f"lp_indices is None, has solve_linear_assignment been called yet?"
+                )
+            # ILP conversion path:
+            # lp_indices:
+            #     Long tensor of shape (L, K), where:
+            #         - L = n_binary_labels
+            #         - K = n_prototypes_per_label
+            #     and indices[c, :] are the selected prototype ids for class c.
+            if self.lp_indices.ndim != 2:
+                raise ValueError(
+                    f"indices must have shape (n_binary_labels, n_prototypes_per_label), got {tuple(self.lp_indices.shape)}"
+                )
 
-        Args:
-            indices:
-                Long tensor of shape (L, K), where:
-                  - L = n_binary_labels
-                  - K = n_prototypes_per_label
-                and indices[c, :] are the selected prototype ids for class c.
+            expected_shape = (self.n_binary_labels, self.n_prototypes_per_label)
+            if tuple(self.lp_indices.shape) != expected_shape:
+                raise ValueError(
+                    f"indices must have shape {expected_shape}, got {tuple(self.lp_indices.shape)}"
+                )
 
-        Returns:
-            PrototypeClassifier with encoder.prototypes reordered into contiguous
-            class-major blocks matching the repo's downstream assumptions.
-        """
-        if indices.ndim != 2:
+            if self.lp_indices.dtype not in (torch.int32, torch.int64):
+                self.lp_indices = self.lp_indices.long()
+
+            indices = self.lp_indices.reshape(-1)
+
+            if torch.any(indices < 0):
+                raise ValueError("indices contains negative prototype ids")
+            if torch.any(indices >= self.n_prototypes):
+                raise ValueError(
+                    f"indices contains prototype ids >= n_prototypes ({self.n_prototypes})"
+                )
+
+            # Require unique prototype usage to match the ILP formulation.
+            unique_flat = torch.unique(indices)
+            if unique_flat.numel() != indices.numel():
+                raise ValueError(
+                    "convert_to_proto_classifier_from_indices expects unique prototype ids, "
+                    "but duplicate indices were provided."
+                )
+        else:
             raise ValueError(
-                f"indices must have shape (n_binary_labels, n_prototypes_per_label), got {tuple(indices.shape)}"
+                f"Unknown how to interpret assignment indices for assignment_strategy={self.assignment_strategy}"
             )
-
-        expected_shape = (self.n_binary_labels, self.n_prototypes_per_label)
-        if tuple(indices.shape) != expected_shape:
-            raise ValueError(
-                f"indices must have shape {expected_shape}, got {tuple(indices.shape)}"
-            )
-
-        if indices.dtype not in (torch.int32, torch.int64):
-            indices = indices.long()
-
-        flat_indices = indices.reshape(-1)
-
-        if torch.any(flat_indices < 0):
-            raise ValueError("indices contains negative prototype ids")
-        if torch.any(flat_indices >= self.n_prototypes):
-            raise ValueError(
-                f"indices contains prototype ids >= n_prototypes ({self.n_prototypes})"
-            )
-
-        # Require unique prototype usage to match the ILP formulation.
-        unique_flat = torch.unique(flat_indices)
-        if unique_flat.numel() != flat_indices.numel():
-            raise ValueError(
-                "convert_to_proto_classifier_from_indices expects unique prototype ids, "
-                "but duplicate indices were provided."
-            )
-
-        model = self._build_proto_classifier_shell()
-
-        sd = self.state_dict()
-        new_sd = dict()
-
-        for name in model.state_dict().keys():
-            if name == "encoder.prototypes":
-                encoder: PrototypeEncoderWithAssignment = self.encoder  # type: ignore[assignment]
-                prototypes = encoder.prototypes[flat_indices]
-                new_sd[name] = prototypes
-            elif name == "cls.weight" or name == "cls.bias":
-                # Same incompatibility as in ProtoPool conversion.
-                continue
-            else:
-                if name not in sd:
-                    raise ValueError(
-                        f"Parameter {name} in PrototypeClassifier not found in PrototypeAssigner state dict"
-                    )
-                new_sd[name] = sd[name]
-
-        missing_keys, unexpected_keys = model.load_state_dict(new_sd, strict=False)
-        assert len(unexpected_keys) == 0
-        assert set(missing_keys) == {"cls.weight", "cls.bias"}
-
-        return model
+        return indices
