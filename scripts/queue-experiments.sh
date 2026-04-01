@@ -2,7 +2,8 @@
 
 set -e
 
-declare -a DATASETS=("echonext" "ptbxl" "cinc" "mimic" "zzu")
+# declare -a DATASETS=("echonext" "ptbxl" "cinc" "mimic" "zzu")
+declare -a DATASETS=("ptbxl" "cinc" "mimic" "zzu")
 declare -A DATASET_DIRS=(
     ["echonext"]="echonext"
     ["ptbxl"]="ptb-xl"
@@ -38,15 +39,15 @@ for dataset in "${DATASETS[@]}"; do
         cache_id=$(submit_job "$suffix" 0-run-cache-data.sh)
         echo $cache_id
 
-        submit_job "$suffix" 1-run-blackbox-direct.sh "--dependency=afterok:$cache_id"
-        submit_job "$suffix" 2-run-labsup-proto-direct-14ppl.sh "--dependency=afterok:$cache_id"
-        submit_job "$suffix" 3-01-run-protossl-no-attn-heedb-pia-14ppl.sh "--dependency=afterok:$cache_id"
-        submit_job "$suffix" 3-02-run-protossl-no-attn-heedb-pila-14ppl.sh "--dependency=afterok:$cache_id"
+        # submit_job "$suffix" 1-run-blackbox-direct.sh "--dependency=afterok:$cache_id"
+        # submit_job "$suffix" 2-run-labsup-proto-direct-14ppl.sh "--dependency=afterok:$cache_id"
+        # submit_job "$suffix" 3-01-run-protossl-no-attn-heedb-pia-14ppl.sh "--dependency=afterok:$cache_id"
+        # submit_job "$suffix" 3-02-run-protossl-no-attn-heedb-pila-14ppl.sh "--dependency=afterok:$cache_id"
         submit_job "$suffix" 3-03-run-protossl-no-attn-heedb-pilma-14ppl.sh "--dependency=afterok:$cache_id"
-        submit_job "$suffix" 4-01-run-labsup-proto-heedb-ria-14ppl.sh "--dependency=afterok:$cache_id"
-        submit_job "$suffix" 4-02-run-labsup-proto-heedb-rila-14ppl.sh "--dependency=afterok:$cache_id"
+        # submit_job "$suffix" 4-01-run-labsup-proto-heedb-ria-14ppl.sh "--dependency=afterok:$cache_id"
+        # submit_job "$suffix" 4-02-run-labsup-proto-heedb-rila-14ppl.sh "--dependency=afterok:$cache_id"
         submit_job "$suffix" 4-03-run-labsup-proto-heedb-rilma-14ppl.sh "--dependency=afterok:$cache_id"
 
-        submit_job "$suffix" 5-run-ecgfounder-logreg.sh # does not depend on same 100 Hz cache (takes 500 Hz)
+        # submit_job "$suffix" 5-run-ecgfounder-logreg.sh # does not depend on same 100 Hz cache (takes 500 Hz)
     done
 done
