@@ -13,7 +13,13 @@ STAGE_T = Literal[
     "train-classifier",
 ]
 
-ASSIGN_T = Literal["protopool", "ilp_effect_size", "ilp_effect_size_multiple_allowed"]
+ASSIGN_T = Literal[
+    "protopool",
+    "ilp_effect_size",
+    "ilp_effect_size_lr_coef_scaled",
+    "ilp_effect_size_lr_or_scaled",
+    "ilp_effect_size_multiple_allowed",
+]
 SPLIT_T = Literal["train", "val", "test"]
 BACKBONE_T = Literal[
     "resnet18",

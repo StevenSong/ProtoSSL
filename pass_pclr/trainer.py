@@ -114,7 +114,12 @@ class LitData(LightningDataModule):
                 # (effectively compute-embeddings but a little more direct)
                 pipeline_stage == "learn-prototype-assignments"
                 and assignment_strategy
-                in ["ilp_effect_size", "ilp_effect_size_multiple_allowed"]
+                in [
+                    "ilp_effect_size",
+                    "ilp_effect_size_lr_coef_scaled",
+                    "ilp_effect_size_lr_or_scaled",
+                    "ilp_effect_size_multiple_allowed",
+                ]
             ),
             pin_memory=True,
             drop_last=False,
@@ -520,7 +525,12 @@ class LitModel(LightningModule):
         elif (
             pipeline_stage == "learn-prototype-assignments"
             and assignment_strategy
-            in ["ilp_effect_size", "ilp_effect_size_multiple_allowed"]
+            in [
+                "ilp_effect_size",
+                "ilp_effect_size_lr_coef_scaled",
+                "ilp_effect_size_lr_or_scaled",
+                "ilp_effect_size_multiple_allowed",
+            ]
         ):
             from .models.encoders import PrototypeEncoder
 
@@ -681,7 +691,12 @@ class PredictionWriter(BasePredictionWriter):
         elif (
             pipeline_stage == "learn-prototype-assignments"
             and assignment_strategy
-            in ["ilp_effect_size", "ilp_effect_size_multiple_allowed"]
+            in [
+                "ilp_effect_size",
+                "ilp_effect_size_lr_coef_scaled",
+                "ilp_effect_size_lr_or_scaled",
+                "ilp_effect_size_multiple_allowed",
+            ]
         ):
             # using returned predicted similarities in next step of run
             to_save = None  # type: ignore
@@ -891,6 +906,8 @@ def run():
             )
         elif assignment_strategy in [
             "ilp_effect_size",
+            "ilp_effect_size_lr_coef_scaled",
+            "ilp_effect_size_lr_or_scaled",
             "ilp_effect_size_multiple_allowed",
         ]:
             cli.datamodule.setup("fit")

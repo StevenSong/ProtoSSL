@@ -12,19 +12,19 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="labsup-proto-heedb-rilma-14ppl"
-PRETRAIN_RUN="$RUN_DIR/../prosup-pretrain-heedb"
+EXP_NAME="protossl-heedb-no-attn-pila-lror-14ppl"
+PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb-no-attn"
 
 # this version relies on learning prototype assignments relative to the target task
 python -m pass_pclr.trainer \
     --pipeline-stage learn-prototype-assignments \
-    --assignment-strategy ilp_effect_size_multiple_allowed \
+    --assignment-strategy ilp_effect_size_lr_or_scaled \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --model.n_prototypes 1000 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt
+    --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt
 
 # then project
 python -m pass_pclr.trainer \

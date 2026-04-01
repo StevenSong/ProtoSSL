@@ -12,13 +12,13 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="protossl-heedb-no-attn-pilma-14ppl"
+EXP_NAME="protossl-heedb-no-attn-pila-lrco-14ppl"
 PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb-no-attn"
 
 # this version relies on learning prototype assignments relative to the target task
 python -m pass_pclr.trainer \
     --pipeline-stage learn-prototype-assignments \
-    --assignment-strategy ilp_effect_size_multiple_allowed \
+    --assignment-strategy ilp_effect_size_lr_coef_scaled \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --model.n_prototypes 1000 \
     --trainer.logger.save_dir $RUN_DIR \

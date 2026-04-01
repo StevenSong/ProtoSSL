@@ -55,7 +55,7 @@ class PrototypeAssigner(BaseClassifier):
         self.input_channels = input_channels
         self.partial_len = partial_len
         self.partial_overlap = partial_overlap
-        self.lp_indices = None  # set by solve_linear_assignment when assignment_strategy in ["ilp_effect_size", "ilp_effect_size_multiple_allowed"]
+        self.lp_indices = None  # set by solve_linear_assignment when assignment_strategy in ["ilp_effect_size", "ilp_effect_size_lr_coef_scaled", "ilp_effect_size_lr_or_scaled", "ilp_effect_size_multiple_allowed"]
 
         if assignment_strategy == "protopool":
             encoder_cls = PrototypeEncoderWithAssignment
@@ -65,6 +65,8 @@ class PrototypeAssigner(BaseClassifier):
             }
         elif assignment_strategy in [
             "ilp_effect_size",
+            "ilp_effect_size_lr_coef_scaled",
+            "ilp_effect_size_lr_or_scaled",
             "ilp_effect_size_multiple_allowed",
         ]:
             encoder_cls = PrototypeEncoder
@@ -120,12 +122,23 @@ class PrototypeAssigner(BaseClassifier):
         )
         assert self.assignment_strategy in [
             "ilp_effect_size",
+            "ilp_effect_size_lr_coef_scaled",
+            "ilp_effect_size_lr_or_scaled",
             "ilp_effect_size_multiple_allowed",
         ]
         max_classes_per_prototype = (
             labels.shape[1]
             if self.assignment_strategy == "ilp_effect_size_multiple_allowed"
             else 1
+        )
+        weight_effects_using_lr = (
+            "coef"
+            if self.assignment_strategy == "ilp_effect_size_lr_coef_scaled"
+            else (
+                "OR"
+                if self.assignment_strategy == "ilp_effect_size_lr_or_scaled"
+                else None
+            )
         )
 
         n_neg_repeats = 10
@@ -140,6 +153,7 @@ class PrototypeAssigner(BaseClassifier):
             eps=1e-6,
             n_neg_repeats=n_neg_repeats,  # number of resample repeats
             balanced_negative_sampling=True,
+            weight_effects_using_lr=weight_effects_using_lr,
             random_seed=0,
         )
 
@@ -219,6 +233,8 @@ class PrototypeAssigner(BaseClassifier):
             indices = indices.view(-1)  # (L * K,)
         elif self.assignment_strategy in [
             "ilp_effect_size",
+            "ilp_effect_size_lr_coef_scaled",
+            "ilp_effect_size_lr_or_scaled",
             "ilp_effect_size_multiple_allowed",
         ]:
             if self.lp_indices is None:
@@ -257,12 +273,17 @@ class PrototypeAssigner(BaseClassifier):
             # Require unique prototype usage to match the ILP formulation.
             unique_flat = torch.unique(indices)
             if (
-                self.assignment_strategy == "ilp_effect_size"
+                self.assignment_strategy
+                in [
+                    "ilp_effect_size",
+                    "ilp_effect_size_lr_coef_scaled",
+                    "ilp_effect_size_lr_or_scaled",
+                ]
                 and unique_flat.numel() != indices.numel()
             ):
                 raise ValueError(
-                    "ilp_effect_size assignment expects unique prototype ids, "
-                    "but duplicate indices were provided."
+                    f"only assignment_strategy=ilp_effect_size_multiple_allowed allows assignment of single prototypes to multiple labels, "
+                    f"but got assignment_strategy={self.assignment_strategy} with non-unique prototype assignments"
                 )
         else:
             raise ValueError(

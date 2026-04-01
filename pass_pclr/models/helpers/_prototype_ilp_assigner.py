@@ -1,7 +1,11 @@
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 from scipy.optimize import Bounds, LinearConstraint, linear_sum_assignment, milp
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from tqdm import trange
 
 INVALID_ASSOCIATION_SCORE = -10_000_000.0
 
@@ -72,6 +76,7 @@ def build_association_matrix(
     eps: float = 1e-6,
     n_neg_repeats: int = 1,
     balanced_negative_sampling: bool = True,
+    weight_effects_using_lr: Literal["coef", "OR"] | None = None,
     random_seed: int = 0,
     invalid_score: float = INVALID_ASSOCIATION_SCORE,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -110,7 +115,12 @@ def build_association_matrix(
     M = np.full((P, C), invalid_score, dtype=np.float64)
     valid_class_mask = np.zeros(C, dtype=bool)
 
-    for c in range(C):
+    X = None
+    if weight_effects_using_lr is not None:
+        scaler = StandardScaler()
+        X = scaler.fit_transform(A)
+
+    for c in trange(C, desc="Computing Prototype Effect Size Per Class"):
         pos_idx = np.where(Y[:, c] == 1)[0]
         neg_idx_all = np.where(Y[:, c] == 0)[0]
 
@@ -151,6 +161,21 @@ def build_association_matrix(
 
             sigma = np.sqrt((s_pos**2 + s_neg**2) / 2.0)
             M[k, c] = (mu_pos - mu_neg) / (sigma + eps)
+
+        if weight_effects_using_lr is not None:
+            assert X is not None
+            model = LogisticRegression(
+                C=5e-4,
+                penalty="l2",
+                solver="saga",
+                random_state=random_seed,
+                max_iter=100,
+                n_jobs=-1,
+            ).fit(X, Y[:, c])
+            scale = model.coef_.squeeze()  # (P,)
+            if weight_effects_using_lr == "OR":
+                scale = np.exp(scale)
+            M[:, c] *= scale
 
     return M.astype(np.float32), valid_class_mask
 
