@@ -74,8 +74,10 @@ scripts/1-run-blackbox-direct.sh @StevenSong
 scripts/2-run-labsup-proto-direct-14ppl.sh @StevenSong
 scripts/3-01-run-protossl-no-attn-heedb-pia-14ppl.sh @StevenSong
 scripts/3-02-run-protossl-no-attn-heedb-pila-14ppl.sh @StevenSong
+scripts/3-03-run-protossl-no-attn-heedb-pilma-14ppl.sh @StevenSong
 scripts/4-01-run-labsup-proto-heedb-ria-14ppl.sh @StevenSong
 scripts/4-02-run-labsup-proto-heedb-rila-14ppl.sh @StevenSong
+scripts/4-03-run-labsup-proto-heedb-rilma-14ppl.sh @StevenSong
 scripts/5-run-ecgfounder-logreg.sh @StevenSong
 scripts/audio-1-1-run-proto-from-scratch.sh
 scripts/ecgfounder/_compute_ecgfounder_embeddings.py @StevenSong

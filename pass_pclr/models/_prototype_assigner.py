@@ -128,17 +128,29 @@ class PrototypeAssigner(BaseClassifier):
             else 1
         )
 
+        n_neg_repeats = 10
+        print(
+            f"Computing effect-size by drawing {n_neg_repeats} pos/neg balanced resamples per label (may take a while if drawing many times)"
+        )
         association_matrix, valid_class_mask = build_association_matrix(
             similarities.numpy(),
             labels.numpy(),
             n_min=1,  # min positive samples
             trim=0.10,
             eps=1e-6,
-            n_neg_repeats=10,  # number of resample repeats
+            n_neg_repeats=n_neg_repeats,  # number of resample repeats
             balanced_negative_sampling=True,
             random_seed=0,
         )
 
+        if max_classes_per_prototype == 1:
+            print(
+                "Reducing to pure LAP since max_classes_per_prototype=1, using faster solver"
+            )
+        else:
+            print(
+                f"Solving a variant of LAP since max_classes_per_prototype={max_classes_per_prototype}, using MILP solver (at least 15x slower in limited tests)"
+            )
         result = solve_assignment_ilp(
             association_matrix,
             n_prototypes_per_label=self.n_prototypes_per_label,
