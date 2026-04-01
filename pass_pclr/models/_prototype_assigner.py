@@ -18,7 +18,7 @@ class PrototypeAssigner(BaseClassifier):
             # from PrototypeSupervisor (learn-prototypes-supervised)
             # NOTE: PrototypeAssigner's encoder uses per-label embeddings
             # and uses a MultiInputLinear instead of a single multitask head
-            "cls.bias", "cls.weight",
+            "_alpha_raw", "_l1_ratio_raw", "cls.bias", "cls.weight",
             # fmt: on
         ]
 

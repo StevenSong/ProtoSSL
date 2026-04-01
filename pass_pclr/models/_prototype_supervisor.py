@@ -139,7 +139,8 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
 
     @property
     def allow_extra_keys(self) -> list[str]:
-        return []
+        return ["proj.0.weight", "proj.0.bias", "proj.2.weight", "proj.2.bias", "log_temperature", "_alpha_raw", "_l1_ratio_raw"]
+
 
     @property
     def allow_missing_keys(self) -> list[str]:
