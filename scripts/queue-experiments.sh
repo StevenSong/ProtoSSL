@@ -18,8 +18,8 @@ declare -a SUFFIXES_mimic=("" "-32k" "-16k" "-8k" "-4k" "-2k" "-1k")
 declare -a SUFFIXES_zzu=("" "-4k" "-2k" "-1k")
 
 export BASE_ECG_PATH=/opt/gpudata/ecg
-export REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
-export BASE_OUTPUT_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs-fast
+export REPO_ROOT=/home/songs1/working/ecg-prototype-fm
+export BASE_OUTPUT_DIR=/home/songs1/working/ecg-prototype-fm/outputs
 
 source _submit_job.sh
 
