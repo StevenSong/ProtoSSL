@@ -6,7 +6,7 @@ from warnings import simplefilter
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.linear_model import LogisticRegressionCV
+from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
@@ -60,17 +60,29 @@ def main(
     for i, target_col in enumerate(tqdm(label_names)):
         y_train = train_targets[:, i]
 
-        model = LogisticRegressionCV(
-            Cs=10,
-            l1_ratios=[0, 0.1, 0.25, 0.5, 0.75, 0.9, 1],
-            penalty="elasticnet",
-            cv=5,
+        # after alot of runs, looks like most of the time,
+        # it's low regularization strength and mostly l2,
+        # so consider just using C=5e-4 and l1_ratio=0
+        model = LogisticRegression(
+            C=5e-4,
+            penalty="l2",
             solver="saga",
             class_weight="balanced" if balance_class_weight else None,
             random_state=42,
             max_iter=100,
             n_jobs=-1,
         )
+        # model = LogisticRegressionCV(
+        #     Cs=10,
+        #     l1_ratios=[0, 0.1, 0.25, 0.5, 0.75, 0.9, 1],
+        #     penalty="elasticnet",
+        #     cv=5,
+        #     solver="saga",
+        #     class_weight="balanced" if balance_class_weight else None,
+        #     random_state=42,
+        #     max_iter=100,
+        #     n_jobs=-1,
+        # )
         model.fit(X_train, y_train)
         models[target_col] = model
 
