@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.optimize import linear_sum_assignment
+from scipy.optimize import Bounds, LinearConstraint, milp
 
 INVALID_ASSOCIATION_SCORE = -10_000_000.0
 
@@ -159,28 +159,31 @@ def solve_assignment_ilp(
     M: np.ndarray,  # (P, C)
     *,
     n_prototypes_per_label: int,
+    max_classes_per_prototype: int = 1,
     valid_class_mask: np.ndarray | None = None,
     invalid_score: float = INVALID_ASSOCIATION_SCORE,
 ) -> PrototypeILPAssignmentResult:
     """
     Solve the exact-quota prototype assignment problem by reducing it to a
-    rectangular linear assignment problem.
+    variant of the rectangular linear assignment problem.
 
     We create K identical slots for each class, where K = n_prototypes_per_label.
     Then we assign prototypes to class slots with maximum total association score.
 
     This supports:
       - exactly K prototypes per class
-      - each prototype used at most once
-      - extra prototypes left unused when P > C*K
+      - each prototype used at most R times
+      - extra prototypes left unused when P*R > C*K
     """
     M = np.asarray(M, dtype=np.float64)
     if M.ndim != 2:
         raise ValueError(f"M must have shape (P, C), got {M.shape}")
 
     P, C = M.shape
+    K = n_prototypes_per_label
+    R = max_classes_per_prototype
 
-    if n_prototypes_per_label <= 0:
+    if K <= 0:
         raise ValueError("n_prototypes_per_label must be positive")
 
     if valid_class_mask is None:
@@ -199,13 +202,11 @@ def solve_assignment_ilp(
             f"but classes {invalid_classes.tolist()} are under-supported."
         )
 
-    K = n_prototypes_per_label
     n_slots = C * K
-
-    if P < n_slots:
+    if P * R < n_slots:
         raise ValueError(
-            f"Infeasible assignment: need at least {n_slots} prototypes "
-            f"for {C} classes x {K} slots, but only have {P}."
+            f"Infeasible assignment: need at least {n_slots} allowable assignments "
+            f"for {C} classes x {K} slots, but only have {P} prototypes x {R} classes per prototype."
         )
 
     # Expand class scores into slot scores: (P, C*K)
@@ -213,32 +214,57 @@ def solve_assignment_ilp(
     slot_to_class = np.repeat(np.arange(C), K)
     score_matrix = M[:, slot_to_class]  # (P, C*K)
 
-    # Forbidden assignments: set to a very bad score
-    forbidden_mask = score_matrix <= invalid_score / 2.0
-    if np.any(forbidden_mask):
-        score_matrix = score_matrix.copy()
-        score_matrix[forbidden_mask] = invalid_score
+    # milp minimizes cost, so negate scores to maximize
+    # milp also requires flat 1D array
+    c_obj = -score_matrix.ravel()
 
-    # linear_sum_assignment minimizes cost, so negate scores to maximize
-    cost_matrix = -score_matrix
-
-    # rectangular assignment:
+    # mimic LAP rectangular assignment:
     # - one prototype per chosen slot
     # - one slot per chosen prototype
-    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+    # Let x be the optimal assignment matrix with shape (P, n_slots)
+    # milp expects flat 1D array so x[p, s] = x_flat[p * n_slots + s]
+    N = P * n_slots  # number of decision variables
+    cell_lbs = np.zeros(N)
+    cell_ubs = np.ones(N)
 
-    # Since P >= C*K, linear_sum_assignment returns assignments for all columns
-    # only if columns <= rows. That is our case.
-    if len(col_ind) != n_slots:
-        raise RuntimeError(
-            f"Assignment failed: expected {n_slots} assigned slots, got {len(col_ind)}"
-        )
+    # Forbidden assignments: set upper bound so that assignments are impossible
+    forbidden = score_matrix <= invalid_score / 2.0
+    cell_ubs[forbidden.ravel()] = 0.0
+
+    # Row-sum constraint: sum_s x[p, s] <= R for each p
+    # each prototype used at most R times (this just defines which variables to consider, bounds later)
+    row_sums = np.kron(np.eye(P), np.ones((1, n_slots)))  # (P, N)
+
+    # Col-sum constraint: sum_p x[p, s] = 1 for each s
+    # each slot filled exactly once (this just defines which variables to consider, bounds later)
+    col_sums = np.kron(np.ones((1, P)), np.eye(n_slots))  # (n_slots, N)
+
+    # row-sums between 0 and R, col-sums = 1
+    constraints = LinearConstraint(
+        A=np.vstack([row_sums, col_sums]),  # linear equations defining constraints
+        lb=np.concatenate([np.zeros(P), np.ones(n_slots) * R]),  # type: ignore
+        ub=np.concatenate([np.ones(P), np.ones(n_slots)]),  # type: ignore
+    )
+
+    result = milp(
+        c=c_obj,
+        constraints=constraints,
+        integrality=np.ones(N),
+        bounds=Bounds(lb=cell_lbs, ub=cell_ubs),  # type: ignore
+    )
+
+    if not result.success:
+        raise RuntimeError(f"MILP solver failed: {result.message}")
+
+    # map flat assignments back to (proto, class) pairs
+    x = np.round(result.x).reshape(P, n_slots)  # (P, n_slots)
 
     assignment_matrix = np.zeros((P, C), dtype=np.int64)
     selected_indices_by_class = [[] for _ in range(C)]
     objective_value = 0.0
 
-    for proto_idx, slot_idx in zip(row_ind, col_ind):
+    proto_indices, slot_indices = np.where(x == 1)
+    for proto_idx, slot_idx in zip(proto_indices, slot_indices):
         c = int(slot_to_class[slot_idx])
         assignment_matrix[proto_idx, c] = 1
         selected_indices_by_class[c].append(int(proto_idx))
@@ -256,6 +282,6 @@ def solve_assignment_ilp(
         selected_indices_by_class=selected_indices_by_class,
         assignment_matrix=assignment_matrix,
         association_matrix=M.astype(np.float32),
-        objective_value=float(objective_value),
+        objective_value=objective_value,
         valid_class_mask=valid_class_mask,
     )

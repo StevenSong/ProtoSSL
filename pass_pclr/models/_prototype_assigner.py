@@ -55,7 +55,7 @@ class PrototypeAssigner(BaseClassifier):
         self.input_channels = input_channels
         self.partial_len = partial_len
         self.partial_overlap = partial_overlap
-        self.lp_indices = None  # set by solve_linear_assignment when assignment_strategy == "ilp_effect_size"
+        self.lp_indices = None  # set by solve_linear_assignment when assignment_strategy in ["ilp_effect_size", "ilp_effect_size_multiple_allowed"]
 
         if assignment_strategy == "protopool":
             encoder_cls = PrototypeEncoderWithAssignment
@@ -63,9 +63,16 @@ class PrototypeAssigner(BaseClassifier):
                 "n_prototypes_per_label": n_prototypes_per_label,
                 "n_labels": n_binary_labels,
             }
-        elif assignment_strategy == "ilp_effect_size":
+        elif assignment_strategy in [
+            "ilp_effect_size",
+            "ilp_effect_size_multiple_allowed",
+        ]:
             encoder_cls = PrototypeEncoder
             extra_kwargs = dict()
+        else:
+            raise ValueError(
+                f"Unknown how to make encoder for assignment_strategy={assignment_strategy}"
+            )
 
         super().__init__(
             encoder=encoder_cls(
@@ -111,16 +118,23 @@ class PrototypeAssigner(BaseClassifier):
         print(
             f"Solving Linear Assignment (assignment_strategy={self.assignment_strategy})"
         )
-        print("===================================================")
-        assert self.assignment_strategy == "ilp_effect_size"
+        assert self.assignment_strategy in [
+            "ilp_effect_size",
+            "ilp_effect_size_multiple_allowed",
+        ]
+        max_classes_per_prototype = (
+            labels.shape[1]
+            if self.assignment_strategy == "ilp_effect_size_multiple_allowed"
+            else 1
+        )
 
         association_matrix, valid_class_mask = build_association_matrix(
             similarities.numpy(),
             labels.numpy(),
-            n_min=10,
+            n_min=1,  # min positive samples
             trim=0.10,
             eps=1e-6,
-            n_neg_repeats=1,
+            n_neg_repeats=10,  # number of resample repeats
             balanced_negative_sampling=True,
             random_seed=0,
         )
@@ -128,6 +142,7 @@ class PrototypeAssigner(BaseClassifier):
         result = solve_assignment_ilp(
             association_matrix,
             n_prototypes_per_label=self.n_prototypes_per_label,
+            max_classes_per_prototype=max_classes_per_prototype,
             valid_class_mask=valid_class_mask,
         )
 
@@ -135,6 +150,7 @@ class PrototypeAssigner(BaseClassifier):
             result.selected_indices_by_class, dtype=torch.long
         )
 
+        print("===================================================")
         return result
 
     def convert_to_proto_classifier(self) -> PrototypeClassifier:
@@ -189,7 +205,10 @@ class PrototypeAssigner(BaseClassifier):
             assignments = self.encoder.get_assignments(hard=True)  # (L, K, P)
             indices = assignments.argmax(dim=-1)  # (L, K)
             indices = indices.view(-1)  # (L * K,)
-        elif self.assignment_strategy == "ilp_effect_size":
+        elif self.assignment_strategy in [
+            "ilp_effect_size",
+            "ilp_effect_size_multiple_allowed",
+        ]:
             if self.lp_indices is None:
                 raise ValueError(
                     f"lp_indices is None, has solve_linear_assignment been called yet?"
@@ -225,9 +244,12 @@ class PrototypeAssigner(BaseClassifier):
 
             # Require unique prototype usage to match the ILP formulation.
             unique_flat = torch.unique(indices)
-            if unique_flat.numel() != indices.numel():
+            if (
+                self.assignment_strategy == "ilp_effect_size"
+                and unique_flat.numel() != indices.numel()
+            ):
                 raise ValueError(
-                    "convert_to_proto_classifier_from_indices expects unique prototype ids, "
+                    "ilp_effect_size assignment expects unique prototype ids, "
                     "but duplicate indices were provided."
                 )
         else:

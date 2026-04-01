@@ -113,7 +113,8 @@ class LitData(LightningDataModule):
                 # no shuffle if getting prototype similarities for linear assignment
                 # (effectively compute-embeddings but a little more direct)
                 pipeline_stage == "learn-prototype-assignments"
-                and assignment_strategy == "ilp_effect_size"
+                and assignment_strategy
+                in ["ilp_effect_size", "ilp_effect_size_multiple_allowed"]
             ),
             pin_memory=True,
             drop_last=False,
@@ -518,7 +519,8 @@ class LitModel(LightningModule):
             )
         elif (
             pipeline_stage == "learn-prototype-assignments"
-            and assignment_strategy == "ilp_effect_size"
+            and assignment_strategy
+            in ["ilp_effect_size", "ilp_effect_size_multiple_allowed"]
         ):
             from .models.encoders import PrototypeEncoder
 
@@ -678,7 +680,8 @@ class PredictionWriter(BasePredictionWriter):
             save_name = "probs.npy"
         elif (
             pipeline_stage == "learn-prototype-assignments"
-            and assignment_strategy == "ilp_effect_size"
+            and assignment_strategy
+            in ["ilp_effect_size", "ilp_effect_size_multiple_allowed"]
         ):
             # using returned predicted similarities in next step of run
             to_save = None  # type: ignore
@@ -886,7 +889,10 @@ def run():
                 model=cli.model,
                 datamodule=cli.datamodule,
             )
-        elif assignment_strategy == "ilp_effect_size":
+        elif assignment_strategy in [
+            "ilp_effect_size",
+            "ilp_effect_size_multiple_allowed",
+        ]:
             cli.datamodule.setup("fit")
             # predict will compute raw prototype activations
             batched_A: list[torch.Tensor] = cli.trainer.predict(  # type: ignore
