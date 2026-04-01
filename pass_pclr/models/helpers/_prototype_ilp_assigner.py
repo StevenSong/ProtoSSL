@@ -244,12 +244,21 @@ def solve_assignment_ilp(
         # each slot filled exactly once (this just defines which variables to consider, bounds later)
         col_sums = np.kron(np.ones((1, P)), np.eye(n_slots))  # (n_slots, N)
 
-        # row-sums between 0 and R, col-sums = 1
+        # Class-slot constraint: sum_k x[p, c*K:(c+1)*K] <= 1 for each p, for each c
+        # a prototype cannot belong to more than 1 slot per class
+        block = np.zeros((C, n_slots))
+        for c in range(C):
+            block[c, c * K : (c + 1) * K] = 1.0  # (C, n_slots)
+        proto_class_sums = np.kron(np.eye(P), block)  # (P*C, N)
+
+        # fmt: off
+        # row-sums between 0 and R, col-sums = 1, prototype only assigned once per class
         constraints = LinearConstraint(
-            A=np.vstack([row_sums, col_sums]),  # linear equations defining constraints
-            lb=np.concatenate([np.zeros(P), np.ones(n_slots)]),  # type: ignore
-            ub=np.concatenate([np.ones(P) * R, np.ones(n_slots)]),  # type: ignore
+            A=np.vstack([      row_sums,       col_sums,         proto_class_sums]), # linear equations defining constraints
+            lb=np.concatenate([np.zeros(P),    np.ones(n_slots), np.zeros(P * C)]), # type: ignore
+            ub=np.concatenate([np.ones(P) * R, np.ones(n_slots), np.ones(P * C)]), # type: ignore
         )
+        # fmt: on
 
         result = milp(
             c=c_obj,
