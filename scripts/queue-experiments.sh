@@ -17,8 +17,8 @@ declare -a SUFFIXES_mimic=("" "-32k" "-16k" "-8k" "-4k" "-2k" "-1k")
 declare -a SUFFIXES_zzu=("" "-4k" "-2k" "-1k")
 
 export BASE_ECG_PATH=/opt/gpudata/ecg
-export REPO_ROOT=/home/songs1/ecg-prototype-fm-run
-export BASE_OUTPUT_DIR=/home/songs1/protossl-outputs
+export REPO_ROOT=/opt/gpu_working/steven/ecg-prototype-fm-run
+export BASE_OUTPUT_DIR=/opt/gpu_working/steven/protossl-outputs
 
 source _submit_job.sh
 

@@ -27,7 +27,7 @@ class PrototypeClassifier(BaseClassifier):
         l1_ratio_init: float | None = None,
         alpha_init: float | None = None,
         learnable_regularization: bool = False,
-        use_proto_cls_init: bool = True,  # NOTE: this overrides weights from pretrained_weights
+        use_proto_cls_init: bool = False,  # NOTE: this overrides weights from pretrained_weights
     ):
         regularization_mask = None
         if use_regularization_mask:
