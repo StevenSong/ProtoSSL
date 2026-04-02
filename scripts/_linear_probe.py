@@ -3,12 +3,13 @@ from argparse import ArgumentParser
 from pathlib import Path
 from warnings import simplefilter
 
+import joblib
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.multioutput import MultiOutputClassifier
 from sklearn.preprocessing import StandardScaler
-from tqdm import tqdm
 
 from pass_pclr.datasets import infer_dataset_class_from_path
 
@@ -55,42 +56,23 @@ def main(
         X_train = pca.fit_transform(X_train)
         X_test = pca.transform(X_test)
 
-    target_probs = []
-    models = dict()
-    for i, target_col in enumerate(tqdm(label_names)):
-        y_train = train_targets[:, i]
-
-        # after alot of runs, looks like most of the time,
-        # it's low regularization strength and mostly l2,
-        # so consider just using C=5e-4 and l1_ratio=0
-        model = LogisticRegression(
+    model = MultiOutputClassifier(
+        estimator=LogisticRegression(
             C=5e-4,
             penalty="l2",
             solver="saga",
             class_weight="balanced" if balance_class_weight else None,
             random_state=42,
             max_iter=100,
-            n_jobs=-1,
-        )
-        # model = LogisticRegressionCV(
-        #     Cs=10,
-        #     l1_ratios=[0, 0.1, 0.25, 0.5, 0.75, 0.9, 1],
-        #     penalty="elasticnet",
-        #     cv=5,
-        #     solver="saga",
-        #     class_weight="balanced" if balance_class_weight else None,
-        #     random_state=42,
-        #     max_iter=100,
-        #     n_jobs=-1,
-        # )
-        model.fit(X_train, y_train)
-        models[target_col] = model
+        ),
+        n_jobs=-1,
+    )
+    model.fit(X_train, train_targets)
+    target_probs = [y_probs[:, 1] for y_probs in model.predict_proba(X_test)]
 
-        y_prob = model.predict_proba(X_test)[:, 1]
-        target_probs.append(y_prob)
     target_probs = np.asarray(target_probs).T
     np.save(os.path.join(output_path, "probs.npy"), target_probs)
-    np.savez(os.path.join(output_path, "models.npz"), **models)
+    joblib.dump(model, os.path.join(output_path, "model.joblib"))
 
 
 if __name__ == "__main__":

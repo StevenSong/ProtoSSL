@@ -4,6 +4,7 @@ from typing import Literal
 import numpy as np
 from scipy.optimize import Bounds, LinearConstraint, linear_sum_assignment, milp
 from sklearn.linear_model import LogisticRegression
+from sklearn.multioutput import MultiOutputClassifier
 from sklearn.preprocessing import StandardScaler
 from tqdm import trange
 
@@ -115,10 +116,22 @@ def build_association_matrix(
     M = np.full((P, C), invalid_score, dtype=np.float64)
     valid_class_mask = np.zeros(C, dtype=bool)
 
-    X = None
+    model = None
     if weight_effects_using_lr is not None:
+        print("Fitting Per Class Logistic Regression")
         scaler = StandardScaler()
         X = scaler.fit_transform(A)
+        assert X is not None
+        model = MultiOutputClassifier(
+            estimator=LogisticRegression(
+                C=5e-4,
+                penalty="l2",
+                solver="saga",
+                random_state=random_seed,
+                max_iter=100,
+            ),
+            n_jobs=-1,
+        ).fit(X, Y)
 
     for c in trange(C, desc="Computing Prototype Effect Size Per Class"):
         pos_idx = np.where(Y[:, c] == 1)[0]
@@ -162,17 +175,9 @@ def build_association_matrix(
             sigma = np.sqrt((s_pos**2 + s_neg**2) / 2.0)
             M[k, c] = (mu_pos - mu_neg) / (sigma + eps)
 
-        if weight_effects_using_lr is not None:
-            assert X is not None
-            model = LogisticRegression(
-                C=5e-4,
-                penalty="l2",
-                solver="saga",
-                random_state=random_seed,
-                max_iter=100,
-                n_jobs=-1,
-            ).fit(X, Y[:, c])
-            scale = model.coef_.squeeze()  # (P,)
+        if model is not None:
+            lr: LogisticRegression = model.estimators_[c]  # type: ignore
+            scale = lr.coef_.squeeze()  # (P,)
             if weight_effects_using_lr == "OR":
                 scale = np.exp(scale)
             M[:, c] *= scale
