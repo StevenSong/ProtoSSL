@@ -54,23 +54,41 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         n_binary_labels: int,
         pretrained_weights: str | None = None,
         regularize: bool = True,
+        regularization_mask: torch.Tensor | None = None,
+        l1_ratio_init: float | None = None,
+        alpha_init: float | None = None,
+        learnable_regularization: bool = False,
     ):
         super().__init__()
         self.encoder = encoder
+        emb_dim = self.encoder.emb_dim
         if encoder.ret_per_label:
             # encoder returns a per-label embedding
             self.cls = MultiInputLinear(
                 num_inputs=n_binary_labels,
-                in_features=self.encoder.emb_dim,
+                in_features=emb_dim,
                 out_features=2,  # binary label output
             )
         else:
             self.cls = nn.Linear(
-                in_features=self.encoder.emb_dim,
+                in_features=emb_dim,
                 out_features=n_binary_labels * 2,
             )
 
         self.regularize = regularize
+        if regularization_mask is not None:
+            if not regularize:
+                raise ValueError(
+                    "must set regularize to True if using regularization_mask"
+                )
+            required_shape = (n_binary_labels, emb_dim)
+            if regularization_mask.shape != required_shape:
+                raise ValueError(
+                    f"regularization_mask must have shape {required_shape} but got shape {regularization_mask.shape}"
+                )
+            self.register_buffer("regularization_mask", regularization_mask)
+        else:
+            self.regularization_mask = None
         self._l1_ratio_raw = None
         self._alpha_raw = None
         if regularize:
@@ -78,17 +96,20 @@ class BaseClassifier(PretrainedMixin, nn.Module):
             # regularization inspired by sklearn logreg parameters:
             # https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
 
+            l1_ratio = l1_ratio_init if l1_ratio_init is not None else 0.15
+            alpha = alpha_init if alpha_init is not None else 1e-4
+
             # l1_ratio = sigmoid(l1_ratio_raw)
             # ensures l1_ratio is always [0-1]
             self._l1_ratio_raw = nn.Parameter(
-                torch.logit(torch.ones(n_binary_labels) * 0.15),
-                requires_grad=False,  # fixed regularization parameters
+                torch.logit(torch.ones(n_binary_labels) * l1_ratio),
+                requires_grad=learnable_regularization,
             )
             # alpha = exp(alpha_raw)
             # ensures alpha is always positive
             self._alpha_raw = nn.Parameter(
-                torch.log(torch.ones(n_binary_labels) * 1e-4),
-                requires_grad=False,  # fixed regularization parameters
+                torch.log(torch.ones(n_binary_labels) * alpha),
+                requires_grad=learnable_regularization,
             )
 
         # assumes no other submodules are initialized in subclasses
@@ -132,6 +153,10 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         if self.regularize:
             weights = self.cls.weight  # (L * 2, H) - contiguous blocks of (2, H)
             weights = weights.view(-1, 2, weights.shape[-1])  # (L, 2, H) - infer L
+            if self.regularization_mask is not None:
+                # (L, 2, H)
+                mask = self.regularization_mask.unsqueeze(1).expand(-1, 2, -1)
+                weights = weights * mask
             l1 = weights.norm(p=1, dim=(1, 2))  # (L,)
             l2 = weights.norm(p=2, dim=(1, 2))  # (L,)
             l1_ratio = self.l1_ratio

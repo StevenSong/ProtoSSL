@@ -209,6 +209,7 @@ class LitModel(LightningModule):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        do_finetune: bool = False,
         extra_kwargs: dict = dict(),
     ):
         super().__init__()
@@ -357,7 +358,11 @@ class LitModel(LightningModule):
         else:
             raise ValueError(f"Unknown pipeline_stage {pipeline_stage}")
 
-        if pretrained_weights is not None and isinstance(self.model, BaseClassifier):
+        if (
+            pretrained_weights is not None
+            and isinstance(self.model, BaseClassifier)
+            and not do_finetune
+        ):
             self.model.freeze_encoder()
             if (
                 isinstance(self.model, PrototypeAssigner)
