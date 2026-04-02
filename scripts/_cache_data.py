@@ -19,4 +19,5 @@ if __name__ == "__main__":
             dataset_path=args.dataset_path,
             split=split,
             sampling_rate=FREQ,
+            label_subset=None,  # label subset does not matter for caching
         )

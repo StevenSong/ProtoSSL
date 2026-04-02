@@ -12,7 +12,12 @@ from ..defines import (
     ZZU_TARGETS,
 )
 from ._audioset_dataset import AudioSetDataset
-from ._base_ecg_dataset import BaseECGDataset, StreamingECGWaveforms, load_cached_data
+from ._base_ecg_dataset import (
+    BaseECGDataset,
+    StreamingECGWaveforms,
+    load_cached_data,
+    validate_label_subset,
+)
 from ._cinc_dataset import CincECGDataset
 from ._echonext_dataset import EchoNextECGDataset
 from ._heedb_dataset import HeedbECGDataset, get_heedb_labels, get_heedb_metadata

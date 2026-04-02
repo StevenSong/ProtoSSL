@@ -10,7 +10,11 @@ from lightning.pytorch.cli import LightningCLI
 from lightning.pytorch.strategies import DDPStrategy, SingleDeviceStrategy
 from torch.utils.data import DataLoader
 
-from .datasets import PCLRWrapperDataset, infer_dataset_class_from_path
+from .datasets import (
+    PCLRWrapperDataset,
+    infer_dataset_class_from_path,
+    validate_label_subset,
+)
 from .defines import ASSIGN_T, BACKBONE_T, CONV_T, PROT_T, SIM_MAX, STAGE_T
 from .lightning_utils import check_final_link
 from .models import (
@@ -36,12 +40,21 @@ class LitData(LightningDataModule):
         sampling_rate: int = 100,
         prefetch_factor: int | None = None,
         assignment_strategy: ASSIGN_T = "protopool",
+        label_subset: list[str] | None = None,
     ):
         super().__init__()
         self.save_hyperparameters()
 
         # label names is linked to LitModel via LitCLI
         self.ds_cls, self.label_names = infer_dataset_class_from_path(dataset_path)
+        if label_subset is not None:
+            if self.label_names is None:
+                raise ValueError(
+                    f"Can only specify label_subset for a dataset with defined labels"
+                )
+            validate_label_subset(label_subset, self.label_names)
+            self.label_names = label_subset
+
         if pipeline_stage == "learn-prototypes-supervised":
             # need label weights and cooccurrence matrix, not best practice
             # to instantiate dataset outside of `setup` but we know we'll need
@@ -50,6 +63,7 @@ class LitData(LightningDataModule):
                 dataset_path=dataset_path,
                 split="train",
                 sampling_rate=sampling_rate,
+                label_subset=label_subset,
             )
             self.label_weights = self.train_ds.get_label_weights()
             self.label_cooccurrence = self.train_ds.get_label_cooccurrence()
@@ -62,6 +76,7 @@ class LitData(LightningDataModule):
         dataset_path: str = self.hparams.dataset_path  # type: ignore
         sampling_rate: int = self.hparams.sampling_rate  # type: ignore
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
+        label_subset = self.hparams.label_subset  # type: ignore
         wrap_pclr = pipeline_stage == "learn-prototypes"
 
         if stage == "fit":
@@ -70,6 +85,7 @@ class LitData(LightningDataModule):
                     dataset_path=dataset_path,
                     split="train",
                     sampling_rate=sampling_rate,
+                    label_subset=label_subset,
                 )
             else:
                 assert self.train_ds is not None, "Not sure how train_ds is None"
@@ -80,6 +96,7 @@ class LitData(LightningDataModule):
                 dataset_path=dataset_path,
                 split="val",
                 sampling_rate=sampling_rate,
+                label_subset=label_subset,
             )
             if wrap_pclr:
                 val_ds = PCLRWrapperDataset(val_ds)
@@ -89,6 +106,7 @@ class LitData(LightningDataModule):
                 dataset_path=dataset_path,
                 split="test",
                 sampling_rate=sampling_rate,
+                label_subset=label_subset,
             )
             if wrap_pclr:
                 raise ValueError("Should not use PCLR dataset with test/predict stage")

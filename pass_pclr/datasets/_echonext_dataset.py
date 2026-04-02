@@ -17,7 +17,12 @@ class EchoNextECGDataset(BaseECGDataset):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
+        if label_subset is not None:
+            raise NotImplementedError(
+                f"label_subset not yet supported for {type(self.__name__)}"
+            )
         mapping = {v: k for k, v in ECHONEXT_TARGETS.items()}  # col --> name
         target_cols = list(mapping.values())
 

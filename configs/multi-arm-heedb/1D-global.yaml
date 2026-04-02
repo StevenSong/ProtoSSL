@@ -1,0 +1,66 @@
+# lightning.pytorch==2.6.0
+seed_everything: 42
+trainer:
+  devices: 1
+  precision: 32
+  logger:
+    class_path: pass_pclr.lightning_utils.StrictWandbLogger
+    init_args:
+      project: ProtoECGNet-HEEDB
+      # save_dir: /path/to/runs/
+      name: ProtoECGNet-HEEDB-1D-Global
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        monitor: val_loss
+        mode: min
+        patience: 10 # check reduce lr on plateau
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: epoch
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        monitor: val_loss
+        mode: min
+        save_last: True
+    - class_path: PredictionWriter
+  max_epochs: 1000
+  log_every_n_steps: 1
+  val_check_interval: 0.25 # affects hyberband pruning
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    lr: 0.001
+    weight_decay: 0.01
+lr_scheduler:
+  class_path: lightning.pytorch.cli.ReduceLROnPlateau
+  init_args:
+    monitor: val_loss
+    patience: 3 # check early stopping
+model:
+  class_path: LitModel
+  init_args:
+    resnet_type: resnet18
+    conv_type: 1D
+    prototype_type: global
+    # n_prototypes_per_label: tune this!
+    # pretrained_weights: /path/to/weights
+data:
+  class_path: LitData
+  init_args:
+    # dataset_path: /path/to/dataset
+    batch_size: 512
+    num_workers: 4
+    prefetch_factor: 4
+    label_subset:
+      - ATRIAL FIBRILLATION
+      - ATRIAL FLUTTER
+      - ATRIAL-PACED RHYTHM
+      - WITH 1ST DEGREE AV BLOCK
+      - SINUS BRADYCARDIA
+      - SINUS RHYTHM
+      - SINUS TACHYCARDIA
+      - VENTRICULAR TACHYCARDIA
+      - VENTRICULAR-PACED RHYTHM
+      - WITH SINUS ARRHYTHMIA
+pipeline_stage: learn-prototypes-supervised
