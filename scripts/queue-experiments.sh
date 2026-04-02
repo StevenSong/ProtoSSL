@@ -2,8 +2,7 @@
 
 set -e
 
-# declare -a DATASETS=("echonext" "ptbxl" "cinc" "mimic" "zzu")
-declare -a DATASETS=("ptbxl" "cinc" "mimic" "zzu")
+declare -a DATASETS=("echonext" "ptbxl" "cinc" "mimic" "zzu")
 declare -A DATASET_DIRS=(
     ["echonext"]="echonext"
     ["ptbxl"]="ptb-xl"
