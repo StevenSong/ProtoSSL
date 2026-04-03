@@ -16,59 +16,59 @@ cd $REPO_ROOT/scripts
 # ==============================================================================
 EXP_NAME="labsup-proto-direct"
 
-python -m pass_pclr.trainer \
-    --pipeline-stage learn-prototypes-supervised \
-    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
-    --model.extra_kwargs '{"use_regularization_mask": True, "use_proto_cls_init": True}' \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH
+# python -m pass_pclr.trainer \
+#     --pipeline-stage learn-prototypes-supervised \
+#     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
+#     --model.extra_kwargs '{"use_regularization_mask": True, "use_proto_cls_init": True}' \
+#     --trainer.logger.save_dir $RUN_DIR \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH
 
-python -m pass_pclr.trainer \
-    --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
+# python -m pass_pclr.trainer \
+#     --pipeline-stage project-prototypes-supervised \
+#     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
+#     --trainer.logger.save_dir $RUN_DIR \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
 
-python -m pass_pclr.trainer \
-    --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
-    --model.extra_kwargs '{"use_regularization_mask": True, "use_proto_cls_init": True}' \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
+# python -m pass_pclr.trainer \
+#     --pipeline-stage train-classifier \
+#     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
+#     --model.extra_kwargs '{"use_regularization_mask": True, "use_proto_cls_init": True}' \
+#     --trainer.logger.save_dir $RUN_DIR \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
 
-python _eval_probs.py \
---dataset-path $DATASET_PATH \
---probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
---output-path $RUN_DIR/$EXP_NAME
+# python _eval_probs.py \
+# --dataset-path $DATASET_PATH \
+# --probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
+# --output-path $RUN_DIR/$EXP_NAME
 
-# ==============================================================================
-# Logistic Regregression
-# ==============================================================================
-PRETRAIN_RUN="$RUN_DIR/$EXP_NAME"
-EXP_NAME_LR="$EXP_NAME-lr"
+# # ==============================================================================
+# # Logistic Regregression
+# # ==============================================================================
+# PRETRAIN_RUN="$RUN_DIR/$EXP_NAME"
+# EXP_NAME_LR="$EXP_NAME-lr"
 
-python -m pass_pclr.trainer \
-    --pipeline-stage compute-embeddings \
-    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME_LR \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt
+# python -m pass_pclr.trainer \
+#     --pipeline-stage compute-embeddings \
+#     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
+#     --trainer.logger.save_dir $RUN_DIR \
+#     --trainer.logger.name $EXP_NAME_LR \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt
 
-python _linear_probe.py \
---dataset-path $DATASET_PATH \
---prototype-embeddings $RUN_DIR/$EXP_NAME_LR/compute-embeddings/latest \
---output-path $RUN_DIR/$EXP_NAME_LR
+# python _linear_probe.py \
+# --dataset-path $DATASET_PATH \
+# --prototype-embeddings $RUN_DIR/$EXP_NAME_LR/compute-embeddings/latest \
+# --output-path $RUN_DIR/$EXP_NAME_LR
 
-python _eval_probs.py \
---dataset-path $DATASET_PATH \
---probs-npy $RUN_DIR/$EXP_NAME_LR/probs.npy \
---output-path $RUN_DIR/$EXP_NAME_LR
+# python _eval_probs.py \
+# --dataset-path $DATASET_PATH \
+# --probs-npy $RUN_DIR/$EXP_NAME_LR/probs.npy \
+# --output-path $RUN_DIR/$EXP_NAME_LR
 
 # ==============================================================================
 # Fine Tune
