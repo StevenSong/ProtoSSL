@@ -447,10 +447,10 @@ class LitModel(LightningModule):
                     f"Cannot use _common_step with pipeline_stage=learn-prototypes-supervised and (lightning) stage={stage}"
                 )
             preds = None
-            loss_terms = self.model(batch["waveform"], batch["label"])
+            losses, _ = self.model(batch["waveform"], batch["label"])
             loss = self._log_and_composite_losses(
                 stage=stage,
-                losses=loss_terms,
+                losses=losses,
                 batch_size=batch_size,
                 log=log,
                 sync_dist=sync_dist,
@@ -519,24 +519,18 @@ class LitModel(LightningModule):
             assert isinstance(self.model, BaseClassifier)
             # waveform/label keys
             (
-                _losses,  # (n_labels,)
-                _preds,  # (n_labels, B)
+                losses,
+                _preds,  # (B, L)
             ) = self.model(
                 batch["waveform"],  # (B, 12, 10 * freq)
                 batch["label"],  # (B, n_labels)
             )
-            losses = dict()
+
             preds = dict()
             label_names: list[str] = self.hparams.label_names  # type: ignore
             assert label_names is not None
             for i, target_name in enumerate(label_names):
-                losses[target_name] = _losses[i]
-                preds[target_name] = _preds[i]
-
-            # TODO: consider refactoring this, otherwise the model losses are intrinsically tied to this trainer
-            static_loss = self.model.static_losses()
-            if static_loss is not None:
-                losses |= static_loss
+                preds[target_name] = _preds[:, i]
 
             loss = self._log_and_composite_losses(
                 stage=stage,

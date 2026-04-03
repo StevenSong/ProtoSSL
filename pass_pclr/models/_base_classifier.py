@@ -53,11 +53,11 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         encoder: BaseEncoder,
         n_binary_labels: int,
         pretrained_weights: str | None = None,
-        regularize: bool = True,
-        regularization_mask: torch.Tensor | None = None,
-        l1_ratio_init: float | None = None,
-        alpha_init: float | None = None,
+        l1_ratio_init: float = 1,
+        alpha_init: float = 1e-4,  # disable regularization by setting alpha to 0
         learnable_regularization: bool = False,
+        regularization_mask: torch.Tensor | None = None,
+        cls_init: tuple[torch.Tensor, torch.Tensor] | None = None,
     ):
         super().__init__()
         self.encoder = encoder
@@ -67,20 +67,16 @@ class BaseClassifier(PretrainedMixin, nn.Module):
             self.cls = MultiInputLinear(
                 num_inputs=n_binary_labels,
                 in_features=emb_dim,
-                out_features=2,  # binary label output
+                out_features=1,
             )
         else:
             self.cls = nn.Linear(
                 in_features=emb_dim,
-                out_features=n_binary_labels * 2,
+                out_features=n_binary_labels,
             )
 
-        self.regularize = regularize
+        # selectively control which weights are regularized
         if regularization_mask is not None:
-            if not regularize:
-                raise ValueError(
-                    "must set regularize to True if using regularization_mask"
-                )
             required_shape = (n_binary_labels, emb_dim)
             if regularization_mask.shape != required_shape:
                 raise ValueError(
@@ -89,32 +85,34 @@ class BaseClassifier(PretrainedMixin, nn.Module):
             self.register_buffer("regularization_mask", regularization_mask)
         else:
             self.regularization_mask = None
-        self._l1_ratio_raw = None
-        self._alpha_raw = None
-        if regularize:
-            # per-task elasticnet regularization
-            # regularization inspired by sklearn logreg parameters:
-            # https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
 
-            l1_ratio = l1_ratio_init if l1_ratio_init is not None else 0.15
-            alpha = alpha_init if alpha_init is not None else 1e-4
+        # elasticnet regularization inspired by sklearn logreg parameters:
+        # https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
 
-            # l1_ratio = sigmoid(l1_ratio_raw)
-            # ensures l1_ratio is always [0-1]
-            self._l1_ratio_raw = nn.Parameter(
-                torch.logit(torch.ones(n_binary_labels) * l1_ratio),
-                requires_grad=learnable_regularization,
-            )
-            # alpha = exp(alpha_raw)
-            # ensures alpha is always positive
-            self._alpha_raw = nn.Parameter(
-                torch.log(torch.ones(n_binary_labels) * alpha),
-                requires_grad=learnable_regularization,
-            )
+        # l1_ratio = sigmoid(l1_ratio_raw), ensures l1_ratio is always [0-1]
+        self._l1_ratio_raw = nn.Parameter(
+            torch.logit(torch.as_tensor(l1_ratio_init)),
+            requires_grad=learnable_regularization,
+        )
+        # alpha = exp(alpha_raw), ensures alpha is always positive
+        self._alpha_raw = nn.Parameter(
+            torch.log(torch.as_tensor(alpha_init)),
+            requires_grad=learnable_regularization,
+        )
 
         # assumes no other submodules are initialized in subclasses
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
+
+        # overrides pretrained weights, if any
+        if cls_init is not None:
+            weight, bias = cls_init
+            if isinstance(self.cls, nn.Linear):
+                with torch.no_grad():
+                    self.cls.weight.copy_(weight)
+                    self.cls.bias.copy_(bias)
+            else:  # MultiInputLinear
+                self.cls.init_weights(weight, bias)
 
     @property
     def l1_ratio(self) -> torch.Tensor:
@@ -130,47 +128,41 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         self,
         x: torch.Tensor,
         y: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        x = self.encoder(x)  # (B, [L,] H), H = hidden_dim
-        logits = self.cls(x)  # (B, 2 * L), L = n_binary_labels
+    ) -> tuple[
+        dict[str, torch.Tensor],  # loss dict
+        torch.Tensor,  # probs
+    ]:
+        embeds = self.encoder(x)  # (B, [L,] H), H = hidden_dim
+        logits = self.cls(embeds)  # (B, L), L = n_binary_labels
 
-        # compute per-label loss
-        losses = []
-        probs = []
-        for i in range(0, logits.shape[1], 2):
-            per_label_logits = logits[:, i : i + 2]  # (B, 2)
-            per_label_loss = F.cross_entropy(
-                input=per_label_logits,  # (B, 2)
-                target=y[:, i // 2],  # (B,)
-            )
-            losses.append(per_label_loss)
-            probs.append(F.softmax(per_label_logits, dim=1)[:, 1])
+        bce_loss = F.binary_cross_entropy_with_logits(logits, y.to(torch.float))
+        probs = torch.sigmoid(logits)  # (B, L)
 
-        losses = torch.stack(losses)  # (L,)
-        probs = torch.stack(probs)  # (L, B)
+        # l1/2 regularization
+        weights = self.cls.weight  # (L, H)
+        if self.regularization_mask is not None:
+            weights = weights * self.regularization_mask
+        l1 = weights.norm(p=1)
+        l2 = weights.norm(p=2)
+        l1_ratio = self.l1_ratio
+        penalty = self.alpha * (l1_ratio * l1 + (1 - l1_ratio) * (l2**2))
+        bce_loss = bce_loss + penalty
 
-        # per-task elasticnet regularization
-        if self.regularize:
-            weights = self.cls.weight  # (L * 2, H) - contiguous blocks of (2, H)
-            weights = weights.view(-1, 2, weights.shape[-1])  # (L, 2, H) - infer L
-            if self.regularization_mask is not None:
-                # (L, 2, H)
-                mask = self.regularization_mask.unsqueeze(1).expand(-1, 2, -1)
-                weights = weights * mask
-            l1 = weights.norm(p=1, dim=(1, 2))  # (L,)
-            l2 = weights.norm(p=2, dim=(1, 2))  # (L,)
-            l1_ratio = self.l1_ratio
-            penalty = self.alpha * (l1_ratio * l1 + (1 - l1_ratio) * (l2**2))  # (L,)
-            losses = losses + penalty  # (L,)
+        losses = {"BCE": bce_loss}
 
+        other_losses = self.other_losses(x, y, embeds)
+        if other_losses is not None:
+            losses |= other_losses
         return losses, probs
 
-    # TODO: consider refactoring this method which makes the model intrinsically
-    # tied to our trainer, maybe the return of losses above should be a dict?
-    def static_losses(self) -> dict[str, torch.Tensor] | None:
-        # because the classifier returns a per-task loss, if a subclass has loss
-        # components which do not depend on the inputs, they should implement this
-        # method which will be called after the main input-dependent forward
+    def other_losses(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        embeds: torch.Tensor,
+    ) -> dict[str, torch.Tensor] | None:
+        # if a subclass has loss components besides the base binary cross entropy,
+        # it should implement this method which will be called at the end of the main forward
         return None
 
     def freeze_encoder(self):

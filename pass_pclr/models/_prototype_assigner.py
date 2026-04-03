@@ -43,6 +43,9 @@ class PrototypeAssigner(BaseClassifier):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        l1_ratio_init: float = 1,
+        alpha_init: float = 1e-4,
+        learnable_regularization: bool = False,
     ):
         self.backbone_type = backbone_type
         self.conv_type = conv_type
@@ -59,7 +62,7 @@ class PrototypeAssigner(BaseClassifier):
 
         if assignment_strategy == "protopool":
             encoder_cls = PrototypeEncoderWithAssignment
-            extra_kwargs = {
+            encoder_kwargs = {
                 "n_prototypes_per_label": n_prototypes_per_label,
                 "n_labels": n_binary_labels,
             }
@@ -70,7 +73,7 @@ class PrototypeAssigner(BaseClassifier):
             "ilp_effect_size_multiple_allowed",
         ]:
             encoder_cls = PrototypeEncoder
-            extra_kwargs = dict()
+            encoder_kwargs = dict()
         else:
             raise ValueError(
                 f"Unknown how to make encoder for assignment_strategy={assignment_strategy}"
@@ -85,30 +88,38 @@ class PrototypeAssigner(BaseClassifier):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
-                **extra_kwargs,
+                **encoder_kwargs,
             ),
             n_binary_labels=n_binary_labels,
             pretrained_weights=pretrained_weights,
+            l1_ratio_init=l1_ratio_init,
+            alpha_init=alpha_init,
+            learnable_regularization=learnable_regularization,
         )
 
-    def static_losses(self) -> dict[str, torch.Tensor] | None:
+    # called in BaseClassifier's forward function
+    def other_losses(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        embeds: torch.Tensor,
+    ) -> dict[str, torch.Tensor] | None:
         # ILP does not train assignment weights, so no static loss
         # we shouldn't ever reach this point anyways but just in case
         if self.assignment_strategy != "protopool":
-            print(
-                "WARNING: Unexpected call to static_losses in PrototypeAssigner with non-prototpool assignment strategy"
+            raise RuntimeError(
+                "Unexpected call to static_losses in PrototypeAssigner with non-prototpool assignment strategy"
             )
-            return None
 
         # In ProtoPool, for each label, the prototype assignment slots should pick
         # separate prototypes, so probability distributions should be orthogonal
-        x = self.encoder.get_assignments(hard=True)  # type: ignore - (L, K, P)
-        L, K, _ = x.shape
+        assignments = self.encoder.get_assignments(hard=True)  # type: ignore - (L, K, P)
+        L, K, _ = assignments.shape
 
-        gram = torch.bmm(x, x.mT)  # (L, K, K)
+        gram = torch.bmm(assignments, assignments.mT)  # (L, K, K)
 
         # zero out diagonal, penalize off-diagonal overlap
-        mask = torch.eye(K, device=x.device)
+        mask = torch.eye(K, device=assignments.device)
         mask = 1 - mask.expand(L, -1, -1)
 
         return {"Prototype_Orthogonality": (gram * mask).pow(2).mean()}
