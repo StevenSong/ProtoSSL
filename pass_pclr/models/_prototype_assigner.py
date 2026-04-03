@@ -43,7 +43,7 @@ class PrototypeAssigner(BaseClassifier):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
-        l1_ratio_init: float = 0.15,
+        l1_ratio_init: float = 1,
         alpha_init: float = 1e-4,
         learnable_regularization: bool = False,
     ):
