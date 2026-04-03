@@ -1,12 +1,13 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 from ..defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX
-from ._base_classifier import BaseClassifier
+from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
 
 
-class PrototypeSupervisor(BaseClassifier):
+class PrototypeSupervisor(PretrainedMixin, nn.Module):
     def __init__(
         self,
         *,  # enforce kwargs
@@ -20,41 +21,25 @@ class PrototypeSupervisor(BaseClassifier):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
-        l1_ratio_init: float = 1,
-        alpha_init: float = 1e-4,  # disable regularization by setting alpha to 0
-        learnable_regularization: bool = False,
     ):
-        n_binary_labels = label_weights.shape[0]
-        mask = torch.repeat_interleave(
-            torch.eye(n_binary_labels), n_prototypes_per_label, dim=1
-        )
-        regularization_mask = 1 - mask
-
-        # apply 1 to prototype connections, -0.5 for others, 0 out bias
-        weight = mask + (1 - mask) * -0.5
-        bias = torch.zeros(n_binary_labels)
-        super().__init__(
-            encoder=PrototypeEncoder(
-                backbone_type=backbone_type,
-                n_prototypes=n_binary_labels * n_prototypes_per_label,
-                conv_type=conv_type,
-                prototytpe_type=prototype_type,
-                input_channels=input_channels,
-                partial_len=partial_len,
-                partial_overlap=partial_overlap,
-            ),
-            n_binary_labels=n_binary_labels,
-            pretrained_weights=pretrained_weights,
-            l1_ratio_init=l1_ratio_init,
-            alpha_init=alpha_init,
-            learnable_regularization=learnable_regularization,
-            regularization_mask=regularization_mask,
-            cls_init=(weight, bias),
-        )
+        super().__init__()
         self.n_prototypes_per_label = n_prototypes_per_label
-        self.n_binary_labels = n_binary_labels
+        self.n_binary_labels = label_weights.shape[0]
         self.register_buffer("label_weights", label_weights, persistent=False)
         self.register_buffer("label_cooccurrence", label_cooccurrence, persistent=False)
+        self.encoder = PrototypeEncoder(
+            backbone_type=backbone_type,
+            n_prototypes=self.n_binary_labels * n_prototypes_per_label,
+            conv_type=conv_type,
+            prototytpe_type=prototype_type,
+            input_channels=input_channels,
+            partial_len=partial_len,
+            partial_overlap=partial_overlap,
+        )
+        self.cls = nn.Linear(
+            in_features=self.encoder.emb_dim,
+            out_features=self.n_binary_labels * 2,
+        )
 
         # these values were taken from ProtoECGNet experiments
         self.lam_clst = 0.004
@@ -68,15 +53,31 @@ class PrototypeSupervisor(BaseClassifier):
         # self.lam_cntrst = 100.0
         # self.lam_div = 0.0
 
-    # called in BaseClassifier's forward function
-    def other_losses(
-        self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        embeds: torch.Tensor,
-    ) -> dict[str, torch.Tensor] | None:
-        # ProtoECGNet: https://arxiv.org/pdf/2504.08713
-        sims = embeds
+        if pretrained_weights is not None:
+            self.load_pretrained_weights(pretrained_weights)
+
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> dict[str, torch.Tensor]:
+        # from ProtoECGNet: https://arxiv.org/pdf/2504.08713
+
+        sims: torch.Tensor = self.encoder(x)  # (B, P)
+        label_weights: torch.Tensor = self.label_weights  # type: ignore
+
+        # binary cross entropy loss
+        logits = self.cls(sims)  # (B, 2 * L)
+        losses = []
+        for i in range(self.n_binary_labels):
+            i = i * 2
+            per_label_logits = logits[:, i : i + 2]  # (B, 2)
+            wt = torch.ones(2, dtype=label_weights.dtype, device=label_weights.device)
+            wt[1] = label_weights[i // 2]  # use weights: [1, pos_weight]
+            per_label_loss = F.cross_entropy(
+                input=per_label_logits,  # (B, 2)
+                target=y[:, i // 2],  # (B,)
+                weight=wt,  # (2,)
+            )
+            losses.append(per_label_loss)
+        # NOTE: Eq 3 in ProtoECGNet paper does not show mean reduction over classes but seems like it should be based on their codebase
+        bce_loss = torch.stack(losses).mean()
 
         # clustering loss
         # use repeat_interleave as all prototypes for a given label should be contiguous
@@ -99,7 +100,6 @@ class PrototypeSupervisor(BaseClassifier):
         sep_loss = per_sample_max_neg_sim.mean()
 
         # orthogonality loss
-        assert isinstance(self.encoder, PrototypeEncoder)
         prots = F.normalize(self.encoder.prototypes, p=2, dim=1)  # (P, H)
         n_prot = prots.shape[0]
         identity = torch.eye(n_prot, device=prots.device)
@@ -121,6 +121,7 @@ class PrototypeSupervisor(BaseClassifier):
         cntrst_loss = (pos_weighted_sims - neg_weighted_sims) / n_prot**0.5
 
         return {
+            "BCE": bce_loss,
             "Clustering": self.lam_clst * clst_loss,
             "Separation": self.lam_sep * sep_loss,
             "Diversity": self.lam_div * div_loss,
@@ -132,5 +133,5 @@ class PrototypeSupervisor(BaseClassifier):
         return []
 
     @property
-    def _allow_missing_keys(self) -> list[str]:
+    def allow_missing_keys(self) -> list[str]:
         return []
