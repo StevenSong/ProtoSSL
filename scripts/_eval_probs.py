@@ -35,6 +35,8 @@ def main(
         label_subset=label_subset,
     )
     assert test_ds.labels is not None and label_names is not None
+    if label_subset is not None:
+        label_names = label_subset
 
     composite_target = None
     if ds_cls == EchoNextECGDataset:
