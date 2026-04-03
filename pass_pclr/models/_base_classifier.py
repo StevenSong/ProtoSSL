@@ -82,7 +82,9 @@ class BaseClassifier(PretrainedMixin, nn.Module):
                 raise ValueError(
                     f"regularization_mask must have shape {required_shape} but got shape {regularization_mask.shape}"
                 )
-            self.register_buffer("regularization_mask", regularization_mask)
+            self.register_buffer(
+                "regularization_mask", regularization_mask, persistent=False
+            )
         else:
             self.regularization_mask = None
 
@@ -180,12 +182,7 @@ class BaseClassifier(PretrainedMixin, nn.Module):
     @final
     @property
     def allow_missing_keys(self) -> list[str]:
-        return [
-            "cls.*",
-            "_alpha_raw",
-            "_l1_ratio_raw",
-            "regularization_mask",
-        ] + self._allow_missing_keys
+        return ["cls.*", "_alpha_raw", "_l1_ratio_raw"] + self._allow_missing_keys
 
     @property
     def _allow_missing_keys(sef) -> list[str]:
