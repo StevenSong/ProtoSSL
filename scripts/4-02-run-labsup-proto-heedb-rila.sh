@@ -25,7 +25,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt
+    --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes-supervised/latest/best.ckpt
 
 python -m pass_pclr.trainer \
     --pipeline-stage project-prototypes-supervised \
