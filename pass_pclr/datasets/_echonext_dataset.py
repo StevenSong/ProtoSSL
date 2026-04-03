@@ -7,7 +7,7 @@ import torch
 from scipy.signal import resample_poly
 
 from ..defines import ECHONEXT_TARGETS, SPLIT_T
-from ._base_ecg_dataset import BaseECGDataset, load_cached_data
+from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
 
 
 class EchoNextECGDataset(BaseECGDataset):
@@ -19,11 +19,11 @@ class EchoNextECGDataset(BaseECGDataset):
         sampling_rate: int,
         label_subset: list[str] | None = None,
     ):
+        targets = ECHONEXT_TARGETS
         if label_subset is not None:
-            raise NotImplementedError(
-                f"label_subset not yet supported for {type(self.__name__)}"
-            )
-        mapping = {v: k for k, v in ECHONEXT_TARGETS.items()}  # col --> name
+            validate_label_subset(label_subset, list(ECHONEXT_TARGETS))
+            targets = {label: ECHONEXT_TARGETS[label] for label in label_subset}
+        mapping = {v: k for k, v in targets.items()}  # col --> name
         target_cols = list(mapping.values())
 
         _path = Path(dataset_path)

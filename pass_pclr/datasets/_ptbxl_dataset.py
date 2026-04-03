@@ -16,14 +16,21 @@ from ..defines import (
     PTBXL_UPPERS,
     SPLIT_T,
 )
-from ._base_ecg_dataset import BaseECGDataset, load_cached_data
+from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
 
 VAL_FOLD = 9
 TEST_FOLD = 10
 
 
-def get_ptbxl_labels(df: pd.DataFrame) -> np.ndarray:
-    label_idx = {l: i for i, l in enumerate(PTBXL_TARGETS)}
+def get_ptbxl_labels(
+    df: pd.DataFrame,
+    label_subset: list[str] | None = None,
+) -> np.ndarray:
+    targets = PTBXL_TARGETS
+    if label_subset is not None:
+        validate_label_subset(label_subset, PTBXL_TARGETS)
+        targets = label_subset
+    label_idx = {l: i for i, l in enumerate(targets)}
     temp = df["scp_codes"].apply(lambda x: ast.literal_eval(x))
     labels = np.zeros((len(df), len(label_idx)))
     for i, label_dict in enumerate(temp):
@@ -42,10 +49,6 @@ class PtbxlECGDataset(BaseECGDataset):
         sampling_rate: int,
         label_subset: list[str] | None = None,
     ):
-        if label_subset is not None:
-            raise NotImplementedError(
-                f"label_subset not yet supported for {type(self.__name__)}"
-            )
         _path = Path(dataset_path)
         df = pd.read_csv(_path / "ptbxl_database.csv", index_col="ecg_id")
         if split == "train":
@@ -60,7 +63,10 @@ class PtbxlECGDataset(BaseECGDataset):
 
         self.patient_ids = torch.as_tensor(df["patient_id"].astype(int).to_numpy())
         self.ecg_ids = torch.as_tensor(df.index.to_numpy())
-        self.labels = torch.as_tensor(get_ptbxl_labels(df), dtype=torch.long)
+        self.labels = torch.as_tensor(
+            get_ptbxl_labels(df, label_subset),
+            dtype=torch.long,
+        )
 
         def load_transform_data_fn() -> torch.Tensor:
             if sampling_rate <= 100:

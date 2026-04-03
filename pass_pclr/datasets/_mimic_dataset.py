@@ -15,7 +15,7 @@ from ..defines import (
     MIMIC_UPPERS,
     SPLIT_T,
 )
-from ._base_ecg_dataset import BaseECGDataset, load_cached_data
+from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
 
 
 class MimicECGDataset(BaseECGDataset):
@@ -27,17 +27,17 @@ class MimicECGDataset(BaseECGDataset):
         sampling_rate: int,
         label_subset: list[str] | None = None,
     ):
+        targets = MIMIC_TARGETS
         if label_subset is not None:
-            raise NotImplementedError(
-                f"label_subset not yet supported for {type(self.__name__)}"
-            )
+            validate_label_subset(label_subset, MIMIC_TARGETS)
+            targets = label_subset
         _path = Path(dataset_path)
         df = pd.read_csv(_path / "ed-ecgs.csv")
         df = df[df["split"] == split]
 
         self.patient_ids = torch.as_tensor(df["subject_id"].to_numpy())
         self.ecg_ids = torch.as_tensor(df["study_id"].to_numpy())
-        self.labels = torch.as_tensor(df[MIMIC_TARGETS].to_numpy(), dtype=torch.long)
+        self.labels = torch.as_tensor(df[targets].to_numpy(), dtype=torch.long)
 
         def load_transform_data_fn() -> torch.Tensor:
             data = []
