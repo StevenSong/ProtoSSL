@@ -23,24 +23,16 @@ class PrototypeSupervisor(BaseClassifier):
         l1_ratio_init: float = 1,
         alpha_init: float = 1e-4,  # disable regularization by setting alpha to 0
         learnable_regularization: bool = False,
-        use_regularization_mask: bool = True,
-        use_proto_cls_init: bool = True,
     ):
         n_binary_labels = label_weights.shape[0]
         mask = torch.repeat_interleave(
             torch.eye(n_binary_labels), n_prototypes_per_label, dim=1
         )
-        regularization_mask = None
-        if use_regularization_mask:
-            regularization_mask = 1 - mask
+        regularization_mask = 1 - mask
 
         # apply 1 to prototype connections, -0.5 for others, 0 out bias
-        cls_init = None
-        if use_proto_cls_init:
-            weight = mask + (1 - mask) * -0.5
-            bias = torch.zeros(n_binary_labels)
-            cls_init = (weight, bias)
-
+        weight = mask + (1 - mask) * -0.5
+        bias = torch.zeros(n_binary_labels)
         super().__init__(
             encoder=PrototypeEncoder(
                 backbone_type=backbone_type,
@@ -57,7 +49,7 @@ class PrototypeSupervisor(BaseClassifier):
             alpha_init=alpha_init,
             learnable_regularization=learnable_regularization,
             regularization_mask=regularization_mask,
-            cls_init=cls_init,
+            cls_init=(weight, bias),
         )
         self.n_prototypes_per_label = n_prototypes_per_label
         self.n_binary_labels = n_binary_labels
