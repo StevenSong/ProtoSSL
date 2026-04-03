@@ -20,11 +20,11 @@ class PrototypeSupervisor(BaseClassifier):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
-        l1_ratio_init: float = 1,
-        alpha_init: float = 1e-4,  # disable regularization by setting alpha to 0
+        l1_ratio_init: float = 0.15,
+        alpha_init: float = 0,  # disable regularization by setting alpha to 0
         learnable_regularization: bool = False,
-        use_regularization_mask: bool = True,
-        use_proto_cls_init: bool = True,
+        use_regularization_mask: bool = False,
+        use_proto_cls_init: bool = False,
     ):
         n_binary_labels = label_weights.shape[0]
         mask = torch.repeat_interleave(

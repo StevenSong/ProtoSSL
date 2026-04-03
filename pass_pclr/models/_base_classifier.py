@@ -53,11 +53,11 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         encoder: BaseEncoder,
         n_binary_labels: int,
         pretrained_weights: str | None = None,
-        l1_ratio_init: float = 1,
+        l1_ratio_init: float = 0.15,
         alpha_init: float = 1e-4,  # disable regularization by setting alpha to 0
         learnable_regularization: bool = False,
-        regularization_mask: torch.Tensor | None = None,
-        cls_init: tuple[torch.Tensor, torch.Tensor] | None = None,
+        regularization_mask: torch.Tensor | None = None,  # assume (L, H)
+        cls_init: tuple[torch.Tensor, torch.Tensor] | None = None,  # assume (L, H)
     ):
         super().__init__()
         self.encoder = encoder
@@ -67,12 +67,12 @@ class BaseClassifier(PretrainedMixin, nn.Module):
             self.cls = MultiInputLinear(
                 num_inputs=n_binary_labels,
                 in_features=emb_dim,
-                out_features=1,
+                out_features=2,
             )
         else:
             self.cls = nn.Linear(
                 in_features=emb_dim,
-                out_features=n_binary_labels,
+                out_features=n_binary_labels * 2,
             )
 
         # selectively control which weights are regularized
@@ -135,15 +135,29 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         torch.Tensor,  # probs
     ]:
         embeds = self.encoder(x)  # (B, [L,] H), H = hidden_dim
-        logits = self.cls(embeds)  # (B, L), L = n_binary_labels
+        logits = self.cls(embeds)  # (B, L * 2), L = n_binary_labels
 
-        bce_loss = F.binary_cross_entropy_with_logits(logits, y.to(torch.float))
-        probs = torch.sigmoid(logits)  # (B, L)
+        # compute per-label loss
+        label_losses = []
+        probs = []
+        for i in range(0, logits.shape[1], 2):
+            per_label_logits = logits[:, i : i + 2]  # (B, 2)
+            per_label_loss = F.cross_entropy(
+                input=per_label_logits,  # (B, 2)
+                target=y[:, i // 2],  # (B,)
+            )
+            label_losses.append(per_label_loss)
+            probs.append(F.softmax(per_label_logits, dim=1)[:, 1])  # (B,)
+
+        bce_loss = torch.stack(label_losses).mean()
+        probs = torch.vstack(probs).T  # (B, L)
 
         # l1/2 regularization
-        weights = self.cls.weight  # (L, H)
+        weights = self.cls.weight  # (L * 2, H)
         if self.regularization_mask is not None:
-            weights = weights * self.regularization_mask
+            # regularization mask is passed in as (L, H), make (L * 2, H)
+            mask = torch.repeat_interleave(self.regularization_mask, repeats=2, dim=0)
+            weights = weights * mask
         l1 = weights.norm(p=1)
         l2 = weights.norm(p=2)
         l1_ratio = self.l1_ratio
