@@ -77,7 +77,7 @@ python -m pass_pclr.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $$RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
 
 python _linear_probe.py \
 --dataset-path $DATASET_PATH \
