@@ -130,7 +130,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
 
     @property
     def allow_extra_keys(self) -> list[str]:
-        return []
+        return ["_alpha_raw", "_l1_ratio_raw"]
 
     @property
     def allow_missing_keys(self) -> list[str]:

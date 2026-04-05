@@ -12,7 +12,7 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="labsup-proto-direct-14ppl"
+EXP_NAME="labsup-proto-direct"
 
 python -m pass_pclr.trainer \
     --pipeline-stage learn-prototypes-supervised \
@@ -30,31 +30,12 @@ python -m pass_pclr.trainer \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
 
 python -m pass_pclr.trainer \
-    --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
-
-python _eval_probs.py \
---dataset-path $DATASET_PATH \
---probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
---output-path $RUN_DIR/$EXP_NAME
-
-cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
-
-# now do logreg
-PRETRAIN_RUN="$RUN_DIR/$EXP_NAME"
-EXP_NAME="$EXP_NAME-logreg"
-
-python -m pass_pclr.trainer \
     --pipeline-stage compute-embeddings \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt
+    --model.pretrained_weights $$RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
 
 python _linear_probe.py \
 --dataset-path $DATASET_PATH \
