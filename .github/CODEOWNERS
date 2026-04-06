@@ -57,6 +57,7 @@ pass_pclr/models/helpers/_prototype_ilp_assigner.py @sahilsethi0105
 pass_pclr/models/layers/__init__.py @StevenSong
 pass_pclr/models/layers/_multi_input_linear.py @StevenSong
 pass_pclr/trainer.py @StevenSong
+plot/user_study @StevenSong
 plot/_plot_utils.py @StevenSong
 plot/curves.ipynb @StevenSong
 plot/metadata_plots.ipynb @StevenSong

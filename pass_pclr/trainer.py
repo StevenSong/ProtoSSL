@@ -418,7 +418,7 @@ class LitModel(LightningModule):
     ) -> tuple[
         torch.Tensor | None,  # scalar (composite) loss value
         dict[str, torch.Tensor]  # 1D arrays of predicted probabilities
-        | torch.Tensor  # embeddings
+        | tuple[torch.Tensor, torch.Tensor]  # embeddings, metadata
         | None,
     ]:
         batch_size = batch["patient_id"].shape[0]
@@ -511,7 +511,11 @@ class LitModel(LightningModule):
                     f"Cannot use pipeline_stage=compute-embeddings with non-predict stage (got stage={stage}).\n"
                 )
             loss = None
-            preds = self.model.encoder(batch["waveform"])  # (B, n_prototypes)
+            sims = self.model(batch["waveform"])  # (B, n_prototypes)
+            # which chunks resulted in the prototype sims?
+            _, chunks = self.model.get_last_embs_and_chunks()  # (B, n_prototypes)
+
+            preds = sims, chunks
         elif pipeline_stage == "train-classifier" or (
             pipeline_stage == "learn-prototype-assignments"
             and assignment_strategy == "protopool"
@@ -729,9 +733,17 @@ class PredictionWriter(BasePredictionWriter):
                 and pl_module.prediction_split is not None
             )
             split = pl_module.prediction_split
-            assert isinstance(predictions[0], torch.Tensor)  # embeddings
-            to_save = torch.concatenate(predictions).numpy()  # type: ignore
+            assert isinstance(predictions[0], tuple)
+            assert isinstance(predictions[0][0], torch.Tensor)  # embeddings
+            assert isinstance(predictions[0][1], torch.Tensor)  # chunk metadata
+            embeddings = [p[0] for p in predictions]
+            to_save = torch.concatenate(embeddings).numpy()  # type: ignore
             save_name = f"{split}_embeds.npy"
+
+            # TODO: gather/save chunk metadata with DDP
+            chunk_metadata = [p[1] for p in predictions]
+            chunk_metadata = torch.concatenate(chunk_metadata).numpy()
+            np.save(os.path.join(trainer.log_dir, f"{split}_chunks.npy"), chunk_metadata)  # type: ignore
         else:
             raise ValueError(
                 f"Unknown how to handle predictions for pipeline_stage={pipeline_stage}"

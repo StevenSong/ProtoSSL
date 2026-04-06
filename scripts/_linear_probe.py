@@ -72,7 +72,7 @@ def main(
             random_state=42,
             max_iter=100,
         ),
-        n_jobs=-1,
+        n_jobs=int(os.environ.get("SLURM_CPUS_PER_TASK", -1)),
     )
     model.fit(X_train, train_targets)
     target_probs = [y_probs[:, 1] for y_probs in model.predict_proba(X_test)]
