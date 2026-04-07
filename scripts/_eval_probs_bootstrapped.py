@@ -8,7 +8,8 @@ import scipy.stats as st
 from pqdm.processes import pqdm
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from pass_pclr.datasets import infer_dataset_class_from_path
+from pass_pclr.datasets import EchoNextECGDataset, infer_dataset_class_from_path
+from pass_pclr.defines import ECHONEXT_COMPOSITE_TARGET
 
 
 def parse_args():
@@ -22,6 +23,53 @@ def parse_args():
     parser.add_argument("--n-jobs", type=int, default=24)
     args = parser.parse_args()
     return args
+
+
+def worker(
+    y_test: np.ndarray,
+    y_prob: np.ndarray,
+    n_bootstraps: int,
+    bootstrap_frac: float,
+) -> dict:
+    bootstrap_n = int(len(y_test) * bootstrap_frac)
+    label_pos_frac = y_test.sum() / len(y_test)
+    label_metrics = dict()
+    pos_idxs = np.argwhere(y_test).squeeze(1)
+    neg_idxs = np.argwhere(1 - y_test).squeeze(1)
+
+    bootstrapped_metrics = defaultdict(list)
+    for b in range(n_bootstraps):
+        rng = np.random.default_rng(b)
+        bootstrap_n_pos = int(bootstrap_n * label_pos_frac)
+        bootstrap_n_pos = max(bootstrap_n_pos, 1)  # require at least 1 sample
+        bootstrap_n_neg = bootstrap_n - bootstrap_n_pos
+
+        bootstrap_pos_idxs = rng.choice(pos_idxs, bootstrap_n_pos, replace=True)
+        bootstrap_neg_idxs = rng.choice(neg_idxs, bootstrap_n_neg, replace=True)
+
+        bootstrap_idxs = np.concat([bootstrap_pos_idxs, bootstrap_neg_idxs])
+
+        bootstrap_y_test = y_test[bootstrap_idxs]
+        bootstrap_y_prob = y_prob[bootstrap_idxs]
+
+        assert bootstrap_y_test.sum() > 0
+
+        bootstrapped_metrics["AUROC"].append(
+            roc_auc_score(bootstrap_y_test, bootstrap_y_prob)
+        )
+        bootstrapped_metrics["AUPRC"].append(
+            average_precision_score(bootstrap_y_test, bootstrap_y_prob)
+        )
+
+    for k, vs in bootstrapped_metrics.items():
+        a = np.asarray(vs)
+        a_avg = np.mean(a)
+        lo, hi = st.t.interval(0.95, len(a) - 1, loc=a_avg, scale=st.sem(a))
+        label_metrics[k] = a_avg
+        label_metrics[f"{k} 95% CI (lo)"] = lo
+        label_metrics[f"{k} 95% CI (hi)"] = hi
+
+    return label_metrics
 
 
 def main(
@@ -47,60 +95,31 @@ def main(
     else:
         label_names = src_label_names
 
+    composite_target = None
+    if ds_cls == EchoNextECGDataset:
+        composite_target = ECHONEXT_COMPOSITE_TARGET
+
     test_targets = test_ds.labels.numpy()
     target_probs = np.load(probs_npy, allow_pickle=True)
 
-    bootstrap_n = int(test_targets.shape[0] * bootstrap_frac)
-    per_label_pos_frac = test_targets.sum(axis=0) / test_targets.shape[0]
+    kwargs = [
+        {
+            "y_test": test_targets[:, src_label_names.index(target_col)],
+            "y_prob": target_probs[:, src_label_names.index(target_col)],
+            "n_bootstraps": n_bootstraps,
+            "bootstrap_frac": bootstrap_frac,
+        }
+        for target_col in label_names
+    ]
 
-    def worker(target_col: str):
-        label_metrics = dict()
-        i = src_label_names.index(target_col)
-        y_test = test_targets[:, i]
-        y_prob = target_probs[:, i]
-        pos_idxs = np.argwhere(y_test).squeeze(1)
-        neg_idxs = np.argwhere(1 - y_test).squeeze(1)
-
-        bootstrapped_metrics = defaultdict(list)
-        for b in range(n_bootstraps):
-            rng = np.random.default_rng(b)
-            bootstrap_n_pos = int(bootstrap_n * per_label_pos_frac[i])
-            bootstrap_n_pos = max(bootstrap_n_pos, 1)  # require at least 1 sample
-            bootstrap_n_neg = bootstrap_n - bootstrap_n_pos
-
-            bootstrap_pos_idxs = rng.choice(pos_idxs, bootstrap_n_pos, replace=True)
-            bootstrap_neg_idxs = rng.choice(neg_idxs, bootstrap_n_neg, replace=True)
-
-            bootstrap_idxs = np.concat([bootstrap_pos_idxs, bootstrap_neg_idxs])
-
-            bootstrap_y_test = y_test[bootstrap_idxs]
-            bootstrap_y_prob = y_prob[bootstrap_idxs]
-
-            assert bootstrap_y_test.sum() > 0
-
-            bootstrapped_metrics["AUROC"].append(
-                roc_auc_score(bootstrap_y_test, bootstrap_y_prob)
-            )
-            bootstrapped_metrics["AUPRC"].append(
-                average_precision_score(bootstrap_y_test, bootstrap_y_prob)
-            )
-
-        for k, vs in bootstrapped_metrics.items():
-            a = np.asarray(vs)
-            a_avg = np.mean(a)
-            lo, hi = st.t.interval(0.95, len(a) - 1, loc=a_avg, scale=st.sem(a))
-            label_metrics[k] = a_avg
-            label_metrics[f"{k} 95% CI (lo)"] = lo
-            label_metrics[f"{k} 95% CI (hi)"] = hi
-
-        return label_metrics
-
-    results = pqdm(label_names, worker, n_jobs=n_jobs)
+    results = pqdm(kwargs, worker, argument_type="kwargs", n_jobs=n_jobs)
     metrics = {label_name: results[l] for l, label_name in enumerate(label_names)}
 
     metrics = pd.DataFrame.from_dict(metrics, orient="index")
-    metrics.loc["Multilabel Averaged"] = metrics.mean()
     metrics.index.name = "Label"
+
+    _labels = [x for x in label_names if x != composite_target]
+    metrics.loc["Multilabel Averaged"] = metrics.loc[_labels].mean()
 
     metrics_path = os.path.join(output_path, "metrics-bootstrapped.csv")
     metrics.to_csv(metrics_path)
