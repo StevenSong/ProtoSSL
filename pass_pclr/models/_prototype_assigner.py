@@ -154,7 +154,6 @@ class PrototypeAssigner(BaseClassifier):
             n_neg_repeats=n_neg_repeats,  # number of resample repeats
             balanced_negative_sampling=True,
             weight_effects_using_lr=weight_effects_using_lr,
-            random_seed=0,
         )
 
         if max_classes_per_prototype == 1:

@@ -6,6 +6,8 @@ set -e
 : "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
 : "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
 : "${REPO_ROOT:?Env var REPO_ROOT must be set prior to script execution}"
+: "${SEED:=42}"
+echo "Using SEED=$SEED"
 echo "Using DATASET_PATH=$DATASET_PATH"
 echo "Using RUN_DIR=$RUN_DIR"
 echo "Using REPO_ROOT=$REPO_ROOT"
@@ -19,6 +21,7 @@ python ecgfounder/_compute_ecgfounder_embeddings.py \
 --output-path $RUN_DIR/$EXP_NAME
 
 python _linear_probe.py \
+--random-seed $SEED \
 --dataset-path $DATASET_PATH \
 --prototype-embeddings $RUN_DIR/$EXP_NAME \
 --output-path $RUN_DIR/$EXP_NAME

@@ -871,6 +871,14 @@ def run():
         run=False,
         save_config_kwargs={"overwrite": True},  # for resuming checkpoint in same dir
     )
+    _seed = os.environ.get("PL_GLOBAL_SEED", None)
+    if _seed is not None:
+        if int(_seed) < 42:
+            # this is a silly limitation tied to our initial results
+            # where ILP prototype assignment had random seed = 0 while the rest
+            # of the initial results used random seed 42 elsewhere. to ensure
+            # reproducibility, we do seed - 42 for ILP assignment
+            raise ValueError("seed_everything must be 42 or greater")
     if not isinstance(cli.trainer.strategy, (DDPStrategy, SingleDeviceStrategy)):
         # NOTE: to implement support for other distributed startegies, should check
         # the places noted in this GH issue: https://github.com/StevenSong/ecg-prototype-fm/issues/63

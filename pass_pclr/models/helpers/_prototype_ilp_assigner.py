@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from typing import Literal
 
@@ -78,7 +79,6 @@ def build_association_matrix(
     n_neg_repeats: int = 1,
     balanced_negative_sampling: bool = True,
     weight_effects_using_lr: Literal["coef", "OR"] | None = None,
-    random_seed: int = 0,
     invalid_score: float = INVALID_ASSOCIATION_SCORE,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -94,6 +94,12 @@ def build_association_matrix(
         M: (P, C)
         valid_class_mask: (C,) bool
     """
+
+    # this is a stupid hack to ensure our results are consistent
+    # our original seed in this method was 0
+    # our original seed in the lightning configs was 42
+    random_seed = int(os.environ.get("PL_GLOBAL_SEED", 42)) - 42
+
     A = np.asarray(A, dtype=np.float64)
     Y = np.asarray(Y)
 

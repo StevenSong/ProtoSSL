@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument("--balance-class-weight", action="store_true")
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--label-subset", nargs="+")
+    parser.add_argument("--random-seed", type=int, default=42)
     args = parser.parse_args()
     return args
 
@@ -36,6 +37,7 @@ def main(
     balance_class_weight: bool,
     output_path: str,
     label_subset: list[str] | None = None,
+    random_seed: int = 42,
 ):
     ds_cls, label_names = infer_dataset_class_from_path(dataset_path)
     assert label_names is not None
@@ -59,7 +61,7 @@ def main(
     X_test = scaler.transform(X_test)
 
     if embedding_pca is not None:
-        pca = PCA(n_components=embedding_pca, random_state=42)
+        pca = PCA(n_components=embedding_pca, random_state=random_seed)
         X_train = pca.fit_transform(X_train)
         X_test = pca.transform(X_test)
 
@@ -69,7 +71,7 @@ def main(
             penalty="l2",
             solver="saga",
             class_weight="balanced" if balance_class_weight else None,
-            random_state=42,
+            random_state=random_seed,
             max_iter=100,
         ),
         n_jobs=int(os.environ.get("SLURM_CPUS_PER_TASK", -1)),
@@ -91,4 +93,5 @@ if __name__ == "__main__":
         balance_class_weight=args.balance_class_weight,
         output_path=args.output_path,
         label_subset=args.label_subset,
+        random_seed=args.random_seed,
     )
