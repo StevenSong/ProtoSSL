@@ -5,8 +5,6 @@
     * applied to CinC Georgia and ZZU datasets
 * for train subsets, use ptbxl stratifier to make nested subsets stratified by binned age, sex, labels
     * ensure each subset has at least 1 positive instance of all labels
-    * done: PTB-XL, CinC Georgia
-    * todo: EchoNext, MIMIC, ZZU
 
 |dataset |defines splits|has patient IDs|
 |--------|--------------|---------------|
