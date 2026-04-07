@@ -51,6 +51,11 @@ python _eval_probs.py \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 
+python _eval_probs_bootstrapped.py \
+--dataset-path $DATASET_PATH \
+--probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
+
 # now fine-tune
 PRETRAIN_RUN=$RUN_DIR/$EXP_NAME
 EXP_NAME="$EXP_NAME-ft"
