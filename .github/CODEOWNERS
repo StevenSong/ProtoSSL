@@ -68,6 +68,7 @@ README.md @StevenSong @sahilsethi0105
 requirements.txt @StevenSong
 scripts/_cache_data.py @StevenSong
 scripts/_eval_probs.py @StevenSong
+scripts/_eval_probs_bootstrapped.py @StevenSong
 scripts/_linear_probe.py @StevenSong
 scripts/_slurm_wrapper.sh @StevenSong
 scripts/_submit_job.sh @StevenSong

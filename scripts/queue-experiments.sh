@@ -40,8 +40,8 @@ for dataset in "${DATASETS[@]}"; do
 
         submit_job "$suffix" 1-run-blackbox-direct.sh "--dependency=afterok:$cache_id"
         submit_job "$suffix" 2-run-labsup-proto-direct.sh "--dependency=afterok:$cache_id"
-        submit_job "$suffix" 3-run-protossl-heedb-pia.sh "--dependency=afterok:$cache_id"
-        submit_job "$suffix" 4-run-labsup-proto-heedb-ria.sh "--dependency=afterok:$cache_id"
+        submit_job "$suffix" 3-run-protossl-heedb-pila.sh "--dependency=afterok:$cache_id"
+        submit_job "$suffix" 4-run-labsup-proto-heedb-rila.sh "--dependency=afterok:$cache_id"
 
         submit_job "$suffix" 5-run-ecgfounder-logreg.sh # does not depend on same 100 Hz cache (takes 500 Hz)
     done

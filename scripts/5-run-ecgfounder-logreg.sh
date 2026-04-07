@@ -27,3 +27,8 @@ python _eval_probs.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
+
+python _eval_probs_bootstrapped.py \
+--dataset-path $DATASET_PATH \
+--probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME

@@ -20,9 +20,14 @@ python -m pass_pclr.trainer \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH
 
+cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
+
 python _eval_probs.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 
-cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
+python _eval_probs_bootstrapped.py \
+--dataset-path $DATASET_PATH \
+--probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
