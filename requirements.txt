@@ -1,5 +1,6 @@
 detect-secrets
 fastdigest
+h5py
 ipywidgets
 jsonargparse[signatures]
 jupyterlab
