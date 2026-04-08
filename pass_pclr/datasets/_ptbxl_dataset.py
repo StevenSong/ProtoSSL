@@ -11,12 +11,18 @@ from wfdb import rdsamp
 from ..defines import (
     PTBXL_CLIPPED_MEANS,
     PTBXL_CLIPPED_STDS,
+    PTBXL_LEAD_ORDER,
     PTBXL_LOWERS,
     PTBXL_TARGETS,
     PTBXL_UPPERS,
     SPLIT_T,
+    STANDARD_LEAD_ORDER,
 )
 from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
+
+ptbxl_lead_order = [l.lower() for l in PTBXL_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+assert all([c == s for c, s in zip(ptbxl_lead_order, standard_lead_order)])
 
 VAL_FOLD = 9
 TEST_FOLD = 10
@@ -75,7 +81,13 @@ class PtbxlECGDataset(BaseECGDataset):
             else:
                 source_freq = 500
                 data = [rdsamp(_path / f) for f in df["filename_hr"]]
-            X = np.array([signal for signal, meta in data])  # (N, 10 * source_freq, 12)
+            X = []
+            for signal, meta in data:
+                X.append(signal)
+                lead_order = [l.lower() for l in meta["sig_name"]]
+                assert all([c == l for c, l in zip(ptbxl_lead_order, lead_order)])
+            # (N, 10 * source_freq, 12)
+            X = np.array(X)
 
             # clip and normalize using stats derived over train set
             X = np.clip(X, PTBXL_LOWERS, PTBXL_UPPERS)

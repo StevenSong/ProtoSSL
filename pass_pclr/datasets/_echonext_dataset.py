@@ -6,8 +6,19 @@ import pandas as pd
 import torch
 from scipy.signal import resample_poly
 
-from ..defines import ECHONEXT_TARGETS, SPLIT_T
+from ..defines import (
+    ECHONEXT_LEAD_ORDER,
+    ECHONEXT_TARGETS,
+    SPLIT_T,
+    STANDARD_LEAD_ORDER,
+)
 from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
+
+# signals arent saved with data, but should be correct given this code from the authors:
+# https://github.com/PierreElias/IntroECG/blob/0aceefed08cbf52ad2458d4a02936cd8fdf87ec8/7-EchoNext%20Minimodel/parse_xml.py#L112
+echonext_lead_order = [l.lower() for l in ECHONEXT_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+assert all([c == s for c, s in zip(echonext_lead_order, standard_lead_order)])
 
 
 class EchoNextECGDataset(BaseECGDataset):

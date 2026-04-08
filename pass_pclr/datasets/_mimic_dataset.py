@@ -10,12 +10,21 @@ from wfdb import rdsamp
 from ..defines import (
     MIMIC_CLIPPED_MEANS,
     MIMIC_CLIPPED_STDS,
+    MIMIC_LEAD_ORDER,
     MIMIC_LOWERS,
     MIMIC_TARGETS,
     MIMIC_UPPERS,
     SPLIT_T,
+    STANDARD_LEAD_ORDER,
 )
 from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
+
+mimic_lead_order = [l.lower() for l in MIMIC_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+# reindex mimic leads to standard lead ordering
+standardize_lead_order = np.asarray(
+    [standard_lead_order.index(l) for l in mimic_lead_order]
+)
 
 
 class MimicECGDataset(BaseECGDataset):
@@ -46,6 +55,8 @@ class MimicECGDataset(BaseECGDataset):
                 signal, meta = rdsamp(_path / f)
                 assert signal is not None
                 assert meta["fs"] == source_freq
+                lead_order = [l.lower() for l in meta["sig_name"]]
+                assert all([c == l for c, l in zip(mimic_lead_order, lead_order)])
                 assert signal.shape == (5000, 12)
                 data.append(signal)
             X = np.array(data)  # (N, 10 * source_freq, 12)
@@ -53,6 +64,9 @@ class MimicECGDataset(BaseECGDataset):
             # clip and normalize using stats derived over train set
             X = np.clip(X, MIMIC_LOWERS, MIMIC_UPPERS)
             X = (X - MIMIC_CLIPPED_MEANS) / MIMIC_CLIPPED_STDS
+
+            # normalize lead order
+            X = X[:, :, standardize_lead_order]
 
             # downsample to target frequency
             if sampling_rate != source_freq:

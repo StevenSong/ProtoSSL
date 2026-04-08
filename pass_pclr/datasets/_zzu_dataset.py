@@ -9,13 +9,19 @@ from wfdb import rdsamp
 
 from ..defines import (
     SPLIT_T,
+    STANDARD_LEAD_ORDER,
     ZZU_CLIPPED_MEANS,
     ZZU_CLIPPED_STDS,
+    ZZU_LEAD_ORDER,
     ZZU_LOWERS,
     ZZU_TARGETS,
     ZZU_UPPERS,
 )
 from ._base_ecg_dataset import BaseECGDataset, load_cached_data
+
+zzu_lead_order = [l.lower() for l in ZZU_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+assert all([c == s for c, s in zip(zzu_lead_order, standard_lead_order)])
 
 
 def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:
@@ -71,6 +77,8 @@ class ZzuECGDataset(BaseECGDataset):
                 signal, meta = rdsamp(f)
                 assert signal is not None
                 assert not np.isnan(signal).any()
+                lead_order = [l.lower() for l in meta["sig_name"]]
+                assert all([c == l for c, l in zip(zzu_lead_order, lead_order)])
 
                 n_timesteps, n_leads = signal.shape
                 assert df.loc[i, "Sampling_point"] == n_timesteps

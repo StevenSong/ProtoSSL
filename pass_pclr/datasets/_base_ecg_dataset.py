@@ -80,6 +80,7 @@ class StreamingECGWaveforms:
         per_lead_std: list[float] | dict[str, list[float]],
         verbose: bool = True,
         stat_mapper: list[str] | None = None,
+        expected_lead_order: list[str],
     ):
         # if a set of waveforms should be normalized using different stats,
         # each of the per-lead stats can be passed as a dictionary mapping some
@@ -122,6 +123,7 @@ class StreamingECGWaveforms:
         self.per_lead_upperbound = per_lead_upperbound
         self.per_lead_mean = per_lead_mean
         self.per_lead_std = per_lead_std
+        self.expected_lead_order = expected_lead_order
         if verbose:
             print("===============StreamingECGWaveforms===============")
             print(
@@ -133,7 +135,11 @@ class StreamingECGWaveforms:
         fpath = self.wfdb_paths[i]
 
         # assume 10-sec 12-lead ECGs
-        x: np.ndarray = rdsamp(fpath)[0]  # type: ignore
+        _samp = rdsamp(fpath)
+        x: np.ndarray = _samp[0]  # type: ignore
+        meta = _samp[1]
+        lead_order = [l.lower() for l in meta["sig_name"]]
+        assert all([c == l for c, l in zip(self.expected_lead_order, lead_order)])
 
         # make shape (T[imesteps], L[eads]) - easier for broadcasting ops
         if x.shape[0] == 12:

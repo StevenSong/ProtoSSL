@@ -32,6 +32,21 @@ BACKBONE_T = Literal[
 CONV_T = Literal["1D", "2D"]
 PROT_T = Literal["global", "partial"]
 
+STANDARD_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVL",
+    "aVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
+
 CACHE_DIR = os.environ.get(
     "CACHE_DIR", os.path.join(os.path.expanduser("~"), ".cache/pass_pclr_cache")
 )
@@ -52,6 +67,20 @@ ECHONEXT_TARGETS = {
     "SHD": "shd_moderate_or_greater_flag",
 }
 ECHONEXT_COMPOSITE_TARGET = "SHD"
+ECHONEXT_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVL",
+    "aVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 # PTB-XL per-lead stats derived over train set at 100 Hz source freq
 PTBXL_LOWERS = [
@@ -184,6 +213,20 @@ PTBXL_TARGETS = [
     "PSVT",
     "TRIGU",
 ]
+PTBXL_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "AVR",
+    "AVL",
+    "AVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 # CinC Georgia per-lead stats derived over train set at 500 Hz source freq
 CINC_LOWERS = [
@@ -294,6 +337,20 @@ CINC_TARGETS = [
     "VH",
     "VPB",
     "VPP",
+]
+CINC_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVL",
+    "aVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
 ]
 
 # HEEDB per-lead stats derived over train set (data before 2021) at 250 or 500 Hz source freq
@@ -435,8 +492,24 @@ HEEDB_TARGETS = {
     "WITH 1ST DEGREE AV BLOCK": [101],
     "WITH SINUS ARRHYTHMIA": [251],
 }
+HEEDB_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVL",
+    "aVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 # MIMIC-IV-ECG per-lead stats derived over train set at 500 Hz source freq
+# NOTE: these stats were derived using the source lead order
+# NOTE: lead order standardization should be applied after normalization
 MIMIC_LOWERS = [
     -0.66,
     -1.06,
@@ -542,6 +615,20 @@ MIMIC_TARGETS = [
     "End stage renal disease",
     "Sepsis",
 ]
+MIMIC_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVF",
+    "aVL",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 # ZZU pECG per-lead stats derived over train set at 500 Hz source freq
 ZZU_LOWERS = [
@@ -632,3 +719,17 @@ ZZU_TARGETS = {
         "Pulmonary valve stenosis",
     ],
 }
+ZZU_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "AVR",
+    "AVL",
+    "AVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]

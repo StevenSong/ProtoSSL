@@ -10,12 +10,18 @@ from wfdb import rdsamp
 from ..defines import (
     CINC_CLIPPED_MEANS,
     CINC_CLIPPED_STDS,
+    CINC_LEAD_ORDER,
     CINC_LOWERS,
     CINC_TARGETS,
     CINC_UPPERS,
     SPLIT_T,
+    STANDARD_LEAD_ORDER,
 )
 from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
+
+cinc_lead_order = [l.lower() for l in CINC_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+assert all([c == s for c, s in zip(cinc_lead_order, standard_lead_order)])
 
 
 class CincECGDataset(BaseECGDataset):
@@ -47,6 +53,8 @@ class CincECGDataset(BaseECGDataset):
                 assert signal is not None
                 assert meta["fs"] == source_freq
                 assert signal.shape == (5000, 12)
+                lead_order = [l.lower() for l in meta["sig_name"]]
+                assert all([c == l for c, l in zip(cinc_lead_order, lead_order)])
                 data.append(signal)
             X = np.array(data)  # (N, 10 * source_freq, 12)
 

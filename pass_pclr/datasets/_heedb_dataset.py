@@ -12,12 +12,14 @@ from ..defines import (
     HEEDB_EUH_CLIPPED_STDS,
     HEEDB_EUH_LOWERS,
     HEEDB_EUH_UPPERS,
+    HEEDB_LEAD_ORDER,
     HEEDB_MGB_CLIPPED_MEANS,
     HEEDB_MGB_CLIPPED_STDS,
     HEEDB_MGB_LOWERS,
     HEEDB_MGB_UPPERS,
     HEEDB_TARGETS,
     SPLIT_T,
+    STANDARD_LEAD_ORDER,
 )
 from ._base_ecg_dataset import (
     BaseECGDataset,
@@ -25,6 +27,10 @@ from ._base_ecg_dataset import (
     load_cached_data,
     validate_label_subset,
 )
+
+heedb_lead_order = [l.lower() for l in HEEDB_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+assert all([c == s for c, s in zip(heedb_lead_order, standard_lead_order)])
 
 # DANGER: set this to load the entire waveform database into memory
 # DANGER: the initial cache should be done prior to any jobs
@@ -74,6 +80,7 @@ class HeedbECGDataset(BaseECGDataset):
             },
             verbose=not HIGH_MEMORY,
             stat_mapper=list(df["source"]),
+            expected_lead_order=heedb_lead_order,
         )
 
         if not HIGH_MEMORY:
