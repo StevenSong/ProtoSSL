@@ -735,6 +735,7 @@ ZZU_LEAD_ORDER = [
 ]
 
 
+# CODE-15% per-lead stats derived over train set at 400 Hz source freq
 CODE15_LOWERS = [
     -7.98072087430954,
     -11.675341571807861,
@@ -792,7 +793,8 @@ CODE15_CLIPPED_STDS = [
     1.5651775827953827,
 ]
 
-CODE15_TARGETS = ["1dAVb", "RBBB", "LBBB", "SB", "ST", "AF", "mortality"]
+# CODE15_TARGETS = ["1dAVb", "RBBB", "LBBB", "SB", "ST", "AF", "mortality"]
+CODE15_TARGETS = ["mortality"]
 CODE15_LEAD_ORDER = [
     "I",
     "II",
