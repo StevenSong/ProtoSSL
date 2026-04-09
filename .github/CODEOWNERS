@@ -72,6 +72,7 @@ scripts/2-run-labsup-proto-direct.sh @StevenSong
 scripts/3-run-protossl-heedb-pila.sh @StevenSong
 scripts/4-run-labsup-proto-heedb-rila.sh @StevenSong
 scripts/5-run-ecgfounder-logreg.sh @StevenSong
+scripts/6-run-protossl-heedb-pia.sh @StevenSong
 scripts/ablations @StevenSong
 scripts/audio-1-1-run-proto-from-scratch.sh
 scripts/ecgfounder/_compute_ecgfounder_embeddings.py @StevenSong

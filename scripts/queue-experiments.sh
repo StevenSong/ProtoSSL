@@ -2,16 +2,18 @@
 
 set -e
 
-declare -a DATASETS=("echonext" "ptbxl" "cinc" "mimic" "zzu")
+declare -a DATASETS=("echonext" "ptbxl" "cinc" "mimic" "zzu" "code15")
 declare -A DATASET_DIRS=(
     ["echonext"]="echonext"
     ["ptbxl"]="ptb-xl"
     ["cinc"]="cinc-2020"
     ["mimic"]="mimic-iv-ecg"
     ["zzu"]="zzu-pecg"
+    ["code15"]="code15"
 )
 declare -a SUFFIXES_echonext=("" "-32k" "-16k" "-8k" "-4k" "-2k" "-1k" "-512" "-256")
 declare -a SUFFIXES_ptbxl=("" "-8k" "-4k" "-2k" "-1k" "-512" "-256")
+declare -a SUFFIXES_code15=("" "-32k" "-16k" "-8k" "-4k" "-2k" "-1k" "-512" "-256")
 declare -a SUFFIXES_cinc=("" "-4k" "-2k" "-1k" "-512" "-256")
 declare -a SUFFIXES_mimic=("" "-32k" "-16k" "-8k" "-4k" "-2k" "-1k" "-512" "-256")
 declare -a SUFFIXES_zzu=("" "-4k" "-2k" "-1k" "-512" "-256")
@@ -42,6 +44,9 @@ for dataset in "${DATASETS[@]}"; do
         submit_job "$suffix" 2-run-labsup-proto-direct.sh "--dependency=afterok:$cache_id"
         submit_job "$suffix" 3-run-protossl-heedb-pila.sh "--dependency=afterok:$cache_id"
         submit_job "$suffix" 4-run-labsup-proto-heedb-rila.sh "--dependency=afterok:$cache_id"
+
+        # ablation
+        # submit_job "$suffix" 6-run-protossl-heedb-pia.sh "--dependency=afterok:$cache_id"
 
         submit_job "$suffix" 5-run-ecgfounder-logreg.sh # does not depend on same 100 Hz cache (takes 500 Hz)
     done
