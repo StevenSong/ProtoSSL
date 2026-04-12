@@ -1,4 +1,8 @@
 import os
+
+# joblib has some instability with /dev/shm so use a tmp folder
+os.environ["JOBLIB_TEMP_FOLDER"] = os.path.join(os.path.expanduser("~"), ".tmp")
+
 from argparse import ArgumentParser
 from pathlib import Path
 from warnings import simplefilter

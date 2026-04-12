@@ -14,12 +14,13 @@ function submit_job() {
     : "${BASE_DATASET_PATH:?Env var BASE_DATASET_PATH must be set prior to script execution}"
     : "${BASE_RUN_DIR:?Env var BASE_RUN_DIR must be set prior to script execution}"
     : "${REPO_ROOT:?Env var REPO_ROOT must be set prior to script execution}"
+    : "${SEED:?Env var SEED must be set prior to script execution}"
 
     local fname="${2%.sh}"
 
     local job_id=$(sbatch -p h200 --gpus=1 \
     --time=0 --cpus-per-task=24 --mem=200g --ntasks=1 \
-    --export=ALL,DATASET_PATH=$BASE_DATASET_PATH$1,RUN_DIR=$BASE_RUN_DIR$1,REPO_ROOT=$REPO_ROOT \
+    --export=ALL,DATASET_PATH=$BASE_DATASET_PATH$1,RUN_DIR=$BASE_RUN_DIR$1,REPO_ROOT=$REPO_ROOT,SEED=$SEED \
     --output $HOME/slurm-logs/%j-$fname$1-%N.out $3 --parsable _slurm_wrapper.sh $REPO_ROOT/scripts/$2)
 
     echo $job_id
