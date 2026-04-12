@@ -793,8 +793,7 @@ CODE15_CLIPPED_STDS = [
     1.5651775827953827,
 ]
 
-# CODE15_TARGETS = ["1dAVb", "RBBB", "LBBB", "SB", "ST", "AF", "mortality"]
-CODE15_TARGETS = ["mortality"]
+CODE15_TARGETS = ["1dAVb", "RBBB", "LBBB", "SB", "ST", "AF", "mortality"]
 CODE15_LEAD_ORDER = [
     "I",
     "II",
