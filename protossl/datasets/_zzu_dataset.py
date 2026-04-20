@@ -17,7 +17,7 @@ from ..defines import (
     ZZU_TARGETS,
     ZZU_UPPERS,
 )
-from ._base_ecg_dataset import BaseECGDataset, load_cached_data
+from ._base_ecg_dataset import BaseTSDataset, load_cached_data
 
 zzu_lead_order = [l.lower() for l in ZZU_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
@@ -42,7 +42,7 @@ def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:
     return df
 
 
-class ZzuECGDataset(BaseECGDataset):
+class ZzuECGDataset(BaseTSDataset):
     def __init__(
         self,
         *,  # enforce kwargs

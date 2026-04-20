@@ -3,11 +3,12 @@ requires = ["hatchling", "hatch-requirements-txt"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pass_pclr"
+name = "protossl"
 authors = [
   { name="Steven Song", email="songs1@uchicago.edu" },
+  { name="Sahil Sethi", email="sethis@uchicago.edu" },
 ]
-description = "Prototype-Attended, Self-Supervision with Patient Contrastive Learning of Representations"
+description = "ProtoSSL: Interpretable Prototype Learning from Unlabeled Time-Series Data"
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ["version", "dependencies"]
@@ -18,11 +19,11 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Steven/ecg-prototype-fm"
-Issues = "https://github.com/Steven/ecg-prototype-fm/issues"
+Homepage = "https://github.com/Steven/ProtoSSL"
+Issues = "https://github.com/Steven/ProtoSSL/issues"
 
 [tool.hatch.version]
-path = "pass_pclr/__init__.py"
+path = "protossl/__init__.py"
 
 [tool.hatch.metadata]
 allow-direct-references = true

@@ -21,12 +21,8 @@ from ..defines import (
     SPLIT_T,
     STANDARD_LEAD_ORDER,
 )
-from ._base_ecg_dataset import (
-    BaseECGDataset,
-    StreamingECGWaveforms,
-    load_cached_data,
-    validate_label_subset,
-)
+from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
+from .streaming_loaders import StreamingECGWaveforms
 
 heedb_lead_order = [l.lower() for l in HEEDB_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
@@ -42,7 +38,7 @@ MGB_FNAME_TO_CODE = None
 EUH_FNAME_TO_CODE = None
 
 
-class HeedbECGDataset(BaseECGDataset):
+class HeedbECGDataset(BaseTSDataset):
     def __init__(
         self,
         *,  # enforce kwargs

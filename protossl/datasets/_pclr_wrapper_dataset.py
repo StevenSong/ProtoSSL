@@ -3,11 +3,11 @@ import torch
 from scipy.sparse import csr_matrix
 from torch.utils.data import Dataset
 
-from ._base_ecg_dataset import BaseECGDataset
+from ._base_ecg_dataset import BaseTSDataset
 
 
 class PCLRWrapperDataset(Dataset):
-    def __init__(self, dataset: BaseECGDataset):
+    def __init__(self, dataset: BaseTSDataset):
         self.ds = dataset
         multi_sample_patients, self.patient_sample_map = get_sample_to_patient_mapping(
             patient_ids=self.ds.source_ids.numpy(),

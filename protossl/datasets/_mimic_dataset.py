@@ -17,7 +17,7 @@ from ..defines import (
     SPLIT_T,
     STANDARD_LEAD_ORDER,
 )
-from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
+from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 
 mimic_lead_order = [l.lower() for l in MIMIC_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
@@ -27,7 +27,7 @@ standardize_lead_order = np.asarray(
 )
 
 
-class MimicECGDataset(BaseECGDataset):
+class MimicECGDataset(BaseTSDataset):
     def __init__(
         self,
         *,  # enforce kwargs
