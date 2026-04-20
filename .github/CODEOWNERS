@@ -50,12 +50,7 @@ protossl/models/helpers/_prototype_ilp_assigner.py @sahilsethi0105
 protossl/models/layers/__init__.py @StevenSong
 protossl/models/layers/_multi_input_linear.py @StevenSong
 protossl/trainer.py @StevenSong
-plot/user_study @StevenSong
-plot/_plot_utils.py @StevenSong
-plot/curves.ipynb @StevenSong
-plot/metadata_plots.ipynb @StevenSong
-plot/prototypes.ipynb @StevenSong
-plot/visualize-prototypes.ipynb @StevenSong
+plot/ecg-results.ipynb @StevenSong
 pyproject.toml @StevenSong
 README.md @StevenSong @sahilsethi0105
 requirements.txt @StevenSong
@@ -86,3 +81,8 @@ scripts/pretrain/run-pass-heedb-pretrain.sh @StevenSong
 scripts/pretrain/run-prosup-heedb-pretrain.sh @StevenSong
 scripts/queue-experiments.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105
+user-study/prepare_samples.ipynb @StevenSong
+user-study/decode_samples.ipynb @StevenSong
+user-study/images @StevenSong
+user-study/metadata.csv @StevenSong
+user-study/results.csv @StevenSong
