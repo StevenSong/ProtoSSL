@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from pass_pclr.datasets import EchoNextECGDataset, infer_dataset_class_from_path
-from pass_pclr.defines import ECHONEXT_COMPOSITE_TARGET
+from protossl.datasets import EchoNextECGDataset, infer_dataset_class_from_path
+from protossl.defines import ECHONEXT_COMPOSITE_TARGET
 
 
 def parse_args():

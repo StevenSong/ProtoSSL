@@ -1,7 +1,7 @@
 import argparse
 
-from pass_pclr.datasets import infer_dataset_class_from_path
-from pass_pclr.defines import SPLIT_T
+from protossl.datasets import infer_dataset_class_from_path
+from protossl.defines import SPLIT_T
 
 FREQ = 100  # Hz
 SPLITS: list[SPLIT_T] = ["train", "val", "test"]

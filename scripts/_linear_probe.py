@@ -15,7 +15,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.preprocessing import StandardScaler
 
-from pass_pclr.datasets import infer_dataset_class_from_path
+from protossl.datasets import infer_dataset_class_from_path
 
 simplefilter("ignore", category=ConvergenceWarning)
 

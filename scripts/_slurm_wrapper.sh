@@ -2,7 +2,7 @@
 
 # assumes submitting context has exported CONDA_EXE
 source "$(dirname "$CONDA_EXE")/../etc/profile.d/conda.sh"
-conda activate ecg
+conda activate protossl
 # echo WOULD RUN:
 # echo $1
 # echo "DATASET_PATH=$DATASET_PATH"

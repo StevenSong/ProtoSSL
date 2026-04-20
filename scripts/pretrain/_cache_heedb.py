@@ -2,7 +2,7 @@ import os
 
 os.environ["HIGH_MEMORY"] = "1"
 
-from pass_pclr.datasets import HeedbECGDataset
+from protossl.datasets import HeedbECGDataset
 
 DATASET_PATH = "/opt/gpudata/ecg/heedb"
 

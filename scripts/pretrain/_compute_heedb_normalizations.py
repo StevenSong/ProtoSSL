@@ -7,7 +7,7 @@ from fastdigest import TDigest
 from tqdm import tqdm
 from wfdb import rdsamp
 
-from pass_pclr.datasets import get_heedb_metadata
+from protossl.datasets import get_heedb_metadata
 
 
 # estimate per-lead 0.1st and 99.9th percentiles using t-digest

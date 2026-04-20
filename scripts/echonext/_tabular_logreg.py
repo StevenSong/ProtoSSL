@@ -9,7 +9,7 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegressionCV
 from tqdm import tqdm
 
-from pass_pclr.defines import ECHONEXT_TARGETS
+from protossl.defines import ECHONEXT_TARGETS
 
 simplefilter("ignore", category=ConvergenceWarning)
 
