@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..defines import CONV_T, PROT_T, RESNET_T
+from ..defines import BACKBONE_T, CONV_T, PROT_T
 from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
 
@@ -12,7 +12,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         prototype_type: PROT_T,
         n_prototypes: int,
@@ -23,10 +23,12 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        do_softmax: bool = True,
+        do_weighted_sum: bool = True,
     ):
         super().__init__()
         self.encoder = PrototypeEncoder(
-            resnet_type=resnet_type,
+            backbone_type=backbone_type,
             n_prototypes=n_prototypes,
             conv_type=conv_type,
             prototytpe_type=prototype_type,
@@ -34,12 +36,22 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
             partial_len=partial_len,
             partial_overlap=partial_overlap,
         )
-        emb_dim = self.encoder.prototypes.shape[1]
+        self.do_softmax = do_softmax
+        self.do_weighted_sum = do_weighted_sum
+        if do_weighted_sum:
+            # use similarity scores to compute weighted sum of prototypes
+            # prototypes are h-dimensional
+            emb_dim = self.encoder.prototypes.shape[1]
+        else:
+            # inputting similarity scores directly into projection
+            # each similarity vector is length n_prototypes
+            emb_dim = self.encoder.prototypes.shape[0]
         if proj_dim is None:
             proj_dim = emb_dim // 2
-        self.proj = nn.Linear(
-            in_features=emb_dim,
-            out_features=proj_dim,
+        self.proj = nn.Sequential(
+            nn.Linear(emb_dim, emb_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(emb_dim, proj_dim),
         )
         self.log_temperature = nn.Parameter(
             torch.ones([]) * np.log(1 / init_log_temp),
@@ -48,20 +60,22 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
 
-    def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
+    def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> dict[str, torch.Tensor]:
         assert x1.shape == x2.shape
 
         # compute prototype similarity scores
         x1 = self.encoder(x1)  # (B, P), P = n_prototypes
         x2 = self.encoder(x2)  # (B, P)
 
-        # convert scores to probabilities
-        x1 = F.softmax(x1, dim=1)
-        x2 = F.softmax(x2, dim=1)
+        if self.do_softmax:
+            # convert scores to probabilities
+            x1 = F.softmax(x1, dim=1)
+            x2 = F.softmax(x2, dim=1)
 
-        # compute weighted prototypes
-        x1 = x1 @ self.encoder.prototypes  # (B, E), E = emb_dim
-        x2 = x2 @ self.encoder.prototypes  # (B, E)
+        if self.do_weighted_sum:
+            # compute weighted prototypes
+            x1 = x1 @ self.encoder.prototypes  # (B, E), E = emb_dim
+            x2 = x2 @ self.encoder.prototypes  # (B, E)
 
         # projection
         x1 = self.proj(x1)  # (B, H), H = proj_dim
@@ -70,7 +84,10 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         # compute losses
         simclr_loss = self._simclr_loss(x1, x2)
         koleo_loss = self._koleo_loss(self.encoder.prototypes)
-        return simclr_loss + koleo_loss
+        return {
+            "SimCLR": simclr_loss,
+            "KoLeo": koleo_loss,
+        }
 
     def _simclr_loss(self, x1: torch.Tensor, x2: torch.Tensor):
         # simclr training objective from: https://arxiv.org/pdf/2002.05709

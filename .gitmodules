@@ -1,3 +1,6 @@
 [submodule "external/PierreElias-IntroECG"]
 	path = external/PierreElias-IntroECG
 	url = git@github.com:StevenSong/IntroECG.git
+[submodule "plot/user_study/images"]
+	path = plot/user_study/images
+	url = git@github.com:StevenSong/protossl-user-study-images.git

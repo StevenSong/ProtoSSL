@@ -7,15 +7,21 @@ import torch
 from scipy.signal import resample_poly
 from wfdb import rdsamp
 
-from pass_pclr.datasets import BaseECGDataset, load_cached_data
-from pass_pclr.defines import (
+from ..defines import (
     CINC_CLIPPED_MEANS,
     CINC_CLIPPED_STDS,
+    CINC_LEAD_ORDER,
     CINC_LOWERS,
     CINC_TARGETS,
     CINC_UPPERS,
     SPLIT_T,
+    STANDARD_LEAD_ORDER,
 )
+from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
+
+cinc_lead_order = [l.lower() for l in CINC_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+assert all([c == s for c, s in zip(cinc_lead_order, standard_lead_order)])
 
 
 class CincECGDataset(BaseECGDataset):
@@ -25,14 +31,19 @@ class CincECGDataset(BaseECGDataset):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
+        targets = CINC_TARGETS
+        if label_subset is not None:
+            validate_label_subset(label_subset, CINC_TARGETS)
+            targets = label_subset
         _path = Path(dataset_path)
         df = pd.read_csv(_path / "georgia.csv")
         df = df[df["split"] == split]
 
         self.patient_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.ecg_ids = torch.as_tensor(df["ecg_id"].to_numpy())
-        self.labels = torch.as_tensor(df[CINC_TARGETS].to_numpy(), dtype=torch.long)
+        self.labels = torch.as_tensor(df[targets].to_numpy(), dtype=torch.long)
 
         def load_transform_data_fn() -> torch.Tensor:
             data = []
@@ -42,6 +53,8 @@ class CincECGDataset(BaseECGDataset):
                 assert signal is not None
                 assert meta["fs"] == source_freq
                 assert signal.shape == (5000, 12)
+                lead_order = [l.lower() for l in meta["sig_name"]]
+                assert all([c == l for c, l in zip(cinc_lead_order, lead_order)])
                 data.append(signal)
             X = np.array(data)  # (N, 10 * source_freq, 12)
 

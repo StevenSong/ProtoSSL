@@ -7,14 +7,23 @@ import torch
 from scipy.signal import resample_poly
 from wfdb import rdsamp
 
-from pass_pclr.datasets import BaseECGDataset, load_cached_data
-from pass_pclr.defines import (
+from ..defines import (
     MIMIC_CLIPPED_MEANS,
     MIMIC_CLIPPED_STDS,
+    MIMIC_LEAD_ORDER,
     MIMIC_LOWERS,
     MIMIC_TARGETS,
     MIMIC_UPPERS,
     SPLIT_T,
+    STANDARD_LEAD_ORDER,
+)
+from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
+
+mimic_lead_order = [l.lower() for l in MIMIC_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+# reindex mimic leads to standard lead ordering
+standardize_lead_order = np.asarray(
+    [standard_lead_order.index(l) for l in mimic_lead_order]
 )
 
 
@@ -25,14 +34,19 @@ class MimicECGDataset(BaseECGDataset):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
+        targets = MIMIC_TARGETS
+        if label_subset is not None:
+            validate_label_subset(label_subset, MIMIC_TARGETS)
+            targets = label_subset
         _path = Path(dataset_path)
         df = pd.read_csv(_path / "ed-ecgs.csv")
         df = df[df["split"] == split]
 
         self.patient_ids = torch.as_tensor(df["subject_id"].to_numpy())
         self.ecg_ids = torch.as_tensor(df["study_id"].to_numpy())
-        self.labels = torch.as_tensor(df[MIMIC_TARGETS].to_numpy(), dtype=torch.long)
+        self.labels = torch.as_tensor(df[targets].to_numpy(), dtype=torch.long)
 
         def load_transform_data_fn() -> torch.Tensor:
             data = []
@@ -41,6 +55,8 @@ class MimicECGDataset(BaseECGDataset):
                 signal, meta = rdsamp(_path / f)
                 assert signal is not None
                 assert meta["fs"] == source_freq
+                lead_order = [l.lower() for l in meta["sig_name"]]
+                assert all([c == l for c, l in zip(mimic_lead_order, lead_order)])
                 assert signal.shape == (5000, 12)
                 data.append(signal)
             X = np.array(data)  # (N, 10 * source_freq, 12)
@@ -48,6 +64,9 @@ class MimicECGDataset(BaseECGDataset):
             # clip and normalize using stats derived over train set
             X = np.clip(X, MIMIC_LOWERS, MIMIC_UPPERS)
             X = (X - MIMIC_CLIPPED_MEANS) / MIMIC_CLIPPED_STDS
+
+            # normalize lead order
+            X = X[:, :, standardize_lead_order]
 
             # downsample to target frequency
             if sampling_rate != source_freq:

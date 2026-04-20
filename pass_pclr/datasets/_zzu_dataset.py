@@ -7,15 +7,21 @@ import torch
 from scipy.signal import resample_poly
 from wfdb import rdsamp
 
-from pass_pclr.datasets import BaseECGDataset, load_cached_data
-from pass_pclr.defines import (
+from ..defines import (
     SPLIT_T,
+    STANDARD_LEAD_ORDER,
     ZZU_CLIPPED_MEANS,
     ZZU_CLIPPED_STDS,
+    ZZU_LEAD_ORDER,
     ZZU_LOWERS,
     ZZU_TARGETS,
     ZZU_UPPERS,
 )
+from ._base_ecg_dataset import BaseECGDataset, load_cached_data
+
+zzu_lead_order = [l.lower() for l in ZZU_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+assert all([c == s for c, s in zip(zzu_lead_order, standard_lead_order)])
 
 
 def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:
@@ -43,7 +49,12 @@ class ZzuECGDataset(BaseECGDataset):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
+        if label_subset is not None:
+            raise NotImplementedError(
+                f"label_subset not yet supported for {type(self.__name__)}"
+            )
         df = get_zzu_dataframe(dataset_path)
         df = df[df["split"] == split]
 
@@ -66,6 +77,8 @@ class ZzuECGDataset(BaseECGDataset):
                 signal, meta = rdsamp(f)
                 assert signal is not None
                 assert not np.isnan(signal).any()
+                lead_order = [l.lower() for l in meta["sig_name"]]
+                assert all([c == l for c, l in zip(zzu_lead_order, lead_order)])
 
                 n_timesteps, n_leads = signal.shape
                 assert df.loc[i, "Sampling_point"] == n_timesteps

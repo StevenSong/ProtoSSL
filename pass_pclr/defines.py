@@ -12,10 +12,40 @@ STAGE_T = Literal[
     "compute-embeddings",
     "train-classifier",
 ]
+
+ASSIGN_T = Literal[
+    "protopool",
+    "ilp_effect_size",
+    "ilp_effect_size_lr_coef_scaled",
+    "ilp_effect_size_lr_or_scaled",
+    "ilp_effect_size_multiple_allowed",
+]
 SPLIT_T = Literal["train", "val", "test"]
-RESNET_T = Literal["resnet18", "resnet34", "resnet50", "resnet101", "resnet152"]
+BACKBONE_T = Literal[
+    "resnet18",
+    "resnet34",
+    "resnet50",
+    "resnet101",
+    "resnet152",
+    "net1d",
+]
 CONV_T = Literal["1D", "2D"]
 PROT_T = Literal["global", "partial"]
+
+STANDARD_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVL",
+    "aVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 CACHE_DIR = os.environ.get(
     "CACHE_DIR", os.path.join(os.path.expanduser("~"), ".cache/pass_pclr_cache")
@@ -37,6 +67,20 @@ ECHONEXT_TARGETS = {
     "SHD": "shd_moderate_or_greater_flag",
 }
 ECHONEXT_COMPOSITE_TARGET = "SHD"
+ECHONEXT_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVL",
+    "aVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 # PTB-XL per-lead stats derived over train set at 100 Hz source freq
 PTBXL_LOWERS = [
@@ -169,6 +213,20 @@ PTBXL_TARGETS = [
     "PSVT",
     "TRIGU",
 ]
+PTBXL_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "AVR",
+    "AVL",
+    "AVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 # CinC Georgia per-lead stats derived over train set at 500 Hz source freq
 CINC_LOWERS = [
@@ -280,10 +338,24 @@ CINC_TARGETS = [
     "VPB",
     "VPP",
 ]
+CINC_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVL",
+    "aVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 # HEEDB per-lead stats derived over train set (data before 2021) at 250 or 500 Hz source freq
 # 250 Hz samples were weighted equally to 500 Hz samples (see scripts/_compute_heedb_normalizations.py)
-HEEDB_LOWERS = [
+HEEDB_MGB_LOWERS = [
     -1.0119186174765404,
     -1.4390830926038203,
     -1.7198238541919237,
@@ -297,7 +369,7 @@ HEEDB_LOWERS = [
     -1.5223512471635987,
     -1.6062121084788448,
 ]
-HEEDB_UPPERS = [
+HEEDB_MGB_UPPERS = [
     1.3460418197872064,
     1.5057521770008284,
     1.3717106293294237,
@@ -311,7 +383,7 @@ HEEDB_UPPERS = [
     1.8878508873821698,
     1.7253424693450583,
 ]
-HEEDB_CLIPPED_MEANS = [
+HEEDB_MGB_CLIPPED_MEANS = [
     -0.0006269784908739345,
     -0.0032141328048856037,
     -0.0025533607205344565,
@@ -325,7 +397,7 @@ HEEDB_CLIPPED_MEANS = [
     -0.001980557557397161,
     -0.00492753875377437,
 ]
-HEEDB_CLIPPED_STDS = [
+HEEDB_MGB_CLIPPED_STDS = [
     0.15993755158963452,
     0.1935362312377656,
     0.19184339812753923,
@@ -338,6 +410,64 @@ HEEDB_CLIPPED_STDS = [
     0.24639481851816147,
     0.22539578223901716,
     0.2110454711343999,
+]
+
+# TODO: replace Emory values w real ones
+HEEDB_EUH_LOWERS = [
+    -0.7038517368573582,
+    -1.1687722073608027,
+    -1.5766076874360642,
+    -1.1474148774929622,
+    -0.6107907486696409,
+    -0.7880775391316841,
+    -1.7644907463452804,
+    -2.4848630681527233,
+    -2.317365931668375,
+    -1.7669268872193773,
+    -1.3187983709915314,
+    -1.0608492130819662,
+]
+HEEDB_EUH_UPPERS = [
+    1.2977676267366527,
+    1.4483912206315044,
+    1.2221323710167684,
+    0.6722268319333242,
+    0.7880201664232516,
+    0.6109128117841898,
+    1.0197808717988628,
+    1.3871085592096128,
+    1.5421727640098344,
+    1.843899560056582,
+    1.8834247685566945,
+    1.7067736639285025,
+]
+HEEDB_EUH_CLIPPED_MEANS = [
+    -0.00333641190429124,
+    -0.0015139232433631325,
+    0.0018329751341113363,
+    0.002425127093554142,
+    -0.0009166117438822255,
+    0.0009166761347320038,
+    -0.00442523197358341,
+    -0.004174428258389581,
+    -0.00363840053302034,
+    -0.0032306875760891867,
+    -0.0031563845364006465,
+    -0.0031243030602937636,
+]
+HEEDB_EUH_CLIPPED_STDS = [
+    0.1484186659504811,
+    0.17659226851748097,
+    0.17035433460633997,
+    0.13951416925077822,
+    0.08517362507419514,
+    0.08517502277442,
+    0.18804115732392176,
+    0.26205856315682696,
+    0.25674355934896154,
+    0.23260461704801536,
+    0.2119686514178204,
+    0.18862748143524874,
 ]
 
 HEEDB_TARGETS = {
@@ -362,8 +492,24 @@ HEEDB_TARGETS = {
     "WITH 1ST DEGREE AV BLOCK": [101],
     "WITH SINUS ARRHYTHMIA": [251],
 }
+HEEDB_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVL",
+    "aVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 # MIMIC-IV-ECG per-lead stats derived over train set at 500 Hz source freq
+# NOTE: these stats were derived using the source lead order
+# NOTE: lead order standardization should be applied after normalization
 MIMIC_LOWERS = [
     -0.66,
     -1.06,
@@ -469,6 +615,20 @@ MIMIC_TARGETS = [
     "End stage renal disease",
     "Sepsis",
 ]
+MIMIC_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "aVR",
+    "aVF",
+    "aVL",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
 
 # ZZU pECG per-lead stats derived over train set at 500 Hz source freq
 ZZU_LOWERS = [
@@ -559,3 +719,92 @@ ZZU_TARGETS = {
         "Pulmonary valve stenosis",
     ],
 }
+ZZU_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "AVR",
+    "AVL",
+    "AVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]
+
+
+# CODE-15% per-lead stats derived over train set at 400 Hz source freq
+CODE15_LOWERS = [
+    -7.98072087430954,
+    -11.675341571807861,
+    -11.757038821220398,
+    -7.827245235443115,
+    -8.069138526916504,
+    -11.181423895835877,
+    -9.700994483947754,
+    -9.93725034046173,
+    -9.993683573722839,
+    -9.70896958732605,
+    -10.642509923934936,
+    -12.401273957252503,
+]
+CODE15_UPPERS = [
+    7.281677956581177,
+    12.278677220344605,
+    12.419217818260279,
+    7.4371469011306885,
+    7.135879512786914,
+    11.704288720130933,
+    10.274758790970168,
+    10.700166702270508,
+    10.092792729378004,
+    9.486830922127126,
+    9.836198090553296,
+    11.631227493286133,
+]
+CODE15_CLIPPED_MEANS = [
+    0.007837389308600366,
+    -0.13357594467548017,
+    -0.14199909369739366,
+    0.06527094880946875,
+    0.07635751665752355,
+    -0.1365293709303242,
+    -0.08867348173797512,
+    -0.10088426216623744,
+    -0.07598320054555482,
+    -0.0779123044829065,
+    -0.07494082222660425,
+    -0.11986878728167445,
+]
+CODE15_CLIPPED_STDS = [
+    0.931320067651844,
+    1.6819708949538912,
+    1.6858023191396274,
+    1.0730994145362918,
+    1.07324342240321,
+    1.6110845599206174,
+    1.303910872689192,
+    1.364940529540425,
+    1.3369350134791345,
+    1.2726441389755105,
+    1.3369952330052994,
+    1.5651775827953827,
+]
+
+CODE15_TARGETS = ["1dAVb", "RBBB", "LBBB", "SB", "ST", "AF", "mortality"]
+CODE15_LEAD_ORDER = [
+    "I",
+    "II",
+    "III",
+    "AVR",
+    "AVL",
+    "AVF",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+]

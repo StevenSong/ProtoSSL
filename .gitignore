@@ -214,7 +214,7 @@ temp/
 
 *.BAK
 
-outputs/
+outputs*/
 OLD/
 slurm-logs/
 protoecgnet-cache/

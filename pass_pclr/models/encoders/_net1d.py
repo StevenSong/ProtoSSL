@@ -356,22 +356,28 @@ class BasicStage(nn.Module):
 
 
 class Net1D(BaseEncoder):
-    def __init__(
-        self,
-        # default init parameters taken from ecgfounder repo
-        in_channels=12,
-        base_filters=64,
-        ratio=1,
-        filter_list=[64, 160, 160, 400, 400, 1024, 1024],
-        m_blocks_list=[2, 2, 2, 3, 3, 4, 4],
-        kernel_size=16,
-        stride=2,
-        groups_width=16,
-        verbose=False,
-        use_bn=False,
-        use_do=False,
-    ):
+    def __init__(self, **kwargs):
         super().__init__()
+
+        if len(kwargs) > 0:
+            print("==================Net1D.__init__===================")
+            print("Net1D does not take kwargs but allows them for compatibility")
+            print(f"The following kwargs are unused: {kwargs}")
+            print("===================================================")
+
+        # TODO should probably allow parameterization via named shorthands
+        # default init parameters taken from ecgfounder repo
+        in_channels = 12
+        base_filters = 64
+        ratio = 1
+        filter_list = [64, 160, 160, 400, 400, 1024, 1024]
+        m_blocks_list = [2, 2, 2, 3, 3, 4, 4]
+        kernel_size = 16
+        stride = 2
+        groups_width = 16
+        verbose = False
+        use_bn = False
+        use_do = False
 
         self.in_channels = in_channels
         self.base_filters = base_filters

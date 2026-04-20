@@ -4,19 +4,42 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from pass_pclr.datasets import BaseECGDataset, StreamingECGWaveforms
-from pass_pclr.defines import (
-    HEEDB_CLIPPED_MEANS,
-    HEEDB_CLIPPED_STDS,
-    HEEDB_LOWERS,
+from ..defines import (
+    HEEDB_EUH_CLIPPED_MEANS,
+    HEEDB_EUH_CLIPPED_STDS,
+    HEEDB_EUH_LOWERS,
+    HEEDB_EUH_UPPERS,
+    HEEDB_LEAD_ORDER,
+    HEEDB_MGB_CLIPPED_MEANS,
+    HEEDB_MGB_CLIPPED_STDS,
+    HEEDB_MGB_LOWERS,
+    HEEDB_MGB_UPPERS,
     HEEDB_TARGETS,
-    HEEDB_UPPERS,
     SPLIT_T,
+    STANDARD_LEAD_ORDER,
+)
+from ._base_ecg_dataset import (
+    BaseECGDataset,
+    StreamingECGWaveforms,
+    load_cached_data,
+    validate_label_subset,
 )
 
+heedb_lead_order = [l.lower() for l in HEEDB_LEAD_ORDER]
+standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
+assert all([c == s for c, s in zip(heedb_lead_order, standard_lead_order)])
+
+# DANGER: set this to load the entire waveform database into memory
+# DANGER: the initial cache should be done prior to any jobs
+HIGH_MEMORY = os.environ.get("HIGH_MEMORY", None) is not None
+
+# global cache variables
 FULL_META = None
+MGB_FNAME_TO_CODE = None
+EUH_FNAME_TO_CODE = None
 
 
 class HeedbECGDataset(BaseECGDataset):
@@ -26,89 +49,223 @@ class HeedbECGDataset(BaseECGDataset):
         dataset_path: str,
         split: SPLIT_T,
         sampling_rate: int,
+        label_subset: list[str] | None = None,
     ):
-        _path = Path(dataset_path)
-        global FULL_META
-        if FULL_META is None:
-            df = pd.read_csv(
-                _path / "I0001/metadata/metadata.csv",
-                usecols=["BDSPPatientID", "SexDSC", "AgeAtAcquisition", "FileName"],
-            )
-            df["AgeAtAcquisition"] = df["AgeAtAcquisition"] / 365.2425
-            df = df[(df["AgeAtAcquisition"] >= 18) & (df["SexDSC"].notna())]
-            df = df.rename(
-                columns={
-                    "BDSPPatientID": "patient_id",
-                    "SexDSC": "sex",
-                    "AgeAtAcquisition": "age",
-                    "FileName": "fpath",
-                }
-            )
-            df.index.name = "ecg_id"
-            df["year"] = df["fpath"].str[1:].str.split("/").str[1].astype(int)
-            df = df.reset_index()[
-                ["ecg_id", "patient_id", "age", "sex", "year", "fpath"]
-            ]
-            FULL_META = df.copy()
-        else:
-            df = FULL_META.copy()
+        df = get_heedb_metadata(dataset_path)
 
-        if split == "train":
-            mask = ~df["year"].isin([2021, 2022])
-        elif split == "val":
-            mask = df["year"] == 2021
-        elif split == "test":
-            mask = df["year"] == 2022
-        else:
-            raise ValueError(f"Unknown split: {split}")
-
-        df = df[mask].reset_index(drop=True)
+        df = df[df["split"] == split].reset_index(drop=True)
         self.patient_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.ecg_ids = torch.as_tensor(df["ecg_id"].to_numpy())
-        self.labels = torch.as_tensor(get_heedb_labels(dataset_path, df))
+        self.labels = torch.as_tensor(get_heedb_labels(dataset_path, df, label_subset))
         self._df = df
 
-        wfdb_paths = [_path / "I0001/WFDB" / f[1:] for f in df["fpath"]]
-        self.waveforms = StreamingECGWaveforms(
-            wfdb_paths=wfdb_paths,
+        streaming_ecgs = StreamingECGWaveforms(
+            wfdb_paths=list(df["full_path"]),
             sampling_rate=sampling_rate,
-            per_lead_lowerbound=HEEDB_LOWERS,
-            per_lead_upperbound=HEEDB_UPPERS,
-            per_lead_mean=HEEDB_CLIPPED_MEANS,
-            per_lead_std=HEEDB_CLIPPED_STDS,
+            per_lead_lowerbound={
+                "mgb": HEEDB_MGB_LOWERS,
+                "emory": HEEDB_EUH_LOWERS,
+            },
+            per_lead_upperbound={
+                "mgb": HEEDB_MGB_UPPERS,
+                "emory": HEEDB_EUH_UPPERS,
+            },
+            per_lead_mean={
+                "mgb": HEEDB_MGB_CLIPPED_MEANS,
+                "emory": HEEDB_EUH_CLIPPED_MEANS,
+            },
+            per_lead_std={
+                "mgb": HEEDB_MGB_CLIPPED_STDS,
+                "emory": HEEDB_EUH_CLIPPED_STDS,
+            },
+            verbose=not HIGH_MEMORY,
+            stat_mapper=list(df["source"]),
+            expected_lead_order=heedb_lead_order,
         )
+
+        if not HIGH_MEMORY:
+            self.waveforms = streaming_ecgs
+        else:
+            print("==================HeedbECGDataset==================")
+            print("WARNING:")
+            print("WARNING: ABOUT TO LOAD ENTIRE HEEDB WAVEFORM MATRIX INTO MEMORY")
+            print("WARNING: THIS WILL CONSUME APPROXIMATELY 500 GB OF RAM IN THE JOB")
+            print("WARNING:")
+            print("===================================================")
+
+            def load_transform_data_fn() -> torch.Tensor:
+                # fmt: off
+                print("WARNING:")
+                print("WARNING: ABOUT TO LOAD ENTIRE HEEDB WAVEFORM MATRIX INTO MEMORY TO CACHE")
+                print("WARNING: THIS USES A DATALOADER AND SHOULD NOT BE DONE INSIDE A TRAINING JOB")
+                print("WARNING:")
+                # fmt: on
+                dl = DataLoader(
+                    streaming_ecgs,  # type: ignore
+                    batch_size=512,
+                    num_workers=8,
+                    prefetch_factor=4,
+                )
+                data = []
+                for batch in tqdm(dl):
+                    data.append(batch)
+                X = torch.concatenate(data)
+                return X
+
+            self.waveforms = load_cached_data(
+                load_transform_data_fn=load_transform_data_fn,
+                dataset_path=dataset_path,
+                split=split,
+                sampling_rate=sampling_rate,
+            )
 
         assert self.patient_ids.shape[0] == self.waveforms.shape[0]
         assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
         assert self.patient_ids.shape[0] == self.labels.shape[0]
 
 
-FNAME_TO_CODE = None
+def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
+    _path = Path(heedb_path)
+    global FULL_META
+    if FULL_META is not None:
+        return FULL_META.copy()
+
+    print("================get_heedb_metadata=================")
+    print("reading HEEDB metadata")
+
+    # read harvard data
+    mgb = pd.read_csv(
+        _path / "I0001/metadata/metadata.csv",
+        usecols=["BDSPPatientID", "SexDSC", "AgeAtAcquisition", "FileName"],
+    )
+    mgb["AgeAtAcquisition"] = mgb["AgeAtAcquisition"] / 365.2425
+    mgb = mgb[(mgb["AgeAtAcquisition"] >= 18) & (mgb["SexDSC"].notna())]
+    mgb = mgb.rename(
+        columns={
+            "BDSPPatientID": "patient_id",
+            "SexDSC": "sex",
+            "AgeAtAcquisition": "age",
+            "FileName": "fpath",
+        }
+    )
+    print("read MGB data")
+
+    # read emory data, slight differences
+    emory = pd.read_csv(
+        _path / "I0006/metadata/metadata.csv",
+        usecols=["BDSPPatientID", "Sex", "AgeAtAcquisition", "FileName"],
+    )
+    emory["AgeAtAcquisition"] = emory["AgeAtAcquisition"] / 365.2425
+    emory = emory[
+        (emory["AgeAtAcquisition"] >= 18)
+        & (emory["Sex"].notna())
+        & (emory["BDSPPatientID"].notna())
+    ]
+    emory = emory.rename(
+        columns={
+            "BDSPPatientID": "patient_id",
+            "Sex": "sex",
+            "AgeAtAcquisition": "age",
+            "FileName": "fpath",
+        }
+    )
+    assert (emory["patient_id"].astype(int) == emory["patient_id"]).all()
+    emory["patient_id"] = emory["patient_id"].astype(int)
+
+    # bad files on emory side
+    emory_exclude = {"WFDB/2013/MUSE_20200225_081000_06000"}
+    emory = emory[~emory["fpath"].isin(emory_exclude)]
+
+    print("read Emory data")
+
+    # join together
+    mgb["source"] = "mgb"
+    emory["source"] = "emory"
+    assert len(set(mgb["patient_id"]) & set(emory["patient_id"])) == 0
+    df = pd.concat([mgb, emory], ignore_index=True)  # MGB, then EUH
+    df.index.name = "ecg_id"
+    df["year"] = df["fpath"].str[1:].str.split("/").str[1].astype(int)
+    df = df.reset_index()[
+        ["ecg_id", "patient_id", "age", "sex", "year", "source", "fpath"]
+    ]
+
+    # emory data ends in 2018 so val/test are all MGB data
+    df["split"] = "no-split"
+    df.loc[~df["year"].isin([2021, 2022]), "split"] = "train"
+    df.loc[df["year"] == 2021, "split"] = "val"
+    df.loc[df["year"] == 2022, "split"] = "test"
+
+    full_paths = []
+    for f, src in zip(df["fpath"], df["source"]):
+        if src == "mgb":
+            # harvard paths start with "/S...", the level just under WFDB
+            p = _path / "I0001/WFDB" / f[1:]
+        elif src == "emory":
+            # emory paths start with "WFDB/..."
+            p = _path / "I0006" / f
+        else:
+            raise ValueError(f"Unknown path structure for institution: {src}")
+        full_paths.append(p)
+    df["full_path"] = full_paths
+
+    FULL_META = df.copy()
+    print("===================================================")
+    return df
 
 
-def get_heedb_labels(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
+def get_heedb_labels(
+    heedb_path: str,
+    meta: pd.DataFrame,
+    label_subset: list[str] | None = None,
+) -> np.ndarray:
     print("=================make_heedb_labels=================")
-    global FNAME_TO_CODE
-    if FNAME_TO_CODE is None:
+    targets = HEEDB_TARGETS
+    if label_subset is not None:
+        validate_label_subset(label_subset, list(HEEDB_TARGETS))
+        targets = {label: HEEDB_TARGETS[label] for label in label_subset}
+    global MGB_FNAME_TO_CODE
+    global EUH_FNAME_TO_CODE
+
+    def make_fname_to_code(institution) -> dict[str, str]:
+        if institution == "mgb":
+            subdir = "I0001"
+        elif institution == "emory":
+            subdir = "I0006"
+        else:
+            raise ValueError(f"Unknown subdir for institution: {institution}")
         df = pd.read_csv(
-            os.path.join(heedb_path, "I0001/12SL_diagnoses/diagnoses_acquisition.csv")
+            os.path.join(heedb_path, subdir, "12SL_diagnoses/diagnoses_acquisition.csv")
         )
-        FNAME_TO_CODE = {
+        return {
             fname: code_str
             for fname, code_str in zip(
-                tqdm(df["FileName"], desc="Creating fname to code mapping"),
+                tqdm(
+                    df["FileName"], desc=f"Creating {institution} fname to code mapping"
+                ),
                 df["codes_physician"],
             )
         }
-    code_to_label = {c: k for k, cs in HEEDB_TARGETS.items() for c in cs}
-    label_to_idx = {k: i for i, k in enumerate(HEEDB_TARGETS)}
 
-    data = np.zeros((len(meta), len(HEEDB_TARGETS)), dtype=np.long)
+    if MGB_FNAME_TO_CODE is None:
+        MGB_FNAME_TO_CODE = make_fname_to_code("mgb")
+    if EUH_FNAME_TO_CODE is None:
+        EUH_FNAME_TO_CODE = make_fname_to_code("emory")
+    code_to_label = {c: k for k, cs in targets.items() for c in cs}
+    label_to_idx = {k: i for i, k in enumerate(targets)}
+
+    data = np.zeros((len(meta), len(targets)), dtype=np.long)
     count = 0
-    for meta_idx, fname in enumerate(
-        tqdm(meta["fpath"], desc="Converting code string to labels")
+    for meta_idx, (fname, institution) in enumerate(
+        zip(
+            tqdm(meta["fpath"], desc="Converting code string to labels"), meta["source"]
+        )
     ):
-        codes = FNAME_TO_CODE.get(fname, "MISSING")
+        if institution == "mgb":
+            codes = MGB_FNAME_TO_CODE.get(fname, "MISSING")
+        elif institution == "emory":
+            codes = EUH_FNAME_TO_CODE.get(fname, "MISSING")
+        else:
+            raise ValueError(f"Unknown institution: {institution}")
         if codes == "MISSING":
             # separate missing vs empty (below)
             continue
@@ -127,7 +284,8 @@ def get_heedb_labels(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
                 continue
             data[meta_idx, label_idx] = 1
     print(
-        f"Of {len(meta)} ECGs and {len(FNAME_TO_CODE)} annotations, {count} matched ({len(meta)-count} ECG annotations were missing and filled with 0s)"
+        f"Of {len(meta)} ECGs and {len(MGB_FNAME_TO_CODE) + len(EUH_FNAME_TO_CODE)} annotations, "
+        f"{count} matched ({len(meta)-count} ECG annotations were missing and filled with 0s)"
     )
     print("===================================================")
     return data

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ...defines import CONV_T, PROT_T, RESNET_T
+from ...defines import BACKBONE_T, CONV_T, PROT_T
 from ._prototype_encoder import PrototypeEncoder
 
 
@@ -10,7 +10,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         prototytpe_type: PROT_T,
         n_prototypes: int,
@@ -21,7 +21,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         partial_overlap: float | None = None,
     ):
         super().__init__(
-            resnet_type=resnet_type,
+            backbone_type=backbone_type,
             conv_type=conv_type,
             prototytpe_type=prototytpe_type,
             n_prototypes=n_prototypes,
@@ -48,13 +48,7 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         # with tau=0.5, this makes the effective temperature 5e-4, approaching a one-hot distribution
         # See: https://github.com/gmum/ProtoPool/blob/2bd42882282fd309b3b70faa62a73c3c88cddd56/model.py#L148
         # rather than do this, we rely on the trick below to derive true one-hot assignments with gradients:
-        soft_dist = self.get_assignments()
-        hard_dist = self.get_assignments(hard=True)
-
-        # NOTE: we use a trick to derive one-hot assignments while still having
-        # gradients flow through a soft-assignment probability distribution
-        # See: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gumbel_softmax.html#torch-nn-functional-gumbel-softmax
-        assignments = hard_dist - soft_dist.detach() + soft_dist
+        assignments = self.get_assignments(hard=True)
 
         # assignments has shape (L, K, P), where:
         # L = n_labels, K = n_prototypes_per_label, P = n_prototypes

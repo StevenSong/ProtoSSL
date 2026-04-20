@@ -20,9 +20,23 @@ class StrictWandbLogger(WandbLogger):
         name: str,
         save_dir: str,
         pipeline_stage: STAGE_T,
+        resume_from_checkpoint: str | None = None,
     ):
         run_dir = os.path.join(save_dir, name, pipeline_stage)
-        version = next_version(run_dir)
+        if resume_from_checkpoint is not None:
+            if not resume_from_checkpoint.startswith(run_dir):
+                raise ValueError(
+                    f"Logger resume_from_checkpoint={resume_from_checkpoint}, but does not start with specified run_dir={run_dir}"
+                )
+            version = (
+                resume_from_checkpoint.replace(run_dir, "")
+                .strip(os.path.sep)
+                .split(os.path.sep)[0]
+            )
+            kwargs = {"resume": "must"}
+        else:
+            version = next_version(run_dir)
+            kwargs = {}
         save_dir = os.path.join(run_dir, version)
         self.best_link = os.path.join(save_dir, "best.ckpt")
         self.best_link_warned_once = False  # only used to prevent cluttering stdout for non-symlink checkpointing
@@ -32,16 +46,18 @@ class StrictWandbLogger(WandbLogger):
             name=f"{name}-{pipeline_stage}",
             version=version,
             save_dir=save_dir,
+            **kwargs,
         )
-        if os.path.exists(self.save_dir):  # type: ignore
-            raise FileExistsError(
-                "\033[91mREAD THIS ERROR MSG: \033[0m"
-                f"Experiment already exists at {self.save_dir}."
-                " This logger uses some custom logic to put all logs,"
-                " checkpoints, and configs related to an experiment"
-                " under one directory. Please delete or rename to retry."
-            )
-        makedirs_wrapper(self.save_dir)
+        if resume_from_checkpoint is None:
+            if os.path.exists(self.save_dir):  # type: ignore
+                raise FileExistsError(
+                    "\033[91mREAD THIS ERROR MSG: \033[0m"
+                    f"Experiment already exists at {self.save_dir}."
+                    " This logger uses some custom logic to put all logs,"
+                    " checkpoints, and configs related to an experiment"
+                    " under one directory. Please delete or rename to retry."
+                )
+            makedirs_wrapper(self.save_dir)
 
     def after_save_checkpoint(self, checkpoint_callback):
         best_model_path = checkpoint_callback.best_model_path

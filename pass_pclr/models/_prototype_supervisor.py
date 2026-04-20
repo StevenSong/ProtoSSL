@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..defines import CONV_T, PROT_T, RESNET_T, SIM_MAX
+from ..defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX
 from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
 
@@ -11,7 +11,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
     def __init__(
         self,
         *,  # enforce kwargs
-        resnet_type: RESNET_T,
+        backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         prototype_type: PROT_T,
         n_prototypes_per_label: int,
@@ -28,7 +28,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         self.register_buffer("label_weights", label_weights, persistent=False)
         self.register_buffer("label_cooccurrence", label_cooccurrence, persistent=False)
         self.encoder = PrototypeEncoder(
-            resnet_type=resnet_type,
+            backbone_type=backbone_type,
             n_prototypes=self.n_binary_labels * n_prototypes_per_label,
             conv_type=conv_type,
             prototytpe_type=prototype_type,
@@ -47,10 +47,16 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         self.lam_cntrst = 300.0
         self.lam_div = 250.0
 
+        # original ProtoPNet coefficients
+        # self.lam_clst = 0.8
+        # self.lam_sep = 0.08
+        # self.lam_cntrst = 100.0
+        # self.lam_div = 0.0
+
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> dict[str, torch.Tensor]:
         # from ProtoECGNet: https://arxiv.org/pdf/2504.08713
 
         sims: torch.Tensor = self.encoder(x)  # (B, P)
@@ -76,17 +82,21 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         # clustering loss
         # use repeat_interleave as all prototypes for a given label should be contiguous
         pos_mask = y.repeat_interleave(self.n_prototypes_per_label, 1)  # (B, P)
+        has_pos = pos_mask.any(dim=1)  # (B,)
         neg_mask = 1 - pos_mask
+        has_neg = neg_mask.any(dim=1)  # (B,)
         # only consider similarity for prototypes assigned to the sample
         # since we take the max of the valid similarities, mask invalid entries
         # with similarities less than all other similarities
         pos_prot_sims = pos_mask * sims + neg_mask * -SIM_MAX  # (B, P)
         per_sample_max_pos_sim, _ = pos_prot_sims.max(1)  # (B,)
+        per_sample_max_pos_sim = per_sample_max_pos_sim[has_pos]  # (B_p), B_p <= B
         clst_loss = -per_sample_max_pos_sim.mean()
 
         # separation loss
         neg_prot_sims = neg_mask * sims + pos_mask * -SIM_MAX  # (B, P)
         per_sample_max_neg_sim, _ = neg_prot_sims.max(1)  # (B,)
+        per_sample_max_neg_sim = per_sample_max_neg_sim[has_neg]  # (B_n), B_n <= B
         sep_loss = per_sample_max_neg_sim.mean()
 
         # orthogonality loss
@@ -110,17 +120,17 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         neg_weighted_sims = (neg_cooc * inter_prot_sims).sum()
         cntrst_loss = (pos_weighted_sims - neg_weighted_sims) / n_prot**0.5
 
-        return (
-            bce_loss
-            + self.lam_clst * clst_loss
-            + self.lam_sep * sep_loss
-            + self.lam_div * div_loss
-            + self.lam_cntrst * cntrst_loss
-        )
+        return {
+            "BCE": bce_loss,
+            "Clustering": self.lam_clst * clst_loss,
+            "Separation": self.lam_sep * sep_loss,
+            "Diversity": self.lam_div * div_loss,
+            "Contrastive": self.lam_cntrst * cntrst_loss,
+        }
 
     @property
     def allow_extra_keys(self) -> list[str]:
-        return []
+        return ["_alpha_raw", "_l1_ratio_raw"]
 
     @property
     def allow_missing_keys(self) -> list[str]:
