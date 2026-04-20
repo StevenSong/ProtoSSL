@@ -356,7 +356,7 @@ class BasicStage(nn.Module):
 
 
 class Net1D(BaseEncoder):
-    def __init__(self, **kwargs):
+    def __init__(self, *, return_patches=False, **kwargs):
         super().__init__()
 
         if len(kwargs) > 0:
@@ -391,6 +391,7 @@ class Net1D(BaseEncoder):
         self.use_bn = use_bn
         self.use_do = use_do
         self.verbose = verbose
+        self.return_patches = return_patches
 
         # first conv
         self.first_conv = MyConv1dPadSame(
@@ -440,6 +441,9 @@ class Net1D(BaseEncoder):
         for i_stage in range(self.n_stages):
             net = self.stage_list[i_stage]
             out = net(out)
+
+        if self.return_patches:
+            return out
 
         # final prediction
         deep_features = out.mean(-1)

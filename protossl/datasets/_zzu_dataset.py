@@ -17,7 +17,7 @@ from ..defines import (
     ZZU_TARGETS,
     ZZU_UPPERS,
 )
-from ._base_ecg_dataset import BaseECGDataset, load_cached_data
+from ._base_ecg_dataset import BaseTSDataset, load_cached_data
 
 zzu_lead_order = [l.lower() for l in ZZU_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
@@ -31,10 +31,10 @@ def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:
 
     # convert string IDs to numerical IDs:
     # all patient IDs are 6 digits, all ECG IDs are patient ID + 2 digits
-    df["ECG_ID"] = df["ECG_ID"].str.replace("[^0-9]", "", regex=True)
-    df["ECG_ID"] = ("1" + df["ECG_ID"]).astype(int)
-    df["Patient_ID"] = df["Patient_ID"].str.replace("[^0-9]", "", regex=True)
-    df["Patient_ID"] = ("1" + df["Patient_ID"]).astype(int)
+    df["sample_id"] = df["sample_id"].str.replace("[^0-9]", "", regex=True)
+    df["sample_id"] = ("1" + df["sample_id"]).astype(int)
+    df["source_id"] = df["source_id"].str.replace("[^0-9]", "", regex=True)
+    df["source_id"] = ("1" + df["source_id"]).astype(int)
 
     for label, sublabels in ZZU_TARGETS.items():
         df[label] = df[sublabels].max(axis=1)  # make coarse labels
@@ -42,7 +42,7 @@ def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:
     return df
 
 
-class ZzuECGDataset(BaseECGDataset):
+class ZzuECGDataset(BaseTSDataset):
     def __init__(
         self,
         *,  # enforce kwargs
@@ -58,8 +58,8 @@ class ZzuECGDataset(BaseECGDataset):
         df = get_zzu_dataframe(dataset_path)
         df = df[df["split"] == split]
 
-        self.patient_ids = torch.as_tensor(df["Patient_ID"].to_numpy())
-        self.ecg_ids = torch.as_tensor(df["ECG_ID"].to_numpy())
+        self.source_ids = torch.as_tensor(df["source_id"].to_numpy())
+        self.sample_ids = torch.as_tensor(df["sample_id"].to_numpy())
         self.labels = torch.as_tensor(
             df[list(ZZU_TARGETS)].to_numpy(), dtype=torch.long
         )
@@ -133,6 +133,6 @@ class ZzuECGDataset(BaseECGDataset):
             sampling_rate=sampling_rate,
         )
 
-        assert self.patient_ids.shape[0] == self.waveforms.shape[0]
-        assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
-        assert self.patient_ids.shape[0] == self.labels.shape[0]
+        assert self.source_ids.shape[0] == self.waveforms.shape[0]
+        assert self.source_ids.shape[0] == self.sample_ids.shape[0]
+        assert self.source_ids.shape[0] == self.labels.shape[0]

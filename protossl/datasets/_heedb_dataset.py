@@ -21,12 +21,8 @@ from ..defines import (
     SPLIT_T,
     STANDARD_LEAD_ORDER,
 )
-from ._base_ecg_dataset import (
-    BaseECGDataset,
-    StreamingECGWaveforms,
-    load_cached_data,
-    validate_label_subset,
-)
+from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
+from .streaming_loaders import StreamingECGWaveforms
 
 heedb_lead_order = [l.lower() for l in HEEDB_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
@@ -42,7 +38,7 @@ MGB_FNAME_TO_CODE = None
 EUH_FNAME_TO_CODE = None
 
 
-class HeedbECGDataset(BaseECGDataset):
+class HeedbECGDataset(BaseTSDataset):
     def __init__(
         self,
         *,  # enforce kwargs
@@ -54,8 +50,8 @@ class HeedbECGDataset(BaseECGDataset):
         df = get_heedb_metadata(dataset_path)
 
         df = df[df["split"] == split].reset_index(drop=True)
-        self.patient_ids = torch.as_tensor(df["patient_id"].to_numpy())
-        self.ecg_ids = torch.as_tensor(df["ecg_id"].to_numpy())
+        self.source_ids = torch.as_tensor(df["source_id"].to_numpy())
+        self.sample_ids = torch.as_tensor(df["sample_id"].to_numpy())
         self.labels = torch.as_tensor(get_heedb_labels(dataset_path, df, label_subset))
         self._df = df
 
@@ -119,9 +115,9 @@ class HeedbECGDataset(BaseECGDataset):
                 sampling_rate=sampling_rate,
             )
 
-        assert self.patient_ids.shape[0] == self.waveforms.shape[0]
-        assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
-        assert self.patient_ids.shape[0] == self.labels.shape[0]
+        assert self.source_ids.shape[0] == self.waveforms.shape[0]
+        assert self.source_ids.shape[0] == self.sample_ids.shape[0]
+        assert self.source_ids.shape[0] == self.labels.shape[0]
 
 
 def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
@@ -142,7 +138,7 @@ def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
     mgb = mgb[(mgb["AgeAtAcquisition"] >= 18) & (mgb["SexDSC"].notna())]
     mgb = mgb.rename(
         columns={
-            "BDSPPatientID": "patient_id",
+            "BDSPPatientID": "source_id",
             "SexDSC": "sex",
             "AgeAtAcquisition": "age",
             "FileName": "fpath",
@@ -163,14 +159,14 @@ def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
     ]
     emory = emory.rename(
         columns={
-            "BDSPPatientID": "patient_id",
+            "BDSPPatientID": "source_id",
             "Sex": "sex",
             "AgeAtAcquisition": "age",
             "FileName": "fpath",
         }
     )
-    assert (emory["patient_id"].astype(int) == emory["patient_id"]).all()
-    emory["patient_id"] = emory["patient_id"].astype(int)
+    assert (emory["source_id"].astype(int) == emory["source_id"]).all()
+    emory["source_id"] = emory["source_id"].astype(int)
 
     # bad files on emory side
     emory_exclude = {"WFDB/2013/MUSE_20200225_081000_06000"}
@@ -181,12 +177,12 @@ def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
     # join together
     mgb["source"] = "mgb"
     emory["source"] = "emory"
-    assert len(set(mgb["patient_id"]) & set(emory["patient_id"])) == 0
+    assert len(set(mgb["source_id"]) & set(emory["source_id"])) == 0
     df = pd.concat([mgb, emory], ignore_index=True)  # MGB, then EUH
-    df.index.name = "ecg_id"
+    df.index.name = "sample_id"
     df["year"] = df["fpath"].str[1:].str.split("/").str[1].astype(int)
     df = df.reset_index()[
-        ["ecg_id", "patient_id", "age", "sex", "year", "source", "fpath"]
+        ["sample_id", "source_id", "age", "sex", "year", "source", "fpath"]
     ]
 
     # emory data ends in 2018 so val/test are all MGB data

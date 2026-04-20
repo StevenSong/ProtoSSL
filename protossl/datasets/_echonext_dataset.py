@@ -12,7 +12,7 @@ from ..defines import (
     SPLIT_T,
     STANDARD_LEAD_ORDER,
 )
-from ._base_ecg_dataset import BaseECGDataset, load_cached_data, validate_label_subset
+from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 
 # signals arent saved with data, but should be correct given this code from the authors:
 # https://github.com/PierreElias/IntroECG/blob/0aceefed08cbf52ad2458d4a02936cd8fdf87ec8/7-EchoNext%20Minimodel/parse_xml.py#L112
@@ -21,7 +21,7 @@ standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
 assert all([c == s for c, s in zip(echonext_lead_order, standard_lead_order)])
 
 
-class EchoNextECGDataset(BaseECGDataset):
+class EchoNextECGDataset(BaseTSDataset):
     def __init__(
         self,
         *,  # enforce kwargs
@@ -44,8 +44,8 @@ class EchoNextECGDataset(BaseECGDataset):
         id_df = df.loc[split_mask, ["patient_key", "ecg_key"]].reset_index(drop=True)
         label_df = df.loc[split_mask, target_cols].reset_index(drop=True)
 
-        self.patient_ids = torch.as_tensor(id_df["patient_key"].to_numpy())
-        self.ecg_ids = torch.as_tensor(id_df["ecg_key"].to_numpy())
+        self.source_ids = torch.as_tensor(id_df["patient_key"].to_numpy())
+        self.sample_ids = torch.as_tensor(id_df["ecg_key"].to_numpy())
         self.labels = torch.as_tensor(
             label_df.to_numpy(),
             dtype=torch.long,
@@ -80,6 +80,6 @@ class EchoNextECGDataset(BaseECGDataset):
             sampling_rate=sampling_rate,
         )
 
-        assert self.patient_ids.shape[0] == self.waveforms.shape[0]
-        assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
-        assert self.patient_ids.shape[0] == self.labels.shape[0]
+        assert self.source_ids.shape[0] == self.waveforms.shape[0]
+        assert self.source_ids.shape[0] == self.sample_ids.shape[0]
+        assert self.source_ids.shape[0] == self.labels.shape[0]

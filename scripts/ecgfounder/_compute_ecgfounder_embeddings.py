@@ -7,8 +7,8 @@ from torch.hub import load_state_dict_from_url
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from pass_pclr.datasets import infer_dataset_class_from_path
-from pass_pclr.models.encoders import Net1D
+from protossl.datasets import infer_dataset_class_from_path
+from protossl.models.encoders import Net1D
 
 CHECKPOINT_URL = "https://huggingface.co/PKUDigitalHealth/ECGFounder/resolve/main/12_lead_ECGFounder.pth"
 
@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument("--dataset-path", required=True)
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--batch-size", type=int, default=512)
+    parser.add_argument("--return-patches", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -27,9 +28,10 @@ def main(
     dataset_path: str,
     output_path: str,
     batch_size: int = 512,
+    return_patches: bool = False,
 ):
     # init parameters taken from ECGFounder/ptbxl_eval.py
-    encoder = Net1D()
+    encoder = Net1D(return_patches=return_patches)
 
     # load pretrained weights
     sd = load_state_dict_from_url(
@@ -90,4 +92,5 @@ if __name__ == "__main__":
         dataset_path=args.dataset_path,
         output_path=args.output_path,
         batch_size=args.batch_size,
+        return_patches=args.return_patches,
     )
