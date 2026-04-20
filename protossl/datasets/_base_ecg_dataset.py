@@ -197,8 +197,8 @@ class StreamingECGWaveforms:
 
 
 class BaseECGDataset(Dataset, ABC):
-    patient_ids: torch.Tensor  # (N,), N = n_samples
-    ecg_ids: torch.Tensor  # (N,), N = n_samples
+    source_ids: torch.Tensor  # (N,), N = n_samples
+    sample_ids: torch.Tensor  # (N,), N = n_samples
     waveforms: (
         torch.Tensor | StreamingECGWaveforms
     )  # (N, L, T), L = n_leads, T = n_timesteps
@@ -228,8 +228,8 @@ class BaseECGDataset(Dataset, ABC):
     def __getitem__(self, i: int) -> dict[str, torch.Tensor]:
         ret = {
             "waveform": self.waveforms[i],  # (L, T)
-            "patient_id": self.patient_ids[i],  # (,)
-            "ecg_id": self.ecg_ids[i],  # (,)
+            "source_id": self.source_ids[i],  # (,)
+            "sample_id": self.sample_ids[i],  # (,)
         }
         if self.labels is not None:
             ret["label"] = self.labels[i]  # (C,)

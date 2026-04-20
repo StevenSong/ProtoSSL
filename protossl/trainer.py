@@ -405,7 +405,7 @@ class LitModel(LightningModule):
             self.prototype_embs = torch.empty(
                 (_n_prototypes, self.model.encoder.backbone.emb_dim)  # type: ignore
             )
-            # each row is patient_id, ecg_id, chunk_idx
+            # each row is source_id, sample_id, chunk_idx
             self.prototype_ids = torch.empty((_n_prototypes, 3), dtype=torch.long)
 
     def _common_step(
@@ -421,7 +421,7 @@ class LitModel(LightningModule):
         | tuple[torch.Tensor, torch.Tensor]  # embeddings, metadata
         | None,
     ]:
-        batch_size = batch["patient_id"].shape[0]
+        batch_size = batch["source_id"].shape[0]
 
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
         assignment_strategy: ASSIGN_T = self.hparams.assignment_strategy  # type: ignore
@@ -486,7 +486,7 @@ class LitModel(LightningModule):
                 embs.detach().cpu(),
                 chunks.detach().cpu(),
             )
-            patient_ids, ecg_ids = batch["patient_id"].cpu(), batch["ecg_id"].cpu()
+            source_ids, sample_ids = batch["source_id"].cpu(), batch["sample_id"].cpu()
 
             # find max sim
             for prot_idx, curr_sim in enumerate(self.prototype_sims):
@@ -501,8 +501,8 @@ class LitModel(LightningModule):
 
                 self.prototype_embs[prot_idx] = embs[batch_idx, chunk_idx]
                 self.prototype_sims[prot_idx] = prot_sims[batch_idx]
-                self.prototype_ids[prot_idx, 0] = patient_ids[batch_idx]
-                self.prototype_ids[prot_idx, 1] = ecg_ids[batch_idx]
+                self.prototype_ids[prot_idx, 0] = source_ids[batch_idx]
+                self.prototype_ids[prot_idx, 1] = sample_ids[batch_idx]
                 self.prototype_ids[prot_idx, 2] = chunk_idx
         elif pipeline_stage == "compute-embeddings":
             assert isinstance(self.model, PrototypeProjector)
@@ -687,8 +687,8 @@ class PredictionWriter(BasePredictionWriter):
             meta = pd.DataFrame.from_dict(
                 {
                     "prototype_id": np.arange(len(pl_module.prototype_sims)),  # type: ignore
-                    "patient_id": pl_module.prototype_ids[:, 0].tolist(),  # type: ignore
-                    "ecg_id": pl_module.prototype_ids[:, 1].tolist(),  # type: ignore
+                    "source_id": pl_module.prototype_ids[:, 0].tolist(),  # type: ignore
+                    "sample_id": pl_module.prototype_ids[:, 1].tolist(),  # type: ignore
                     "chunk_idx": pl_module.prototype_ids[:, 2].tolist(),  # type: ignore
                     "emb_sim": pl_module.prototype_sims.tolist(),  # type: ignore
                 },

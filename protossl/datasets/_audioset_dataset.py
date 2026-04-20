@@ -122,8 +122,8 @@ class AudioSetDataset(BaseECGDataset):
 
         # numeric IDs for repo compatibility
         ytid_codes, _ = pd.factorize(df["YTID"], sort=True)
-        self.patient_ids = torch.as_tensor(ytid_codes, dtype=torch.long)
-        self.ecg_ids = torch.arange(len(df), dtype=torch.long)
+        self.source_ids = torch.as_tensor(ytid_codes, dtype=torch.long)
+        self.sample_ids = torch.arange(len(df), dtype=torch.long)
 
         # multi-hot labels
         labels = torch.zeros((len(df), len(self.label_names)), dtype=torch.long)
@@ -142,8 +142,8 @@ class AudioSetDataset(BaseECGDataset):
         keep = [p.exists() for p in wav_paths]
         if not all(keep):
             wav_paths = [p for p, k in zip(wav_paths, keep) if k]
-            self.patient_ids = self.patient_ids[keep]
-            self.ecg_ids = self.ecg_ids[keep]
+            self.source_ids = self.source_ids[keep]
+            self.sample_ids = self.sample_ids[keep]
             self.labels = self.labels[keep]
 
         self.waveforms = StreamingAudioWaveforms(
@@ -152,6 +152,6 @@ class AudioSetDataset(BaseECGDataset):
             clip_seconds=10.0,
         )
 
-        assert self.patient_ids.shape[0] == self.waveforms.shape[0]
-        assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
-        assert self.patient_ids.shape[0] == self.labels.shape[0]
+        assert self.source_ids.shape[0] == self.waveforms.shape[0]
+        assert self.source_ids.shape[0] == self.sample_ids.shape[0]
+        assert self.source_ids.shape[0] == self.labels.shape[0]

@@ -41,8 +41,8 @@ class Code15ECGDataset(BaseECGDataset):
         df = pd.read_csv(_path / "labels.csv")
         df = df[df["split"] == split]
 
-        self.patient_ids = torch.as_tensor(df["patient_id"].to_numpy())
-        self.ecg_ids = torch.as_tensor(df["exam_id"].to_numpy())
+        self.source_ids = torch.as_tensor(df["source_id"].to_numpy())
+        self.sample_ids = torch.as_tensor(df["exam_id"].to_numpy())
         self.labels = torch.as_tensor(df[targets].to_numpy(), dtype=torch.long)
 
         def load_transform_data_fn() -> torch.Tensor:
@@ -107,6 +107,6 @@ class Code15ECGDataset(BaseECGDataset):
             sampling_rate=sampling_rate,
         )
 
-        assert self.patient_ids.shape[0] == self.waveforms.shape[0]
-        assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
-        assert self.patient_ids.shape[0] == self.labels.shape[0]
+        assert self.source_ids.shape[0] == self.waveforms.shape[0]
+        assert self.source_ids.shape[0] == self.sample_ids.shape[0]
+        assert self.source_ids.shape[0] == self.labels.shape[0]

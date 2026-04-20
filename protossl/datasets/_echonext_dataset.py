@@ -44,8 +44,8 @@ class EchoNextECGDataset(BaseECGDataset):
         id_df = df.loc[split_mask, ["patient_key", "ecg_key"]].reset_index(drop=True)
         label_df = df.loc[split_mask, target_cols].reset_index(drop=True)
 
-        self.patient_ids = torch.as_tensor(id_df["patient_key"].to_numpy())
-        self.ecg_ids = torch.as_tensor(id_df["ecg_key"].to_numpy())
+        self.source_ids = torch.as_tensor(id_df["patient_key"].to_numpy())
+        self.sample_ids = torch.as_tensor(id_df["ecg_key"].to_numpy())
         self.labels = torch.as_tensor(
             label_df.to_numpy(),
             dtype=torch.long,
@@ -80,6 +80,6 @@ class EchoNextECGDataset(BaseECGDataset):
             sampling_rate=sampling_rate,
         )
 
-        assert self.patient_ids.shape[0] == self.waveforms.shape[0]
-        assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
-        assert self.patient_ids.shape[0] == self.labels.shape[0]
+        assert self.source_ids.shape[0] == self.waveforms.shape[0]
+        assert self.source_ids.shape[0] == self.sample_ids.shape[0]
+        assert self.source_ids.shape[0] == self.labels.shape[0]

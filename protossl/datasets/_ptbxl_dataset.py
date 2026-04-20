@@ -56,7 +56,7 @@ class PtbxlECGDataset(BaseECGDataset):
         label_subset: list[str] | None = None,
     ):
         _path = Path(dataset_path)
-        df = pd.read_csv(_path / "ptbxl_database.csv", index_col="ecg_id")
+        df = pd.read_csv(_path / "ptbxl_database.csv", index_col="sample_id")
         if split == "train":
             mask = ~df["strat_fold"].isin({VAL_FOLD, TEST_FOLD})
         elif split == "val":
@@ -67,8 +67,8 @@ class PtbxlECGDataset(BaseECGDataset):
             raise ValueError(f"Unknown split: {split}")
         df = df[mask]
 
-        self.patient_ids = torch.as_tensor(df["patient_id"].astype(int).to_numpy())
-        self.ecg_ids = torch.as_tensor(df.index.to_numpy())
+        self.source_ids = torch.as_tensor(df["source_id"].astype(int).to_numpy())
+        self.sample_ids = torch.as_tensor(df.index.to_numpy())
         self.labels = torch.as_tensor(
             get_ptbxl_labels(df, label_subset),
             dtype=torch.long,
@@ -115,6 +115,6 @@ class PtbxlECGDataset(BaseECGDataset):
             sampling_rate=sampling_rate,
         )
 
-        assert self.patient_ids.shape[0] == self.waveforms.shape[0]
-        assert self.patient_ids.shape[0] == self.ecg_ids.shape[0]
-        assert self.labels is None or self.patient_ids.shape[0] == self.labels.shape[0]
+        assert self.source_ids.shape[0] == self.waveforms.shape[0]
+        assert self.source_ids.shape[0] == self.sample_ids.shape[0]
+        assert self.labels is None or self.source_ids.shape[0] == self.labels.shape[0]
