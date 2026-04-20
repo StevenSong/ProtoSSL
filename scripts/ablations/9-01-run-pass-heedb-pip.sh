@@ -16,7 +16,7 @@ EXP_NAME="pass-heedb-pip"
 PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-fm/outputs/pass-pretrain-heedb"
 
 # this version relies on samples projected in the pretraining dataset
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \
@@ -36,7 +36,7 @@ PRETRAIN_RUN="$RUN_DIR/$EXP_NAME"
 EXP_NAME="$EXP_NAME-logreg"
 
 # this version relies on samples projected in the pretraining dataset
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage compute-embeddings \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \

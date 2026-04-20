@@ -16,7 +16,7 @@ cd $REPO_ROOT/scripts
 # experiment parameters
 EXP_NAME="blackbox-direct"
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --seed_everything $SEED \
     --config $REPO_ROOT/configs/target-blackbox.yaml \
     --trainer.logger.save_dir $RUN_DIR \

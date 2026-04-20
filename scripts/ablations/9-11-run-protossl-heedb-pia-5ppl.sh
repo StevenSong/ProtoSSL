@@ -16,7 +16,7 @@ EXP_NAME="protossl-heedb-pia-5ppl"
 PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb"
 
 # this version relies on learning prototype assignments relative to the target task
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage learn-prototype-assignments \
     --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --model.n_prototypes 1000 \
@@ -26,7 +26,7 @@ python -m pass_pclr.trainer \
     --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt
 
 # then project
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage project-prototypes-supervised \
     --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
@@ -35,7 +35,7 @@ python -m pass_pclr.trainer \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
 
 # then train classifier
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
@@ -55,7 +55,7 @@ PRETRAIN_RUN="$RUN_DIR/$EXP_NAME"
 EXP_NAME="$EXP_NAME-logreg"
 
 # this version relies on samples projected in the transfer dataset
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage compute-embeddings \
     --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \

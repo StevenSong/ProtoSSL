@@ -17,7 +17,7 @@ cd $REPO_ROOT/scripts
 EXP_NAME="protossl-heedb-pila"
 PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb-no-attn"
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage learn-prototype-assignments \
     --assignment-strategy ilp_effect_size \
@@ -28,7 +28,7 @@ python -m pass_pclr.trainer \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage project-prototypes-supervised \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
@@ -37,7 +37,7 @@ python -m pass_pclr.trainer \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage compute-embeddings \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
@@ -66,7 +66,7 @@ python _eval_probs_bootstrapped.py \
 PRETRAIN_RUN=$RUN_DIR/$EXP_NAME
 EXP_NAME="$EXP_NAME-ft"
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage learn-prototypes-supervised \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
@@ -75,7 +75,7 @@ python -m pass_pclr.trainer \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $PRETRAIN_RUN/learn-prototype-assignments/latest/assigned.ckpt
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage project-prototypes-supervised \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
@@ -84,7 +84,7 @@ python -m pass_pclr.trainer \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage compute-embeddings \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \

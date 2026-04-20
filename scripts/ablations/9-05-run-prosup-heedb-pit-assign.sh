@@ -17,7 +17,7 @@ PRETRAIN_RUN="/opt/gpudata/steven/ecg-prototype-fm/outputs/prosup-pretrain-heedb
 PPL=5
 
 # this version relies on learning prototype assignments relative to the target task
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage learn-prototype-assignments \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \
@@ -28,7 +28,7 @@ python -m pass_pclr.trainer \
     --model.n_prototypes 100  # from 5 per label for 20 heedb labels
 
 # then project
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage project-prototypes-supervised \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \
@@ -39,7 +39,7 @@ python -m pass_pclr.trainer \
     --model.n_prototypes null
 
 # then train classifier
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \
@@ -61,7 +61,7 @@ PRETRAIN_RUN="$RUN_DIR/$EXP_NAME"
 EXP_NAME="$EXP_NAME-logreg"
 
 # this version relies on samples projected in the transfer dataset
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage compute-embeddings \
     --config $REPO_ROOT/configs/pass-pclr.yaml \
     --trainer.logger.save_dir $RUN_DIR \

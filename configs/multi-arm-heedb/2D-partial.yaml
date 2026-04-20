@@ -4,7 +4,7 @@ trainer:
   devices: 1
   precision: 32
   logger:
-    class_path: pass_pclr.lightning_utils.StrictWandbLogger
+    class_path: protossl.lightning_utils.StrictWandbLogger
     init_args:
       project: ProtoECGNet-HEEDB
       # save_dir: /path/to/runs/
