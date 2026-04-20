@@ -14,14 +14,14 @@ cd $REPO_ROOT/scripts
 # experiment parameters
 EXP_NAME="labsup-proto-direct-5ppl"
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage learn-prototypes-supervised \
     --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage project-prototypes-supervised \
     --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
@@ -29,7 +29,7 @@ python -m pass_pclr.trainer \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
@@ -48,7 +48,7 @@ cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs
 PRETRAIN_RUN="$RUN_DIR/$EXP_NAME"
 EXP_NAME="$EXP_NAME-logreg"
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage compute-embeddings \
     --config $REPO_ROOT/configs/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \

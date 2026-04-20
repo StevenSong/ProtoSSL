@@ -22,7 +22,7 @@ cd $REPO_ROOT/scripts
 # experiment parameters
 EXP_NAME="proto-from-scratch"
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage learn-prototypes-supervised \
     --config $REPO_ROOT/configs/proto-supervised.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
@@ -38,7 +38,7 @@ python -m pass_pclr.trainer \
     --model.init_args.partial_overlap 0.5 \
     --model.init_args.n_prototypes_per_label 5
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage project-prototypes-supervised \
     --config $REPO_ROOT/configs/proto-supervised.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
@@ -55,7 +55,7 @@ python -m pass_pclr.trainer \
     --model.init_args.n_prototypes_per_label 5 \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/proto-supervised.yaml \
     --trainer.logger.save_dir $RUN_DIR \

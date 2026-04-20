@@ -25,7 +25,7 @@ conda activate protossl
 # 3) enable pre-commit hooks
 pre-commit install
 
-# 4) install pass_pclr from editable source
+# 4) install protossl from editable source
 pip install -e .
 
 # 5) dev away

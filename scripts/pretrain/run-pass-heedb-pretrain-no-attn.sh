@@ -24,7 +24,7 @@ BACKBONE=resnet18
 CONV=2D
 
 # pretrain via self supervised prototype learning
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage learn-prototypes \
     --config $REPO_ROOT/configs/pretrain-unsupervised.yaml \
     --model.backbone_type $BACKBONE \
@@ -36,7 +36,7 @@ python -m pass_pclr.trainer \
     --data.dataset_path $PRETRAIN_DATASET
 
 project in the pretraining dataset
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage project-prototypes \
     --config $REPO_ROOT/configs/pretrain-unsupervised.yaml \
     --model.backbone_type $BACKBONE \
@@ -46,7 +46,7 @@ python -m pass_pclr.trainer \
     --data.dataset_path $PRETRAIN_DATASET \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes/latest/best.ckpt
 
-python -m pass_pclr.trainer \
+python -m protossl.trainer \
     --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/pretrain-unsupervised.yaml \
     --model.backbone_type $BACKBONE \
