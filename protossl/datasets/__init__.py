@@ -8,6 +8,7 @@ from ..defines import (
     HEEDB_TARGETS,
     MIMIC_TARGETS,
     PTBXL_TARGETS,
+    SPEECH_COMMANDS_V2_TARGETS,
     ZZU_TARGETS,
 )
 from ._audio_contrastive_wrapper_dataset import AudioContrastiveWrapperDataset
@@ -20,6 +21,7 @@ from ._heedb_dataset import HeedbECGDataset, get_heedb_labels, get_heedb_metadat
 from ._mimic_dataset import MimicECGDataset
 from ._pclr_wrapper_dataset import PCLRWrapperDataset
 from ._ptbxl_dataset import PtbxlECGDataset, get_ptbxl_labels
+from ._speech_commands_dataset import SpeechCommandsV2Dataset
 from ._zzu_dataset import ZzuECGDataset
 
 
@@ -40,6 +42,7 @@ def infer_dataset_class_from_path(
     zzu_indicators = ["zzu"]
     code15_indicators = ["code15"]
     audioset_indicators = ["audioset", "audio-set", "audio_set"]
+    speech_cmds_indicators = ["speech-commands", "speech_commands", "speechcommands"]
 
     if any(x in dataset_path for x in echonext_indicators):
         return EchoNextECGDataset, list(ECHONEXT_TARGETS.keys()), False
@@ -57,6 +60,8 @@ def infer_dataset_class_from_path(
         return Code15ECGDataset, CODE15_TARGETS, False
     elif any(x in dataset_path_lower for x in audioset_indicators):
         return AudioSetDataset, list(AUDIOSET_TARGETS), True
+    elif any(x in dataset_path_lower for x in speech_cmds_indicators):
+        return SpeechCommandsV2Dataset, SPEECH_COMMANDS_V2_TARGETS, True
     raise ValueError(
         f"Could not infer BaseECGDataset subclass from dataset_path: {dataset_path}"
     )
