@@ -15,9 +15,10 @@ env.yaml @StevenSong
 external/PierreElias-IntroECG @StevenSong
 hf-token-plugin.py @StevenSong
 LICENSE @StevenSong
+plot/ecg-results.ipynb @StevenSong
 protossl/__init__.py @StevenSong
 protossl/datasets/__init__.py @StevenSong
-protossl/datasets/streaming_loaders @StevenSong
+protossl/datasets/_audio_contrastive_wrapper_dataset.py @sahilsethi0105
 protossl/datasets/_audioset_dataset.py @sahilsethi0105
 protossl/datasets/_base_ecg_dataset.py @StevenSong
 protossl/datasets/_cinc_dataset.py @StevenSong
@@ -28,6 +29,7 @@ protossl/datasets/_mimic_dataset.py @StevenSong
 protossl/datasets/_pclr_wrapper_dataset.py @StevenSong
 protossl/datasets/_ptbxl_dataset.py @StevenSong
 protossl/datasets/_zzu_dataset.py @StevenSong
+protossl/datasets/streaming_loaders @StevenSong
 protossl/defines.py @StevenSong
 protossl/lightning_utils.py @StevenSong
 protossl/models/__init__.py @StevenSong
@@ -42,6 +44,7 @@ protossl/models/_prototype_supervisor.py @StevenSong
 protossl/models/encoders/__init__.py @StevenSong
 protossl/models/encoders/_base_encoder.py @StevenSong
 protossl/models/encoders/_net1d.py @StevenSong
+protossl/models/encoders/_panns_encoder.py @sahilsethi0105
 protossl/models/encoders/_prototype_encoder_with_assignment.py @StevenSong
 protossl/models/encoders/_prototype_encoder.py @StevenSong
 protossl/models/encoders/_resnet1d.py @StevenSong
@@ -50,18 +53,23 @@ protossl/models/helpers/__init__.py @StevenSong
 protossl/models/helpers/_prototype_ilp_assigner.py @sahilsethi0105
 protossl/models/layers/__init__.py @StevenSong
 protossl/models/layers/_multi_input_linear.py @StevenSong
+protossl/models/layers/_panns_backbones.py @StevenSong
 protossl/trainer.py @StevenSong
-plot/ecg-results.ipynb @StevenSong
 pyproject.toml @StevenSong
 README.md @StevenSong @sahilsethi0105
 requirements.txt @StevenSong
 scripts/_cache_data.py @StevenSong
-scripts/_eval_probs.py @StevenSong
 scripts/_eval_probs_bootstrapped.py @StevenSong
+scripts/_eval_probs.py @StevenSong
+scripts/_linear_probe_audio.py @sahilsethi0105
 scripts/_linear_probe.py @StevenSong
 scripts/_slurm_wrapper.sh @StevenSong
 scripts/_submit_job.sh @StevenSong
 scripts/0-run-cache-data.sh @StevenSong
+scripts/1-2-run-proto-from-scratch_audio-logreg.sh @sahilsethi0105
+scripts/1-3-run-audioblackbox.sh @sahilsethi0105
+scripts/1-5-run-audio-assign-PIT.sh @sahilsethi0105
+scripts/1-5-run-audio-contrastive-assign-pit.sh @sahilsethi0105
 scripts/1-run-blackbox-direct.sh @StevenSong
 scripts/2-run-labsup-proto-direct.sh @StevenSong
 scripts/3-run-protossl-heedb-pila.sh @StevenSong
@@ -82,8 +90,8 @@ scripts/pretrain/run-pass-heedb-pretrain.sh @StevenSong
 scripts/pretrain/run-prosup-heedb-pretrain.sh @StevenSong
 scripts/queue-experiments.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105
-user-study/prepare_samples.ipynb @StevenSong
-user-study/decode_samples.ipynb @StevenSong
+user-study/analyze_results.ipynb @StevenSong
 user-study/images @StevenSong
 user-study/metadata.csv @StevenSong
+user-study/prepare_samples.ipynb @StevenSong
 user-study/results.csv @StevenSong

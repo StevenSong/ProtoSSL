@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Type
 
 from ..defines import (
@@ -11,6 +10,7 @@ from ..defines import (
     PTBXL_TARGETS,
     ZZU_TARGETS,
 )
+from ._audio_contrastive_wrapper_dataset import AudioContrastiveWrapperDataset
 from ._audioset_dataset import AudioSetDataset
 from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 from ._cinc_dataset import CincECGDataset
@@ -28,6 +28,7 @@ def infer_dataset_class_from_path(
 ) -> tuple[
     Type[BaseTSDataset],
     list[str] | None,  # label names
+    bool,  # is audio
 ]:
     dataset_path_lower = dataset_path.lower()
 
@@ -41,21 +42,21 @@ def infer_dataset_class_from_path(
     audioset_indicators = ["audioset", "audio-set", "audio_set"]
 
     if any(x in dataset_path for x in echonext_indicators):
-        return EchoNextECGDataset, list(ECHONEXT_TARGETS.keys())
+        return EchoNextECGDataset, list(ECHONEXT_TARGETS.keys()), False
     elif any(x in dataset_path for x in ptbxl_indicators):
-        return PtbxlECGDataset, PTBXL_TARGETS
+        return PtbxlECGDataset, PTBXL_TARGETS, False
     elif any(x in dataset_path for x in cinc_indicators):
-        return CincECGDataset, CINC_TARGETS
+        return CincECGDataset, CINC_TARGETS, False
     elif any(x in dataset_path for x in heedb_indicators):
-        return HeedbECGDataset, list(HEEDB_TARGETS.keys())
+        return HeedbECGDataset, list(HEEDB_TARGETS.keys()), False
     elif any(x in dataset_path for x in mimic_indicators):
-        return MimicECGDataset, MIMIC_TARGETS
+        return MimicECGDataset, MIMIC_TARGETS, False
     elif any(x in dataset_path for x in zzu_indicators):
-        return ZzuECGDataset, list(ZZU_TARGETS)
+        return ZzuECGDataset, list(ZZU_TARGETS), False
     elif any(x in dataset_path for x in code15_indicators):
-        return Code15ECGDataset, CODE15_TARGETS
+        return Code15ECGDataset, CODE15_TARGETS, False
     elif any(x in dataset_path_lower for x in audioset_indicators):
-        return AudioSetDataset, list(AUDIOSET_TARGETS)
+        return AudioSetDataset, list(AUDIOSET_TARGETS), True
     raise ValueError(
         f"Could not infer BaseECGDataset subclass from dataset_path: {dataset_path}"
     )

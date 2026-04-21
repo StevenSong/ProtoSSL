@@ -35,7 +35,7 @@ class PrototypeAssigner(BaseClassifier):
         backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         prototype_type: PROT_T,
-        assignment_strategy: ASSIGN_T = "protopool",
+        assignment_strategy: ASSIGN_T,
         n_prototypes: int,
         n_prototypes_per_label: int,
         n_binary_labels: int,
@@ -43,6 +43,8 @@ class PrototypeAssigner(BaseClassifier):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        prototype_h: int | None = None,
+        prototype_w: int | None = None,
     ):
         self.backbone_type = backbone_type
         self.conv_type = conv_type
@@ -81,10 +83,12 @@ class PrototypeAssigner(BaseClassifier):
                 backbone_type=backbone_type,
                 n_prototypes=n_prototypes,
                 conv_type=conv_type,
-                prototytpe_type=prototype_type,
+                prototype_type=prototype_type,
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
                 **extra_kwargs,
             ),
             n_binary_labels=n_binary_labels,

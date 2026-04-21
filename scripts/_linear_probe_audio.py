@@ -1,21 +1,16 @@
 import os
-
-# joblib has some instability with /dev/shm so use a tmp folder
-os.environ["JOBLIB_TEMP_FOLDER"] = os.path.join(os.path.expanduser("~"), ".tmp")
-
 from argparse import ArgumentParser
 from pathlib import Path
 from warnings import simplefilter
 
-import joblib
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.linear_model import LogisticRegression
-from sklearn.multioutput import MultiOutputClassifier
+from sklearn.linear_model import LogisticRegressionCV, LogisticRegression
 from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 
-from protossl.datasets import infer_dataset_class_from_path
+from pass_pclr.datasets import infer_dataset_class_from_path
 
 simplefilter("ignore", category=ConvergenceWarning)
 
@@ -27,8 +22,6 @@ def parse_args():
     parser.add_argument("--embedding-pca", type=int)
     parser.add_argument("--balance-class-weight", action="store_true")
     parser.add_argument("--output-path", required=True)
-    parser.add_argument("--label-subset", nargs="+")
-    parser.add_argument("--random-seed", type=int, default=42)
     args = parser.parse_args()
     return args
 
@@ -40,25 +33,17 @@ def main(
     embedding_pca: int | None = None,
     balance_class_weight: bool,
     output_path: str,
-    label_subset: list[str] | None = None,
-    random_seed: int = 42,
 ):
-    ds_cls, label_names, is_audio = infer_dataset_class_from_path(dataset_path)
+    ds_cls, label_names = infer_dataset_class_from_path(dataset_path)
     assert label_names is not None
 
-    if is_audio:
+    if "audioset" in dataset_path.lower():
         sampling_rate = 32000
         print("Using audio sampling rate")
-    else:
+    else: 
         sampling_rate = 100
         print("Using ECG sampling rate")
-
-    train_ds = ds_cls(
-        dataset_path=dataset_path,
-        split="train",
-        sampling_rate=sampling_rate,
-        label_subset=label_subset,
-    )
+    train_ds = ds_cls(dataset_path=dataset_path, split="train", sampling_rate=sampling_rate)
 
     assert train_ds.labels is not None
     train_targets = train_ds.labels.numpy()
@@ -72,27 +57,42 @@ def main(
     X_test = scaler.transform(X_test)
 
     if embedding_pca is not None:
-        pca = PCA(n_components=embedding_pca, random_state=random_seed)
+        pca = PCA(n_components=embedding_pca, random_state=42)
         X_train = pca.fit_transform(X_train)
         X_test = pca.transform(X_test)
 
-    model = MultiOutputClassifier(
-        estimator=LogisticRegression(
-            C=5e-4,
-            penalty="l2",
-            solver="saga",
-            class_weight="balanced" if balance_class_weight else None,
-            random_state=random_seed,
-            max_iter=100,
-        ),
-        n_jobs=int(os.environ.get("SLURM_CPUS_PER_TASK", -1)),
-    )
-    model.fit(X_train, train_targets)
-    target_probs = [y_probs[:, 1] for y_probs in model.predict_proba(X_test)]
+    target_probs = []
+    models = dict()
+    for i, target_col in enumerate(tqdm(label_names)):
+        y_train = train_targets[:, i]
 
+        # model = LogisticRegressionCV(
+        #     Cs=10,
+        #     l1_ratios=[0, 0.1, 0.25, 0.5, 0.75, 0.9, 1],
+        #     penalty="elasticnet",
+        #     cv=5,
+        #     solver="saga",
+        #     class_weight="balanced" if balance_class_weight else None,
+        #     random_state=42,
+        #     max_iter=100,
+        #     n_jobs=-1,
+        # )
+        model = LogisticRegression(
+            penalty="l2",
+            solver="lbfgs",
+            class_weight="balanced" if balance_class_weight else None,
+            random_state=42,
+            max_iter=100,
+            n_jobs=-1,
+        )
+        model.fit(X_train, y_train)
+        models[target_col] = model
+
+        y_prob = model.predict_proba(X_test)[:, 1]
+        target_probs.append(y_prob)
     target_probs = np.asarray(target_probs).T
     np.save(os.path.join(output_path, "probs.npy"), target_probs)
-    joblib.dump(model, os.path.join(output_path, "model.joblib"))
+    np.savez(os.path.join(output_path, "models.npz"), **models)
 
 
 if __name__ == "__main__":
@@ -103,6 +103,4 @@ if __name__ == "__main__":
         embedding_pca=args.embedding_pca,
         balance_class_weight=args.balance_class_weight,
         output_path=args.output_path,
-        label_subset=args.label_subset,
-        random_seed=args.random_seed,
     )

@@ -11,11 +11,22 @@ from lightning.pytorch.strategies import DDPStrategy, SingleDeviceStrategy
 from torch.utils.data import DataLoader
 
 from .datasets import (
+    AudioContrastiveWrapperDataset,
+    AudioSetDataset,
+    BaseTSDataset,
     PCLRWrapperDataset,
     infer_dataset_class_from_path,
     validate_label_subset,
 )
-from .defines import ASSIGN_T, BACKBONE_T, CONV_T, PROT_T, SIM_MAX, STAGE_T
+from .defines import (
+    ASSIGN_T,
+    BACKBONE_T,
+    CONTRASTIVE_T,
+    CONV_T,
+    PROT_T,
+    SIM_MAX,
+    STAGE_T,
+)
 from .lightning_utils import check_final_link
 from .models import (
     BaseClassifier,
@@ -39,14 +50,18 @@ class LitData(LightningDataModule):
         num_workers: int,
         sampling_rate: int = 100,
         prefetch_factor: int | None = None,
-        assignment_strategy: ASSIGN_T = "protopool",
         label_subset: list[str] | None = None,
+        assignment_strategy: ASSIGN_T | None = None,
+        contrastive_pair_mode: CONTRASTIVE_T | None = None,
+        cola_view_seconds: float | None = None,
     ):
         super().__init__()
         self.save_hyperparameters()
 
         # label names is linked to LitModel via LitCLI
-        self.ds_cls, self.label_names = infer_dataset_class_from_path(dataset_path)
+        self.ds_cls, self.label_names, self.is_audio = infer_dataset_class_from_path(
+            dataset_path
+        )
         if label_subset is not None:
             if self.label_names is None:
                 raise ValueError(
@@ -76,8 +91,10 @@ class LitData(LightningDataModule):
         dataset_path: str = self.hparams.dataset_path  # type: ignore
         sampling_rate: int = self.hparams.sampling_rate  # type: ignore
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
-        label_subset = self.hparams.label_subset  # type: ignore
-        wrap_pclr = pipeline_stage == "learn-prototypes"
+        label_subset: list[str] | None = self.hparams.label_subset  # type: ignore
+        contrastive_pair_mode: CONTRASTIVE_T | None = self.hparams.contrastive_pair_mode  # type: ignore
+        cola_view_seconds: float | None = self.hparams.cola_view_seconds  # type: ignore
+        wrap_contrastive = pipeline_stage == "learn-prototypes"
 
         if stage == "fit":
             if not hasattr(self, "train_ds"):
@@ -89,28 +106,60 @@ class LitData(LightningDataModule):
                 )
             else:
                 assert self.train_ds is not None, "Not sure how train_ds is None"
-            if wrap_pclr:
-                self.train_ds = PCLRWrapperDataset(self.train_ds)  # type: ignore
+            if wrap_contrastive:
+                if self.is_audio:
+                    assert isinstance(self.train_ds, AudioSetDataset)
+                    assert (
+                        contrastive_pair_mode is not None
+                    ), "contrastive_pair_mode must not be None"
+                    assert (
+                        cola_view_seconds is not None
+                    ), "cola_view_seconds must not be None"
+                    self.train_ds = AudioContrastiveWrapperDataset(
+                        self.train_ds,
+                        pair_mode=contrastive_pair_mode,
+                        cola_view_seconds=cola_view_seconds,
+                    )
+                else:
+                    assert isinstance(self.train_ds, BaseTSDataset)
+                    self.train_ds = PCLRWrapperDataset(self.train_ds)
+
         if stage in ["fit", "validate"]:
-            val_ds = self.ds_cls(
+            self.val_ds = self.ds_cls(
                 dataset_path=dataset_path,
                 split="val",
                 sampling_rate=sampling_rate,
                 label_subset=label_subset,
             )
-            if wrap_pclr:
-                val_ds = PCLRWrapperDataset(val_ds)
-            self.val_ds = val_ds
+            if wrap_contrastive:
+                if self.is_audio:
+                    assert isinstance(self.val_ds, AudioSetDataset)
+                    assert (
+                        contrastive_pair_mode is not None
+                    ), "contrastive_pair_mode must not be None"
+                    assert (
+                        cola_view_seconds is not None
+                    ), "cola_view_seconds must not be None"
+                    self.val_ds = AudioContrastiveWrapperDataset(
+                        self.val_ds,
+                        pair_mode=contrastive_pair_mode,
+                        cola_view_seconds=cola_view_seconds,
+                    )
+                else:
+                    assert isinstance(self.val_ds, BaseTSDataset)
+                    self.val_ds = PCLRWrapperDataset(self.val_ds)
+
         if stage in ["test", "predict"]:
-            test_ds = self.ds_cls(
+            self.test_ds = self.ds_cls(
                 dataset_path=dataset_path,
                 split="test",
                 sampling_rate=sampling_rate,
                 label_subset=label_subset,
             )
-            if wrap_pclr:
-                raise ValueError("Should not use PCLR dataset with test/predict stage")
-            self.test_ds = test_ds
+            if wrap_contrastive:
+                raise ValueError(
+                    "Should not use contrastive wrapper dataset with test/predict stage"
+                )
 
     def train_dataloader(self):
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
@@ -216,7 +265,8 @@ class LitModel(LightningModule):
         backbone_type: BACKBONE_T,
         conv_type: CONV_T,
         pipeline_stage: STAGE_T,
-        assignment_strategy: ASSIGN_T = "protopool",
+        assignment_strategy: ASSIGN_T | None = None,
+        contrastive_pair_mode: CONTRASTIVE_T | None = None,
         prototype_type: PROT_T | None = None,
         n_prototypes: int | None = None,
         n_prototypes_per_label: int | None = None,
@@ -227,6 +277,8 @@ class LitModel(LightningModule):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        prototype_h: int | None = None,
+        prototype_w: int | None = None,
         do_finetune: bool = False,
         extra_kwargs: dict = dict(),
     ):
@@ -246,6 +298,10 @@ class LitModel(LightningModule):
                 raise ValueError(
                     "pipeline_stage=learn-prototypes must be used with model_type=PrototypeContraster and setting n_prototypes AND prototype_type"
                 )
+            if contrastive_pair_mode is None:
+                raise ValueError(
+                    "pipeline_stage=learn-prototypes must specify contrastive_pair_mode"
+                )
             warn_unused(
                 label_names=label_names,
                 label_weights=label_weights,
@@ -260,6 +316,9 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
+                contrastive_pair_mode=contrastive_pair_mode,
                 **extra_kwargs,
             )
         elif pipeline_stage == "learn-prototypes-supervised":
@@ -284,6 +343,8 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
                 **extra_kwargs,
             )
         elif pipeline_stage == "learn-prototype-assignments":
@@ -297,7 +358,11 @@ class LitModel(LightningModule):
                     "pipeline_stage=learn-prototype-assignments must be used with model_type=PrototypeAssigner "
                     "and setting n_prototypes AND n_prototypes_per_label AND label_names AND prototype_type"
                 )
-            # TODO should PrototypeAssigner require pretrained_weights?
+            if assignment_strategy is None:
+                raise ValueError(
+                    "pipeline_stage=learn-prototype-assignments must specify assignment_strategy"
+                )
+
             self.model = PrototypeAssigner(
                 backbone_type=backbone_type,
                 conv_type=conv_type,
@@ -310,6 +375,8 @@ class LitModel(LightningModule):
                 assignment_strategy=assignment_strategy,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
                 **extra_kwargs,
             )
         elif (
@@ -340,6 +407,8 @@ class LitModel(LightningModule):
                 input_channels=input_channels,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
+                prototype_h=prototype_h,
+                prototype_w=prototype_w,
                 **extra_kwargs,
             )
         elif pipeline_stage == "train-classifier":
@@ -358,6 +427,8 @@ class LitModel(LightningModule):
                     input_channels=input_channels,
                     partial_len=partial_len,
                     partial_overlap=partial_overlap,
+                    prototype_h=prototype_h,
+                    prototype_w=prototype_w,
                     **extra_kwargs,
                 )
             elif _n_prototypes is None and label_names is not None:
@@ -424,15 +495,25 @@ class LitModel(LightningModule):
         batch_size = batch["source_id"].shape[0]
 
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
-        assignment_strategy: ASSIGN_T = self.hparams.assignment_strategy  # type: ignore
+        assignment_strategy: ASSIGN_T | None = self.hparams.assignment_strategy  # type: ignore
+        contrastive_pair_mode: CONTRASTIVE_T | None = self.hparams.contrastive_pair_mode  # type: ignore
         if pipeline_stage == "learn-prototypes":
             assert isinstance(self.model, PrototypeContraster)
+            assert contrastive_pair_mode is not None
             if stage not in ["train", "val"]:
                 raise ValueError(
                     f"Cannot use _common_step with pipeline_stage=learn-prototypes and (lightning) stage={stage}"
                 )
+
             preds = None
-            loss_terms = self.model(batch["x1"], batch["x2"])
+
+            if contrastive_pair_mode == "cola+clar":
+                loss_terms = self.model(
+                    batch["x1"], batch["x2"], batch["x1_clar"], batch["x2_clar"]
+                )
+            else:
+                loss_terms = self.model(batch["x1"], batch["x2"])
+
             loss = self._log_and_composite_losses(
                 stage=stage,
                 losses=loss_terms,
@@ -567,6 +648,13 @@ class LitModel(LightningModule):
             # raw prototype activations, shape (B, P)
             preds = self.model.encoder(batch["waveform"])
             loss = None
+        elif (
+            pipeline_stage == "learn-prototype-assignments"
+            and assignment_strategy is None
+        ):
+            raise ValueError(
+                "pipeline_stage=learn-prototype-assignments must specify assignment_strategy"
+            )
         else:
             raise ValueError(
                 f"Unknown forward step for pipeline_stage {pipeline_stage}"
@@ -676,7 +764,7 @@ class PredictionWriter(BasePredictionWriter):
     ):
         # hard to set pipeline_stage on prediction_writer with CLI link_arguments but we can borrow from lit module
         pipeline_stage: STAGE_T = pl_module.hparams.pipeline_stage  # type: ignore
-        assignment_strategy: ASSIGN_T = pl_module.hparams.assignment_strategy  # type: ignore
+        assignment_strategy: ASSIGN_T | None = pl_module.hparams.assignment_strategy  # type: ignore
         if (
             pipeline_stage == "project-prototypes"
             or pipeline_stage == "project-prototypes-supervised"
@@ -794,7 +882,6 @@ class LitCLI(LightningCLI):
         parser.add_argument(
             "--assignment-strategy",
             choices=get_args(ASSIGN_T),
-            default="protopool",
         )
         parser.link_arguments(
             "assignment_strategy",
@@ -886,7 +973,7 @@ def run():
             f"Only single device or DDP training strategies are supported, got: {cli.trainer.strategy}"
         )
     pipeline_stage: STAGE_T = cli.config.pipeline_stage
-    assignment_strategy: ASSIGN_T = cli.config.assignment_strategy
+    assignment_strategy: ASSIGN_T | None = cli.config.assignment_strategy
 
     # NOTE all model/data validation should happen in their respective modules above
     # Assume at this point, we have the correct models/datasets for the given stage

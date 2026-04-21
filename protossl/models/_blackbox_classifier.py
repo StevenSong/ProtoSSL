@@ -1,6 +1,6 @@
 from ..defines import BACKBONE_T, CONV_T
 from ._base_classifier import BaseClassifier
-from .encoders import Net1D, ResNet1D, ResNet2D
+from .encoders import Net1D, PANNSEncoder, ResNet1D, ResNet2D
 
 
 class BlackboxClassifier(BaseClassifier):
@@ -26,6 +26,8 @@ class BlackboxClassifier(BaseClassifier):
                 backbone_cls = ResNet1D
             elif conv_type == "2D":
                 backbone_cls = ResNet2D
+            elif conv_type == "PANNS":
+                backbone_cls = PANNSEncoder
             else:
                 raise ValueError(f"Unknown conv_type={conv_type}")
         super().__init__(

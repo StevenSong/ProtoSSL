@@ -1,3 +1,4 @@
+datasets
 detect-secrets
 fastdigest
 h5py
@@ -15,6 +16,8 @@ pre-commit
 scikit-learn
 seaborn
 tensorboard
+timm
+torchlibrosa
 wandb
 wfdb==4.2.0
 # not the best form to use extra index url, but acceptable risk for research repo

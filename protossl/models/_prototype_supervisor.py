@@ -21,6 +21,9 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        prototype_h: int | None = None,
+        prototype_w: int | None = None,
+        use_default_weights: bool = False,
     ):
         super().__init__()
         self.n_prototypes_per_label = n_prototypes_per_label
@@ -31,27 +34,30 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
             backbone_type=backbone_type,
             n_prototypes=self.n_binary_labels * n_prototypes_per_label,
             conv_type=conv_type,
-            prototytpe_type=prototype_type,
+            prototype_type=prototype_type,
             input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,
+            prototype_h=prototype_h,
+            prototype_w=prototype_w,
         )
         self.cls = nn.Linear(
             in_features=self.encoder.emb_dim,
             out_features=self.n_binary_labels * 2,
         )
 
-        # these values were taken from ProtoECGNet experiments
-        self.lam_clst = 0.004
-        self.lam_sep = 0.0004
-        self.lam_cntrst = 300.0
-        self.lam_div = 250.0
-
-        # original ProtoPNet coefficients
-        # self.lam_clst = 0.8
-        # self.lam_sep = 0.08
-        # self.lam_cntrst = 100.0
-        # self.lam_div = 0.0
+        if use_default_weights:
+            # original ProtoPNet coefficients
+            self.lam_clst = 0.8
+            self.lam_sep = 0.08
+            self.lam_div = 100
+            self.lam_cntrst = 0  # no label co-occurrence loss
+        else:
+            # ProtoECGNet paper
+            self.lam_clst = 0.004
+            self.lam_sep = 0.0004
+            self.lam_div = 250.0
+            self.lam_cntrst = 300.0
 
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)

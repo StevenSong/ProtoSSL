@@ -12,22 +12,26 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         *,  # enforce kwargs
         backbone_type: BACKBONE_T,
         conv_type: CONV_T,
-        prototytpe_type: PROT_T,
+        prototype_type: PROT_T,
         n_prototypes: int,
         n_prototypes_per_label: int,
         n_labels: int,
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        prototype_h: int | None = None,
+        prototype_w: int | None = None,
     ):
         super().__init__(
             backbone_type=backbone_type,
             conv_type=conv_type,
-            prototytpe_type=prototytpe_type,
+            prototype_type=prototype_type,
             n_prototypes=n_prototypes,
             input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,
+            prototype_h=prototype_h,
+            prototype_w=prototype_w,
         )
         self.assignment_weights = nn.Parameter(
             torch.randn(n_labels, n_prototypes_per_label, n_prototypes),
@@ -57,3 +61,10 @@ class PrototypeEncoderWithAssignment(PrototypeEncoder):
         # probability that a given prototype belongs to that label-slot?
         # using this, compute weighted prototype assignments for each label-slot
         return torch.einsum("bp,lkp->blk", sims, assignments)  # (B, L, K)
+
+    def forward_raw_prototypes(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Raw prototype activations before any ProtoPool assignment logic.
+        Needed for ILP/effect-size assignment.
+        """
+        return super().forward(x)  # (B, P)
