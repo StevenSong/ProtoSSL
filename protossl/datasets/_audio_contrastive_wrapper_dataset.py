@@ -15,14 +15,12 @@ class AudioContrastiveWrapperDataset(Dataset):
     ):
         self.ds = dataset
         self.pair_mode = pair_mode
+        if pair_mode in {"cola", "cola+clar"} and cola_view_seconds is None:
+            raise ValueError("Must set cola_view_seconds if pair_mode uses COLA")
         self.cola_view_seconds = cola_view_seconds
 
-        valid_modes = {"cola", "clar", "cola+clar"}
-        if pair_mode not in valid_modes:
-            raise ValueError(
-                f"Unknown audio contrastive pair_mode={pair_mode}. "
-                f"Expected one of {sorted(valid_modes)}"
-            )
+        if pair_mode not in {"cola", "clar", "cola+clar"}:
+            raise ValueError(f"Unknown audio contrastive pair_mode={pair_mode}. ")
 
     def __getitem__(self, i: int) -> dict[str, torch.Tensor]:
         base1 = self.ds[i]

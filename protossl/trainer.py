@@ -53,7 +53,7 @@ class LitData(LightningDataModule):
         label_subset: list[str] | None = None,
         assignment_strategy: ASSIGN_T | None = None,
         contrastive_pair_mode: CONTRASTIVE_T | None = None,
-        cola_view_seconds: float | None = None,
+        extra_kwargs: dict = dict(),
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -93,7 +93,7 @@ class LitData(LightningDataModule):
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
         label_subset: list[str] | None = self.hparams.label_subset  # type: ignore
         contrastive_pair_mode: CONTRASTIVE_T | None = self.hparams.contrastive_pair_mode  # type: ignore
-        cola_view_seconds: float | None = self.hparams.cola_view_seconds  # type: ignore
+        extra_kwargs: dict = self.hparams.extra_kwargs  # type: ignore
         wrap_contrastive = pipeline_stage == "learn-prototypes"
 
         if stage == "fit":
@@ -112,13 +112,10 @@ class LitData(LightningDataModule):
                     assert (
                         contrastive_pair_mode is not None
                     ), "contrastive_pair_mode must not be None"
-                    assert (
-                        cola_view_seconds is not None
-                    ), "cola_view_seconds must not be None"
                     self.train_ds = AudioContrastiveWrapperDataset(
                         self.train_ds,
                         pair_mode=contrastive_pair_mode,
-                        cola_view_seconds=cola_view_seconds,
+                        **extra_kwargs,
                     )
                 else:
                     assert isinstance(self.train_ds, BaseTSDataset)
@@ -137,13 +134,10 @@ class LitData(LightningDataModule):
                     assert (
                         contrastive_pair_mode is not None
                     ), "contrastive_pair_mode must not be None"
-                    assert (
-                        cola_view_seconds is not None
-                    ), "cola_view_seconds must not be None"
                     self.val_ds = AudioContrastiveWrapperDataset(
                         self.val_ds,
                         pair_mode=contrastive_pair_mode,
-                        cola_view_seconds=cola_view_seconds,
+                        **extra_kwargs,
                     )
                 else:
                     assert isinstance(self.val_ds, BaseTSDataset)
@@ -890,6 +884,18 @@ class LitCLI(LightningCLI):
         parser.link_arguments(
             "assignment_strategy",
             "data.init_args.assignment_strategy",
+        )
+        parser.add_argument(
+            "--contrastive-pair-mode",
+            choices=get_args(ASSIGN_T),
+        )
+        parser.link_arguments(
+            "contrastive_pair_mode",
+            "model.init_args.contrastive_pair_mode",
+        )
+        parser.link_arguments(
+            "contrastive_pair_mode",
+            "data.init_args.contrastive_pair_mode",
         )
         parser.link_arguments("pipeline_stage", "data.init_args.pipeline_stage")
         parser.link_arguments("pipeline_stage", "model.init_args.pipeline_stage")

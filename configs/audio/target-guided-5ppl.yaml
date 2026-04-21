@@ -6,7 +6,7 @@ trainer:
   logger:
     class_path: protossl.lightning_utils.StrictWandbLogger
     init_args:
-      project: ProtoSSL
+      project: ProtoSSL-Audio
       # save_dir: /path/to/runs/
       # name: exp-name
   callbacks:
@@ -24,7 +24,7 @@ trainer:
         mode: min
         save_last: True
     - class_path: PredictionWriter
-  max_epochs: 1000
+  max_epochs: 5
   log_every_n_steps: 1
 optimizer:
   class_path: torch.optim.AdamW
@@ -35,16 +35,25 @@ lr_scheduler:
   class_path: lightning.pytorch.cli.ReduceLROnPlateau
   init_args:
     monitor: val_loss
-    patience: 3 # check early stopping
+    patience: 5 # check early stopping
 model:
   class_path: LitModel
   init_args:
-    backbone_type: resnet18
-    conv_type: 2D
+    backbone_type: Cnn14
+    conv_type: PANNS
+    input_channels: 1
+    prototype_type: partial
+    partial_len: 32000 # 1-second @ 32 kHz
+    partial_overlap: 0.5
+    prototype_h: 1
+    prototype_w: 1
+    n_prototypes_per_label: 5
+    # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
   init_args:
     # dataset_path: /path/to/dataset
-    batch_size: 512
+    sampling_rate: 32000
+    batch_size: 128
     num_workers: 4
-pipeline_stage: train-classifier
+# pipeline_stage: learn-prototypes-supervised|learn-prototype-assignments|project-prototypes-supervised|compute-embeddings|train-classifier

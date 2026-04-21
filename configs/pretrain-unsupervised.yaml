@@ -1,8 +1,7 @@
 # lightning.pytorch==2.6.0
 seed_everything: 42
 trainer:
-  devices: -1
-  strategy: "ddp_find_unused_parameters_true"
+  devices: 1
   precision: 32
   logger:
     class_path: protossl.lightning_utils.StrictWandbLogger
@@ -36,7 +35,7 @@ lr_scheduler:
   class_path: lightning.pytorch.cli.ReduceLROnPlateau
   init_args:
     monitor: val_loss
-    patience: 5 # check early stopping
+    patience: 3 # check early stopping
 model:
   class_path: LitModel
   init_args:
@@ -53,4 +52,5 @@ data:
     # dataset_path: /path/to/dataset
     batch_size: 512
     num_workers: 4
+contrastive_pair_mode: pclr
 # pipeline_stage: learn-prototypes|project-prototypes|compute-embeddings|train-classifier
