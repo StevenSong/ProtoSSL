@@ -17,7 +17,7 @@ from ..defines import (
     SPLIT_T,
     STANDARD_LEAD_ORDER,
 )
-from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
+from ._base_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 
 cinc_lead_order = [l.lower() for l in CINC_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]

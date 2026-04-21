@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 
 from ..defines import SPLIT_T
-from ._base_ecg_dataset import BaseTSDataset
+from ._base_dataset import BaseTSDataset
 from .streaming_loaders import StreamingAudioWaveforms
 
 

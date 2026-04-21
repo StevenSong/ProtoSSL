@@ -12,7 +12,7 @@ from ..defines import (
 )
 from ._audio_contrastive_wrapper_dataset import AudioContrastiveWrapperDataset
 from ._audioset_dataset import AudioSetDataset
-from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
+from ._base_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 from ._cinc_dataset import CincECGDataset
 from ._code15_dataset import Code15ECGDataset
 from ._echonext_dataset import EchoNextECGDataset
