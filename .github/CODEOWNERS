@@ -29,6 +29,7 @@ protossl/datasets/_heedb_dataset.py @StevenSong
 protossl/datasets/_mimic_dataset.py @StevenSong
 protossl/datasets/_pclr_wrapper_dataset.py @StevenSong
 protossl/datasets/_ptbxl_dataset.py @StevenSong
+protossl/datasets/_speech_commands_dataset.py @StevenSong
 protossl/datasets/_zzu_dataset.py @StevenSong
 protossl/datasets/streaming_loaders @StevenSong
 protossl/defines.py @StevenSong
