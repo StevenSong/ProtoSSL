@@ -21,27 +21,10 @@ def parse_args():
     return args
 
 
-def is_audioset_path(dataset_path: str) -> bool:
-    dataset_path_lower = dataset_path.lower()
-    audioset_indicators = ["audioset", "audio-set", "audio_set"]
-    return any(x in dataset_path_lower for x in audioset_indicators)
-
-
-def get_eval_sampling_rate(dataset_path: str) -> int:
-    if is_audioset_path(dataset_path):
-        return 32000
-    return 100
-
-
 def safe_auc_to_dprime(auc: float) -> float:
     # avoid inf at exactly 0 or 1
     auc = float(np.clip(auc, 1e-7, 1 - 1e-7))
     return float(np.sqrt(2.0) * norm.ppf(auc))
-
-
-def has_both_classes(y_true: np.ndarray) -> bool:
-    y_true = np.asarray(y_true)
-    return np.unique(y_true).size >= 2
 
 
 def evaluate_audioset(
@@ -49,6 +32,7 @@ def evaluate_audioset(
     test_targets: np.ndarray,
     target_probs: np.ndarray,
     label_names: list[str],
+    src_label_names: list[str],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     metrics = defaultdict(dict)
     per_class_rows = []
@@ -57,7 +41,8 @@ def evaluate_audioset(
     auc_vals = []
     dprime_vals = []
 
-    for i, target_col in enumerate(label_names):
+    for target_col in label_names:
+        i = src_label_names.index(target_col)
         y_test = test_targets[:, i]
         y_prob = target_probs[:, i]
 
@@ -72,17 +57,17 @@ def evaluate_audioset(
 
         # AP is usually still meaningful when positives exist.
         # If a class has zero positives, skip AP.
-        if np.sum(y_test) > 0:
+        if prevalence > 0:
             ap = average_precision_score(y_test, y_prob)
             row["AP"] = ap
             ap_vals.append(ap)
         else:
             row["AP"] = np.nan
 
-        # AUC / d-prime require both classes present
-        if has_both_classes(y_test):
+        # AUC / d-prime require both neg and pos present
+        if prevalence > 0 and prevalence < 1:
             auc = roc_auc_score(y_test, y_prob)
-            dprime = safe_auc_to_dprime(auc)
+            dprime = safe_auc_to_dprime(auc)  # type: ignore
             row["AUC"] = auc
             row["d_prime"] = dprime
             auc_vals.append(auc)
@@ -172,11 +157,12 @@ def main(
     output_path: str,
     label_subset: list[str] | None = None,
 ):
-    ds_cls, src_label_names = infer_dataset_class_from_path(dataset_path)
+    ds_cls, src_label_names, is_audio = infer_dataset_class_from_path(dataset_path)
     test_ds = ds_cls(
         dataset_path=dataset_path,
         split="test",
-        sampling_rate=100,
+        # we don't use the waveforms in this step of eval, this is just so we hit the cached dataset
+        sampling_rate=(32000 if is_audio else 100),
         label_subset=label_subset,
     )
     assert test_ds.labels is not None and src_label_names is not None
@@ -195,11 +181,12 @@ def main(
 
     assert not os.path.exists(metrics_path), f"{metrics_path} already exists"
 
-    if is_audioset_path(dataset_path):
+    if is_audio:
         metrics_df, per_class_df = evaluate_audioset(
             test_targets=test_targets,
             target_probs=target_probs,
             label_names=label_names,
+            src_label_names=src_label_names,
         )
     else:
         metrics_df, per_class_df = evaluate_ecg(

@@ -875,7 +875,7 @@ class LitCLI(LightningCLI):
         )
         parser.add_argument(
             "--assignment-strategy",
-            choices=get_args(ASSIGN_T),
+            choices=get_args(ASSIGN_T) + (None,),
         )
         parser.link_arguments(
             "assignment_strategy",
@@ -887,7 +887,7 @@ class LitCLI(LightningCLI):
         )
         parser.add_argument(
             "--contrastive-pair-mode",
-            choices=get_args(ASSIGN_T),
+            choices=get_args(CONTRASTIVE_T) + (None,),
         )
         parser.link_arguments(
             "contrastive_pair_mode",

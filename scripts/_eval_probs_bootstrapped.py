@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as st
 from pqdm.processes import pqdm
+from scipy.stats import norm
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from protossl.datasets import EchoNextECGDataset, infer_dataset_class_from_path
@@ -25,11 +26,14 @@ def parse_args():
     return args
 
 
+# compute bootstrapped metrics per label
 def worker(
+    label: str,
     y_test: np.ndarray,
     y_prob: np.ndarray,
     n_bootstraps: int,
     bootstrap_frac: float,
+    is_audio: bool,
 ) -> dict:
     bootstrap_n = int(len(y_test) * bootstrap_frac)
     label_pos_frac = y_test.sum() / len(y_test)
@@ -54,12 +58,30 @@ def worker(
 
         assert bootstrap_y_test.sum() > 0
 
-        bootstrapped_metrics["AUROC"].append(
-            roc_auc_score(bootstrap_y_test, bootstrap_y_prob)
-        )
-        bootstrapped_metrics["AUPRC"].append(
-            average_precision_score(bootstrap_y_test, bootstrap_y_prob)
-        )
+        if is_audio:
+            prevalence = float(np.mean(bootstrap_y_test))
+            if np.isclose(prevalence, 0) or np.isclose(prevalence, 1):
+                raise ValueError(f"Must have both pos/neg for given class {label}")
+
+            bootstrapped_metrics["Prevalence"].append(prevalence)
+            bootstrapped_metrics["NumPos"].append(int(np.sum(bootstrap_y_test)))
+            bootstrapped_metrics["NumNeg"].append(
+                int(len(bootstrap_y_test) - np.sum(bootstrap_y_test))
+            )
+
+            ap = average_precision_score(bootstrap_y_test, bootstrap_y_prob)
+            auc = roc_auc_score(bootstrap_y_test, bootstrap_y_prob)
+            dprime = np.sqrt(2.0) * norm.ppf(np.clip(auc, 1e-7, 1 - 1e-7))
+            bootstrapped_metrics["AP"].append(ap)
+            bootstrapped_metrics["AUC"].append(auc)
+            bootstrapped_metrics["d_prime"].append(dprime)
+        else:
+            bootstrapped_metrics["AUROC"].append(
+                roc_auc_score(bootstrap_y_test, bootstrap_y_prob)
+            )
+            bootstrapped_metrics["AUPRC"].append(
+                average_precision_score(bootstrap_y_test, bootstrap_y_prob)
+            )
 
     for k, vs in bootstrapped_metrics.items():
         a = np.asarray(vs)
@@ -82,11 +104,12 @@ def main(
     bootstrap_frac: float = 0.5,
     n_jobs: int = 24,
 ):
-    ds_cls, src_label_names = infer_dataset_class_from_path(dataset_path)
+    ds_cls, src_label_names, is_audio = infer_dataset_class_from_path(dataset_path)
     test_ds = ds_cls(
         dataset_path=dataset_path,
         split="test",
-        sampling_rate=100,
+        # we don't use the waveforms in this step of eval, this is just so we hit the cached dataset
+        sampling_rate=(32000 if is_audio else 100),
         label_subset=label_subset,
     )
     assert test_ds.labels is not None and src_label_names is not None
@@ -104,15 +127,17 @@ def main(
 
     kwargs = [
         {
+            "label": target_col,
             "y_test": test_targets[:, src_label_names.index(target_col)],
             "y_prob": target_probs[:, src_label_names.index(target_col)],
             "n_bootstraps": n_bootstraps,
             "bootstrap_frac": bootstrap_frac,
+            "is_audio": is_audio,
         }
         for target_col in label_names
     ]
 
-    results = pqdm(kwargs, worker, argument_type="kwargs", n_jobs=n_jobs)
+    results = pqdm(kwargs, worker, argument_type="kwargs", n_jobs=n_jobs)  # type: ignore
     metrics = {label_name: results[l] for l, label_name in enumerate(label_names)}
 
     metrics = pd.DataFrame.from_dict(metrics, orient="index")
