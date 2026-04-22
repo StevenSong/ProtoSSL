@@ -5,6 +5,7 @@ from ..defines import (
     CINC_TARGETS,
     CODE15_TARGETS,
     ECHONEXT_TARGETS,
+    ESC_50_TARGETS,
     HEEDB_TARGETS,
     MIMIC_TARGETS,
     PTBXL_TARGETS,
@@ -17,6 +18,7 @@ from ._base_dataset import BaseTSDataset, load_cached_data, validate_label_subse
 from ._cinc_dataset import CincECGDataset
 from ._code15_dataset import Code15ECGDataset
 from ._echonext_dataset import EchoNextECGDataset
+from ._esc_50_dataset import Esc50Dataset
 from ._heedb_dataset import HeedbECGDataset, get_heedb_labels, get_heedb_metadata
 from ._mimic_dataset import MimicECGDataset
 from ._pclr_wrapper_dataset import PCLRWrapperDataset
@@ -64,8 +66,7 @@ def infer_dataset_class_from_path(
     elif any(x in dataset_path_lower for x in speech_cmds_indicators):
         return SpeechCommandsV2Dataset, SPEECH_COMMANDS_V2_TARGETS, True
     elif any(x in dataset_path_lower for x in esc50_indicators):
-        pass  # TODO
-        # return Esc50Dataset, ESC_50_TARGETS, True
+        return Esc50Dataset, ESC_50_TARGETS, True
     raise ValueError(
         f"Could not infer BaseECGDataset subclass from dataset_path: {dataset_path}"
     )
