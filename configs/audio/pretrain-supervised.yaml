@@ -48,6 +48,7 @@ model:
     prototype_h: 1
     prototype_w: 1
     n_prototypes_per_label: 5
+    model_kwargs: '{"use_default_weights": True}'
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
