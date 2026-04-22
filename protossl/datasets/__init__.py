@@ -11,7 +11,7 @@ from ..defines import (
     SPEECH_COMMANDS_V2_TARGETS,
     ZZU_TARGETS,
 )
-from ._audio_contrastive_wrapper_dataset import AudioContrastiveWrapperDataset
+from ._audioset_contrastive_wrapper_dataset import AudioSetContrastiveWrapperDataset
 from ._audioset_dataset import AudioSetDataset
 from ._base_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 from ._cinc_dataset import CincECGDataset

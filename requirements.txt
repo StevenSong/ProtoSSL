@@ -1,4 +1,4 @@
-# we pin torch, which drives compatibility with torchcodec, and subsequently datasets
+cachetools
 datasets[audio]==4.0.0
 detect-secrets
 fastdigest

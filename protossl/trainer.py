@@ -11,7 +11,7 @@ from lightning.pytorch.strategies import DDPStrategy, SingleDeviceStrategy
 from torch.utils.data import DataLoader
 
 from .datasets import (
-    AudioContrastiveWrapperDataset,
+    AudioSetContrastiveWrapperDataset,
     AudioSetDataset,
     BaseTSDataset,
     PCLRWrapperDataset,
@@ -112,7 +112,7 @@ class LitData(LightningDataModule):
                     assert (
                         contrastive_pair_mode is not None
                     ), "contrastive_pair_mode must not be None"
-                    self.train_ds = AudioContrastiveWrapperDataset(
+                    self.train_ds = AudioSetContrastiveWrapperDataset(
                         self.train_ds,
                         pair_mode=contrastive_pair_mode,
                         **extra_kwargs,
@@ -134,7 +134,7 @@ class LitData(LightningDataModule):
                     assert (
                         contrastive_pair_mode is not None
                     ), "contrastive_pair_mode must not be None"
-                    self.val_ds = AudioContrastiveWrapperDataset(
+                    self.val_ds = AudioSetContrastiveWrapperDataset(
                         self.val_ds,
                         pair_mode=contrastive_pair_mode,
                         **extra_kwargs,
