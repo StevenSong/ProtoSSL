@@ -43,25 +43,29 @@ def infer_dataset_class_from_path(
     code15_indicators = ["code15"]
     audioset_indicators = ["audioset", "audio-set", "audio_set"]
     speech_cmds_indicators = ["speech-commands", "speech_commands", "speechcommands"]
+    esc50_indicators = ["esc-50", "esc_50", "esc50"]
 
-    if any(x in dataset_path for x in echonext_indicators):
+    if any(x in dataset_path_lower for x in echonext_indicators):
         return EchoNextECGDataset, list(ECHONEXT_TARGETS.keys()), False
-    elif any(x in dataset_path for x in ptbxl_indicators):
+    elif any(x in dataset_path_lower for x in ptbxl_indicators):
         return PtbxlECGDataset, PTBXL_TARGETS, False
-    elif any(x in dataset_path for x in cinc_indicators):
+    elif any(x in dataset_path_lower for x in cinc_indicators):
         return CincECGDataset, CINC_TARGETS, False
-    elif any(x in dataset_path for x in heedb_indicators):
+    elif any(x in dataset_path_lower for x in heedb_indicators):
         return HeedbECGDataset, list(HEEDB_TARGETS.keys()), False
-    elif any(x in dataset_path for x in mimic_indicators):
+    elif any(x in dataset_path_lower for x in mimic_indicators):
         return MimicECGDataset, MIMIC_TARGETS, False
-    elif any(x in dataset_path for x in zzu_indicators):
+    elif any(x in dataset_path_lower for x in zzu_indicators):
         return ZzuECGDataset, list(ZZU_TARGETS), False
-    elif any(x in dataset_path for x in code15_indicators):
+    elif any(x in dataset_path_lower for x in code15_indicators):
         return Code15ECGDataset, CODE15_TARGETS, False
     elif any(x in dataset_path_lower for x in audioset_indicators):
         return AudioSetDataset, list(AUDIOSET_TARGETS), True
     elif any(x in dataset_path_lower for x in speech_cmds_indicators):
         return SpeechCommandsV2Dataset, SPEECH_COMMANDS_V2_TARGETS, True
+    elif any(x in dataset_path_lower for x in esc50_indicators):
+        pass  # TODO
+        # return Esc50Dataset, ESC_50_TARGETS, True
     raise ValueError(
         f"Could not infer BaseECGDataset subclass from dataset_path: {dataset_path}"
     )
