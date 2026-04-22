@@ -43,7 +43,8 @@ python -m protossl.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt
+    --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt \
+    --model.model_kwargs '{"label_type": "multiclass"}'
 
 python -m protossl.trainer \
     --seed_everything $SEED \
@@ -85,7 +86,8 @@ python -m protossl.trainer \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/learn-prototype-assignments/latest/assigned.ckpt
+    --model.pretrained_weights $PRETRAIN_RUN/learn-prototype-assignments/latest/assigned.ckpt \
+    --model.model_kwargs '{"label_type": "multiclass", "use_default_weights": True}'
 
 python -m protossl.trainer \
     --seed_everything $SEED \

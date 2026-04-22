@@ -39,7 +39,8 @@ python -m protossl.trainer \
     --config $REPO_ROOT/configs/audio/target-guided-5ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH
+    --data.dataset_path $DATASET_PATH \
+    --model.model_kwargs '{"label_type": "multiclass", "use_default_weights": True}'
 
 python -m protossl.trainer \
     --seed_everything $SEED \
