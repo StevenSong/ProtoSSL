@@ -74,7 +74,7 @@ class Esc50Dataset(BaseTSDataset):
         self.waveforms = StreamingAudioWaveforms(
             wav_paths=wav_paths,
             sampling_rate=sampling_rate,
-            clip_seconds=10.0,
+            clip_seconds=5.0,
         )
 
         assert self.source_ids.shape[0] == self.waveforms.shape[0]

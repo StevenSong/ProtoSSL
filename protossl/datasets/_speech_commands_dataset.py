@@ -59,7 +59,7 @@ class SpeechCommandsV2Dataset(BaseTSDataset):
         self.waveforms = StreamingAudioWaveforms(
             hf_ds=hf_ds,
             sampling_rate=sampling_rate,
-            clip_seconds=10.0,
+            clip_seconds=1.0,
         )
 
         assert self.source_ids.shape[0] == self.waveforms.shape[0]
