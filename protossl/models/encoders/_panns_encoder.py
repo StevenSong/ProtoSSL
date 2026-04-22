@@ -88,7 +88,7 @@ class PANNSEncoder(BaseEncoder):
         mel_bins: int = 64,
         fmin: int = 50,
         fmax: int = 14000,
-        num_classes: int = 1,  # we won't use the classifier component of the PANNs model
+        num_classes: int = 527,  # we won't use the classifier component of the PANNs model
     ):
         super().__init__(ret_3D=False)
         assert input_channels == 1

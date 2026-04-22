@@ -24,6 +24,7 @@ class PrototypeProjector(PretrainedMixin, nn.Module):
         partial_overlap: float | None = None,
         prototype_h: int | None = None,
         prototype_w: int | None = None,
+        **kwargs,
     ):
         super().__init__()
         self.encoder = PrototypeEncoder(
@@ -39,6 +40,12 @@ class PrototypeProjector(PretrainedMixin, nn.Module):
         )
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
+
+        # these might get passed in from a static config, can ignore
+        kwargs.pop("label_type", None)
+        kwargs.pop("use_default_weights", None)
+        if len(kwargs) > 0:
+            raise ValueError(f"Got unexpected keyword arguments: {list(kwargs)}")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.encoder(x)

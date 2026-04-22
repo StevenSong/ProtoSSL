@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..defines import LABEL_T
 from ._pretrained_utils import PretrainedMixin
 from .encoders import BaseEncoder
 from .layers import MultiInputLinear
@@ -11,7 +12,7 @@ from .layers import MultiInputLinear
 
 class BaseClassifier(PretrainedMixin, nn.Module):
     """
-    Binary Multilabel BaseClassifier abstract class
+    BaseClassifier abstract class
 
     Classifiers which inherit from this base class need only call
     `super().__init__()` with a given BaseEncoder and the number of labels.
@@ -36,12 +37,12 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         def __init__(
             self,
             encoder_params: Any,
-            n_binary_labels: int,
+            n_labels: int,
             pretrained_weights: str | None = None,
         ):
             super().__init__(
                 encoder=Encoder(encoder_params),
-                n_binary_labels=n_binary_labels,
+                n_labels=n_labels,
                 pretrained_weights=pretrained_weights,
             )
     ```
@@ -51,7 +52,8 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         self,
         *,  # enforce kwargs
         encoder: BaseEncoder,
-        n_binary_labels: int,
+        n_labels: int,
+        label_type: LABEL_T = "binary-multilabel",
         pretrained_weights: str | None = None,
         regularize: bool = True,
         regularization_mask: torch.Tensor | None = None,
@@ -60,19 +62,34 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         learnable_regularization: bool = False,
     ):
         super().__init__()
+
+        if label_type == "binary-multilabel":
+            n_outputs_per_label = 2
+        elif label_type == "multiclass":
+            print(f"==============BaseClassifier.__init__==============")
+            print(
+                f"Using multiclass mode for classifier (instead of binary multilabel)"
+            )
+            print(f"===================================================")
+            n_outputs_per_label = 1
+        else:
+            raise ValueError(f"Unknown how to handle label_type={label_type}")
+        self.label_type: LABEL_T = label_type
+        self.n_outputs_per_label = n_outputs_per_label
+
         self.encoder = encoder
         emb_dim = self.encoder.emb_dim
         if encoder.ret_per_label:
             # encoder returns a per-label embedding
             self.cls = MultiInputLinear(
-                num_inputs=n_binary_labels,
+                num_inputs=n_labels,
                 in_features=emb_dim,
-                out_features=2,  # binary label output
+                out_features=n_outputs_per_label,
             )
         else:
             self.cls = nn.Linear(
                 in_features=emb_dim,
-                out_features=n_binary_labels * 2,
+                out_features=n_labels * n_outputs_per_label,
             )
 
         self.regularize = regularize
@@ -81,7 +98,7 @@ class BaseClassifier(PretrainedMixin, nn.Module):
                 raise ValueError(
                     "must set regularize to True if using regularization_mask"
                 )
-            required_shape = (n_binary_labels, emb_dim)
+            required_shape = (n_labels, emb_dim)
             if regularization_mask.shape != required_shape:
                 raise ValueError(
                     f"regularization_mask must have shape {required_shape} but got shape {regularization_mask.shape}"
@@ -92,25 +109,36 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         self._l1_ratio_raw = None
         self._alpha_raw = None
         if regularize:
-            # per-task elasticnet regularization
             # regularization inspired by sklearn logreg parameters:
             # https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-
             l1_ratio = l1_ratio_init if l1_ratio_init is not None else 0.15
             alpha = alpha_init if alpha_init is not None else 1e-4
 
-            # l1_ratio = sigmoid(l1_ratio_raw)
-            # ensures l1_ratio is always [0-1]
-            self._l1_ratio_raw = nn.Parameter(
-                torch.logit(torch.ones(n_binary_labels) * l1_ratio),
-                requires_grad=learnable_regularization,
-            )
-            # alpha = exp(alpha_raw)
-            # ensures alpha is always positive
-            self._alpha_raw = nn.Parameter(
-                torch.log(torch.ones(n_binary_labels) * alpha),
-                requires_grad=learnable_regularization,
-            )
+            if label_type == "binary-multilabel":
+                # per-task elasticnet regularization
+
+                # l1_ratio = sigmoid(l1_ratio_raw) - ensures l1_ratio is always [0-1]
+                self._l1_ratio_raw = nn.Parameter(
+                    torch.logit(torch.ones(n_labels) * l1_ratio),
+                    requires_grad=learnable_regularization,
+                )
+                # alpha = exp(alpha_raw) - ensures alpha is always positive
+                self._alpha_raw = nn.Parameter(
+                    torch.log(torch.ones(n_labels) * alpha),
+                    requires_grad=learnable_regularization,
+                )
+            elif label_type == "multiclass":
+                # joint elasticnet regularization
+                self._l1_ratio_raw = nn.Parameter(
+                    torch.logit(torch.tensor(l1_ratio)),
+                    requires_grad=learnable_regularization,
+                )
+                self._alpha_raw = nn.Parameter(
+                    torch.log(torch.tensor(alpha)),
+                    requires_grad=learnable_regularization,
+                )
+            else:
+                raise ValueError(f"Unknown regularization for label_type={label_type}")
 
         # assumes no other submodules are initialized in subclasses
         if pretrained_weights is not None:
@@ -126,14 +154,11 @@ class BaseClassifier(PretrainedMixin, nn.Module):
         assert self._alpha_raw is not None
         return torch.exp(self._alpha_raw)
 
-    def forward(
+    def _binary_multilabel_forward(
         self,
-        x: torch.Tensor,
-        y: torch.Tensor,
+        logits: torch.Tensor,  # (B, 2L)
+        y: torch.Tensor,  # (B, L)
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        x = self.encoder(x)  # (B, [L,] H), H = hidden_dim
-        logits = self.cls(x)  # (B, 2 * L), L = n_binary_labels
-
         # compute per-label loss
         losses = []
         probs = []
@@ -164,6 +189,48 @@ class BaseClassifier(PretrainedMixin, nn.Module):
             losses = losses + penalty  # (L,)
 
         return losses, probs
+
+    def _multiclass_forward(
+        self,
+        logits: torch.Tensor,  # (B, L)
+        y: torch.Tensor,  # (B, L)
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        # verify y is one-hot but multiclass
+        assert y.ndim == 2, "Expected 2D tensor (B, num_classes)"
+        assert (y.sum(dim=-1) == 1).all(), "Rows must sum to 1"
+        assert (y >= 0).all() and (y <= 1).all(), "Values must be 0 or 1"
+
+        loss = F.cross_entropy(logits, y.argmax(dim=-1))  # (,) - scalar
+        probs = F.softmax(logits, dim=1)  # (B, L)
+
+        # elasticnet regularization
+        if self.regularize:
+            weights = self.cls.weight  # (L, H)
+            if self.regularization_mask is not None:
+                weights = weights * self.regularization_mask
+            # all scalar values
+            l1 = weights.norm(p=1)
+            l2 = weights.norm(p=2)
+            l1_ratio = self.l1_ratio
+            penalty = self.alpha * (l1_ratio * l1 + (1 - l1_ratio) * (l2**2))
+            loss = loss + penalty
+
+        return loss, probs
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        x = self.encoder(x)  # (B, [L,] H), H = hidden_dim
+        logits = self.cls(x)  # (B, [2]L), L = n_labels
+
+        if self.label_type == "binary-multilabel":
+            return self._binary_multilabel_forward(logits, y)
+        elif self.label_type == "multiclass":
+            return self._multiclass_forward(logits, y)
+        else:
+            raise ValueError(f"Unknown forward for label_type={self.label_type}")
 
     # TODO: consider refactoring this method which makes the model intrinsically
     # tied to our trainer, maybe the return of losses above should be a dict?

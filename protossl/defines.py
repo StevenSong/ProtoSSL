@@ -13,6 +13,9 @@ STAGE_T = Literal[
     "train-classifier",
 ]
 
+LABEL_T = Literal["binary-multilabel", "multiclass"]
+SPLIT_T = Literal["train", "val", "test"]
+PROT_T = Literal["global", "partial"]
 ASSIGN_T = Literal[
     "protopool",
     "ilp_effect_size",
@@ -20,7 +23,8 @@ ASSIGN_T = Literal[
     "ilp_effect_size_lr_or_scaled",
     "ilp_effect_size_multiple_allowed",
 ]
-SPLIT_T = Literal["train", "val", "test"]
+CONTRASTIVE_T = Literal["pclr", "cola", "clar", "cola+clar"]
+CONV_T = Literal["1D", "2D", "PANNS"]
 BACKBONE_T = Literal[
     "resnet18",
     "resnet34",
@@ -59,9 +63,6 @@ BACKBONE_T = Literal[
     "Cnn14_DecisionLevelAvg",
     "Cnn14_DecisionLevelAtt",
 ]
-CONV_T = Literal["1D", "2D", "PANNS"]
-PROT_T = Literal["global", "partial"]
-CONTRASTIVE_T = Literal["pclr", "cola", "clar", "cola+clar"]
 
 STANDARD_LEAD_ORDER = [
     "I",
@@ -1407,6 +1408,7 @@ SPEECH_COMMANDS_V2_TARGETS = [
     "wow",
     "yes",
     "zero",
+    "_silence_",
 ]
 
 ESC_50_TARGETS = [

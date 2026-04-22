@@ -11,10 +11,13 @@
 
 set -e
 
-export DATASET_PATH=/opt/gpudata/audio/ESC-50
-# export DATASET_PATH=/opt/gpudata/audio/speech-commands-v2
-export RUN_DIR=/opt/gpu_working/protossl-audio
 export REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
+
+# export DATASET_PATH=/opt/gpudata/audio/ESC-50
+# export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-esc50
+
+# export DATASET_PATH=/opt/gpudata/audio/speech-commands-v2
+# export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-speechcmds
 
 # set these env vars prior to executing this script
 : "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
@@ -25,7 +28,7 @@ echo "Using SEED=$SEED"
 echo "Using DATASET_PATH=$DATASET_PATH"
 echo "Using RUN_DIR=$RUN_DIR"
 echo "Using REPO_ROOT=$REPO_ROOT"
-cd $REPO_ROOT/scripts
+cd $REPO_ROOT/scripts/audio
 
 # experiment parameters
 EXP_NAME="labsup-proto-heedb-rila"
@@ -71,11 +74,6 @@ python _eval_probs.py \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 
-python _eval_probs_bootstrapped.py \
---dataset-path $DATASET_PATH \
---probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
---output-path $RUN_DIR/$EXP_NAME
-
 # now fine-tune
 PRETRAIN_RUN=$RUN_DIR/$EXP_NAME
 EXP_NAME="$EXP_NAME-ft"
@@ -114,11 +112,6 @@ python _linear_probe.py \
 --output-path $RUN_DIR/$EXP_NAME
 
 python _eval_probs.py \
---dataset-path $DATASET_PATH \
---probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
---output-path $RUN_DIR/$EXP_NAME
-
-python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME

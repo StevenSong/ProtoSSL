@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from ..defines import BACKBONE_T, CONV_T, PROT_T
+from ..defines import BACKBONE_T, CONV_T, LABEL_T, PROT_T
 from ._base_classifier import BaseClassifier
 from .encoders import PrototypeEncoder
 
@@ -18,7 +18,8 @@ class PrototypeClassifier(BaseClassifier):
         conv_type: CONV_T,
         prototype_type: PROT_T,
         n_prototypes: int,
-        n_binary_labels: int,
+        n_labels: int,
+        label_type: LABEL_T = "binary-multilabel",
         pretrained_weights: str | None = None,
         input_channels: int = 12,
         partial_len: int | None = None,
@@ -36,10 +37,10 @@ class PrototypeClassifier(BaseClassifier):
             # for a given label, only regularize weights for prototypes not of that label
             # this assumes that prototypes are assigned to labels!
             # heuristic to check this is that it's divisible
-            assert n_prototypes % n_binary_labels == 0
-            prototypes_per_label = n_prototypes // n_binary_labels
+            assert n_prototypes % n_labels == 0
+            prototypes_per_label = n_prototypes // n_labels
             label_prototype_mask = torch.repeat_interleave(
-                torch.eye(n_binary_labels, dtype=torch.int32),
+                torch.eye(n_labels, dtype=torch.int32),
                 prototypes_per_label,
                 dim=1,
             )
@@ -56,7 +57,8 @@ class PrototypeClassifier(BaseClassifier):
                 prototype_h=prototype_h,
                 prototype_w=prototype_w,
             ),
-            n_binary_labels=n_binary_labels,
+            n_labels=n_labels,
+            label_type=label_type,
             pretrained_weights=pretrained_weights,
             regularize=True,
             regularization_mask=regularization_mask,
@@ -68,16 +70,23 @@ class PrototypeClassifier(BaseClassifier):
         # apply 1 to prototype connections, -0.5 for others, 0 out bias
         if use_proto_cls_init:
             # same heuristic as above
-            assert n_prototypes % n_binary_labels == 0
-            ppl = n_prototypes // n_binary_labels
+            assert n_prototypes % n_labels == 0
+            ppl = n_prototypes // n_labels
 
             # construct mask for positive connections
-            mask = torch.eye(n_binary_labels, dtype=torch.int32)  # (L, L)
+            mask = torch.eye(n_labels, dtype=torch.int32)  # (L, L)
             mask = torch.repeat_interleave(mask, ppl, dim=1)  # (L, P)
-            mask = torch.repeat_interleave(mask, 2, dim=0)  # (2L, P)
+            if label_type == "binary-multilabel":
+                mask = torch.repeat_interleave(mask, 2, dim=0)  # (2L, P)
+                bias = torch.zeros(n_labels * 2)
+            elif label_type == "multiclass":
+                bias = torch.zeros(n_labels)
+            else:
+                raise ValueError(
+                    f"Unknown how to handle prototype classifier initialization for label_type={label_type}"
+                )
 
             weight = mask + (1 - mask) * -0.5
-            bias = torch.zeros(n_binary_labels * 2)
 
             if isinstance(self.cls, nn.Linear):
                 with torch.no_grad():

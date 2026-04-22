@@ -1,6 +1,6 @@
 import torch
 
-from ..defines import ASSIGN_T, BACKBONE_T, CONV_T, PROT_T
+from ..defines import ASSIGN_T, BACKBONE_T, CONV_T, LABEL_T, PROT_T
 from ._base_classifier import BaseClassifier
 from ._prototype_classifier import PrototypeClassifier
 from .encoders import PrototypeEncoder, PrototypeEncoderWithAssignment
@@ -38,7 +38,8 @@ class PrototypeAssigner(BaseClassifier):
         assignment_strategy: ASSIGN_T,
         n_prototypes: int,
         n_prototypes_per_label: int,
-        n_binary_labels: int,
+        n_labels: int,
+        label_type: LABEL_T = "binary-multilabel",
         pretrained_weights: str | None = None,
         input_channels: int = 12,
         partial_len: int | None = None,
@@ -53,17 +54,20 @@ class PrototypeAssigner(BaseClassifier):
 
         self.n_prototypes = n_prototypes
         self.n_prototypes_per_label = n_prototypes_per_label
-        self.n_binary_labels = n_binary_labels
+        self.n_labels = n_labels
+        self.label_type = label_type
         self.input_channels = input_channels
         self.partial_len = partial_len
         self.partial_overlap = partial_overlap
+        self.prototype_h = prototype_h
+        self.prototype_w = prototype_w
         self.lp_indices = None  # set by solve_linear_assignment when assignment_strategy in ["ilp_effect_size", "ilp_effect_size_lr_coef_scaled", "ilp_effect_size_lr_or_scaled", "ilp_effect_size_multiple_allowed"]
 
         if assignment_strategy == "protopool":
             encoder_cls = PrototypeEncoderWithAssignment
             extra_kwargs = {
                 "n_prototypes_per_label": n_prototypes_per_label,
-                "n_labels": n_binary_labels,
+                "n_labels": n_labels,
             }
         elif assignment_strategy in [
             "ilp_effect_size",
@@ -91,7 +95,8 @@ class PrototypeAssigner(BaseClassifier):
                 prototype_w=prototype_w,
                 **extra_kwargs,
             ),
-            n_binary_labels=n_binary_labels,
+            n_labels=n_labels,
+            label_type=label_type,
             pretrained_weights=pretrained_weights,
         )
 
@@ -187,11 +192,14 @@ class PrototypeAssigner(BaseClassifier):
             backbone_type=self.backbone_type,  # type: ignore
             conv_type=self.conv_type,  # type: ignore
             prototype_type=self.prototype_type,  # type: ignore
-            n_prototypes=self.n_prototypes_per_label * self.n_binary_labels,
-            n_binary_labels=self.n_binary_labels,
+            n_prototypes=self.n_prototypes_per_label * self.n_labels,
+            n_labels=self.n_labels,
+            label_type=self.label_type,
             input_channels=self.input_channels,
             partial_len=self.partial_len,
             partial_overlap=self.partial_overlap,
+            prototype_h=self.prototype_h,
+            prototype_w=self.prototype_w,
         )
 
         sd = self.state_dict()
@@ -247,15 +255,15 @@ class PrototypeAssigner(BaseClassifier):
             # ILP conversion path:
             # lp_indices:
             #     Long tensor of shape (L, K), where:
-            #         - L = n_binary_labels
+            #         - L = n_labels
             #         - K = n_prototypes_per_label
             #     and indices[c, :] are the selected prototype ids for class c.
             if self.lp_indices.ndim != 2:
                 raise ValueError(
-                    f"indices must have shape (n_binary_labels, n_prototypes_per_label), got {tuple(self.lp_indices.shape)}"
+                    f"indices must have shape (n_labels, n_prototypes_per_label), got {tuple(self.lp_indices.shape)}"
                 )
 
-            expected_shape = (self.n_binary_labels, self.n_prototypes_per_label)
+            expected_shape = (self.n_labels, self.n_prototypes_per_label)
             if tuple(self.lp_indices.shape) != expected_shape:
                 raise ValueError(
                     f"indices must have shape {expected_shape}, got {tuple(self.lp_indices.shape)}"

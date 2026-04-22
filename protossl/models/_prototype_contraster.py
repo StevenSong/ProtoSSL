@@ -24,10 +24,11 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
-        do_softmax: bool = True,
-        do_weighted_sum: bool = True,
         prototype_h: int | None = None,
         prototype_w: int | None = None,
+        # specified via model_kawrgs in trainer
+        do_softmax: bool = False,
+        do_weighted_sum: bool = False,
         cola_loss_weight: float = 1.0,
         clar_loss_weight: float = 1.0,
         koleo_loss_weight: float = 1.0,

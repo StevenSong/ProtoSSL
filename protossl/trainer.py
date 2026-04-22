@@ -53,7 +53,7 @@ class LitData(LightningDataModule):
         label_subset: list[str] | None = None,
         assignment_strategy: ASSIGN_T | None = None,
         contrastive_pair_mode: CONTRASTIVE_T | None = None,
-        extra_kwargs: dict = dict(),
+        data_kwargs: dict = dict(),
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -93,7 +93,7 @@ class LitData(LightningDataModule):
         pipeline_stage: STAGE_T = self.hparams.pipeline_stage  # type: ignore
         label_subset: list[str] | None = self.hparams.label_subset  # type: ignore
         contrastive_pair_mode: CONTRASTIVE_T | None = self.hparams.contrastive_pair_mode  # type: ignore
-        extra_kwargs: dict = self.hparams.extra_kwargs  # type: ignore
+        data_kwargs: dict = self.hparams.data_kwargs  # type: ignore
         wrap_contrastive = pipeline_stage == "learn-prototypes"
 
         if stage == "fit":
@@ -115,7 +115,7 @@ class LitData(LightningDataModule):
                     self.train_ds = AudioSetContrastiveWrapperDataset(
                         self.train_ds,
                         pair_mode=contrastive_pair_mode,
-                        **extra_kwargs,
+                        **data_kwargs,
                     )
                 else:
                     assert isinstance(self.train_ds, BaseTSDataset)
@@ -137,7 +137,7 @@ class LitData(LightningDataModule):
                     self.val_ds = AudioSetContrastiveWrapperDataset(
                         self.val_ds,
                         pair_mode=contrastive_pair_mode,
-                        **extra_kwargs,
+                        **data_kwargs,
                     )
                 else:
                     assert isinstance(self.val_ds, BaseTSDataset)
@@ -274,7 +274,7 @@ class LitModel(LightningModule):
         prototype_h: int | None = None,
         prototype_w: int | None = None,
         do_finetune: bool = False,
-        extra_kwargs: dict = dict(),
+        model_kwargs: dict = dict(),
     ):
         super().__init__()
         self.lr = None
@@ -313,7 +313,7 @@ class LitModel(LightningModule):
                 prototype_h=prototype_h,
                 prototype_w=prototype_w,
                 contrastive_pair_mode=contrastive_pair_mode,
-                **extra_kwargs,
+                **model_kwargs,
             )
         elif pipeline_stage == "learn-prototypes-supervised":
             if (
@@ -339,7 +339,7 @@ class LitModel(LightningModule):
                 partial_overlap=partial_overlap,
                 prototype_h=prototype_h,
                 prototype_w=prototype_w,
-                **extra_kwargs,
+                **model_kwargs,
             )
         elif pipeline_stage == "learn-prototype-assignments":
             if (
@@ -363,7 +363,7 @@ class LitModel(LightningModule):
                 prototype_type=prototype_type,
                 n_prototypes=n_prototypes,
                 n_prototypes_per_label=n_prototypes_per_label,
-                n_binary_labels=len(label_names),
+                n_labels=len(label_names),
                 pretrained_weights=pretrained_weights,
                 input_channels=input_channels,
                 assignment_strategy=assignment_strategy,
@@ -371,7 +371,7 @@ class LitModel(LightningModule):
                 partial_overlap=partial_overlap,
                 prototype_h=prototype_h,
                 prototype_w=prototype_w,
-                **extra_kwargs,
+                **model_kwargs,
             )
         elif (
             pipeline_stage == "project-prototypes"
@@ -386,7 +386,7 @@ class LitModel(LightningModule):
                 raise ValueError(
                     "pipeline_stage=[project-prototypes|project-prototypes-supervised|compute-embeddings] "
                     "must be used with model_type=PrototypeProjector and setting "
-                    "[n_prototypes|n_prototypes_per_label^n_binary_labels], pretrained_weights, AND prototype_type"
+                    "[n_prototypes|n_prototypes_per_label*n_labels], pretrained_weights, AND prototype_type"
                 )
             warn_unused(
                 label_weights=label_weights,
@@ -403,7 +403,7 @@ class LitModel(LightningModule):
                 partial_overlap=partial_overlap,
                 prototype_h=prototype_h,
                 prototype_w=prototype_w,
-                **extra_kwargs,
+                **model_kwargs,
             )
         elif pipeline_stage == "train-classifier":
             if (
@@ -416,23 +416,23 @@ class LitModel(LightningModule):
                     conv_type=conv_type,
                     prototype_type=prototype_type,
                     n_prototypes=_n_prototypes,
-                    n_binary_labels=len(label_names),
+                    n_labels=len(label_names),
                     pretrained_weights=pretrained_weights,
                     input_channels=input_channels,
                     partial_len=partial_len,
                     partial_overlap=partial_overlap,
                     prototype_h=prototype_h,
                     prototype_w=prototype_w,
-                    **extra_kwargs,
+                    **model_kwargs,
                 )
             elif _n_prototypes is None and label_names is not None:
                 self.model = BlackboxClassifier(
                     backbone_type=backbone_type,
                     conv_type=conv_type,
-                    n_binary_labels=len(label_names),
+                    n_labels=len(label_names),
                     input_channels=input_channels,
                     pretrained_weights=pretrained_weights,
-                    **extra_kwargs,
+                    **model_kwargs,
                 )
             else:
                 raise ValueError(
@@ -598,19 +598,28 @@ class LitModel(LightningModule):
             assert isinstance(self.model, BaseClassifier)
             # waveform/label keys
             (
-                _losses,  # (n_labels,)
-                _preds,  # (n_labels, B)
+                _loss,  # (n_labels,) or (,)
+                _pred,  # (n_labels, B) or (B, n_labels)
             ) = self.model(
                 batch["waveform"],  # (B, 12, 10 * freq)
                 batch["label"],  # (B, n_labels)
             )
-            losses = dict()
-            preds = dict()
-            label_names: list[str] = self.hparams.label_names  # type: ignore
-            assert label_names is not None
-            for i, target_name in enumerate(label_names):
-                losses[target_name] = _losses[i]
-                preds[target_name] = _preds[i]
+            # dumb heuristic to distinguish between binary multilabel vs multiclass setting
+            if _pred.shape[1] == batch_size:
+                # binary multilabel predictions
+                losses = dict()
+                preds = dict()
+                label_names: list[str] = self.hparams.label_names  # type: ignore
+                assert label_names is not None
+                for i, target_name in enumerate(label_names):
+                    losses[target_name] = _loss[i]
+                    preds[target_name] = _pred[i]
+            elif _pred.shape[0] == batch_size:
+                # multiclass predictions
+                losses = {"CE": _loss}
+                preds = {"Multiclass": _pred}
+            else:
+                raise ValueError(f"Unknown how to handle classifier output")
 
             # TODO: consider refactoring this, otherwise the model losses are intrinsically tied to this trainer
             static_loss = self.model.static_losses()
@@ -788,14 +797,18 @@ class PredictionWriter(BasePredictionWriter):
             pipeline_stage == "learn-prototype-assignments"
             and assignment_strategy == "protopool"
         ):
+            # TODO batch order when using distributed
             assert isinstance(predictions[0], dict)  # classifiction probabilities
-            target_names: list[str] = pl_module.hparams.label_names  # type: ignore
-            probs = {k: [] for k in target_names}
-            for batch_probs in predictions:
-                for k in target_names:
-                    batch_label_prob: torch.Tensor = batch_probs[k]
-                    probs[k].append(batch_label_prob.numpy())
-            to_save = np.stack([np.concatenate(v) for v in probs.values()]).T
+            if "Multiclass" in predictions[0]:
+                to_save = np.concatenate([p["Multiclass"] for p in predictions])
+            else:
+                target_names: list[str] = pl_module.hparams.label_names  # type: ignore
+                probs = {k: [] for k in target_names}
+                for batch_probs in predictions:
+                    for k in target_names:
+                        batch_label_prob: torch.Tensor = batch_probs[k]
+                        probs[k].append(batch_label_prob.numpy())
+                to_save = np.stack([np.concatenate(v) for v in probs.values()]).T
             save_name = "probs.npy"
         elif (
             pipeline_stage == "learn-prototype-assignments"

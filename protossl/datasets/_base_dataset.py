@@ -69,7 +69,7 @@ class BaseTSDataset(Dataset, ABC):
     source_ids: torch.Tensor  # (N,), N = n_samples
     sample_ids: torch.Tensor  # (N,), N = n_samples
     waveforms: torch.Tensor | StreamingWaveformsBase  # (N, n_leads, n_timesteps)
-    labels: torch.Tensor | None  # (N, C), C = n_binary_labels
+    labels: torch.Tensor | None  # (N, C), C = n_labels
 
     @abstractmethod
     def __init__(
@@ -121,6 +121,8 @@ class BaseTSDataset(Dataset, ABC):
     def get_label_weights(self) -> torch.Tensor:
         if self.labels is None:
             raise ValueError("This dataset does not have any labels!")
+
+        # labels should always be one-hot encoded
         n_samples = self.labels.shape[0]
         per_label_count = self.labels.sum(dim=0)
         return (n_samples - per_label_count) / per_label_count

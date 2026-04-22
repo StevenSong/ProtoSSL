@@ -12,7 +12,7 @@
 set -e
 
 export DATASET_PATH=/opt/gpudata/audioset
-export RUN_DIR=/opt/gpu_working/protossl-audio
+export RUN_DIR=/opt/gpu_working/steven/protossl-audio
 export REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
 
 : "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
