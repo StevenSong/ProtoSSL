@@ -13,8 +13,13 @@ set -e
 
 export REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
 
+# export ESC_TEST_FOLD=0
 # export DATASET_PATH=/opt/gpudata/audio/ESC-50
-# export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-esc50
+# export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-esc50-fold$ESC_TEST_FOLD
+
+# export US8K_TEST_FOLD=0
+# export DATASET_PATH=/opt/gpudata/audio/UrbanSound8K
+# export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-us8k-fold$US8K_TEST_FOLD
 
 # export DATASET_PATH=/opt/gpudata/audio/speech-commands-v2
 # export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-speechcmds
@@ -31,8 +36,8 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts/audio
 
 # experiment parameters
-EXP_NAME="labsup-proto-heedb-rila"
-PRETRAIN_RUN="$RUN_DIR/../prosup-audioset"
+EXP_NAME="protossl-audioset-pila"
+PRETRAIN_RUN="$RUN_DIR/../pass-audioset"
 
 python -m protossl.trainer \
     --seed_everything $SEED \
@@ -43,7 +48,7 @@ python -m protossl.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
+    --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt \
     --model.model_kwargs '{"label_type": "multiclass"}'
 
 python -m protossl.trainer \

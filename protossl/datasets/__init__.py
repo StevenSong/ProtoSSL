@@ -10,6 +10,7 @@ from ..defines import (
     MIMIC_TARGETS,
     PTBXL_TARGETS,
     SPEECH_COMMANDS_V2_TARGETS,
+    URBANSOUND8K_TARGETS,
     ZZU_TARGETS,
 )
 from ._audioset_contrastive_wrapper_dataset import AudioSetContrastiveWrapperDataset
@@ -24,6 +25,7 @@ from ._mimic_dataset import MimicECGDataset
 from ._pclr_wrapper_dataset import PCLRWrapperDataset
 from ._ptbxl_dataset import PtbxlECGDataset, get_ptbxl_labels
 from ._speech_commands_dataset import SpeechCommandsV2Dataset
+from ._urbansound8k_dataset import UrbanSound8kDataset
 from ._zzu_dataset import ZzuECGDataset
 
 
@@ -46,6 +48,7 @@ def infer_dataset_class_from_path(
     audioset_indicators = ["audioset", "audio-set", "audio_set"]
     speech_cmds_indicators = ["speech-commands", "speech_commands", "speechcommands"]
     esc50_indicators = ["esc-50", "esc_50", "esc50"]
+    us8k_indicators = ["urbansound", "urban_sound", "urban-sound"]
 
     if any(x in dataset_path_lower for x in echonext_indicators):
         return EchoNextECGDataset, list(ECHONEXT_TARGETS.keys()), False
@@ -67,6 +70,8 @@ def infer_dataset_class_from_path(
         return SpeechCommandsV2Dataset, SPEECH_COMMANDS_V2_TARGETS, True
     elif any(x in dataset_path_lower for x in esc50_indicators):
         return Esc50Dataset, ESC_50_TARGETS, True
+    elif any(x in dataset_path_lower for x in us8k_indicators):
+        return UrbanSound8kDataset, URBANSOUND8K_TARGETS, True
     raise ValueError(
         f"Could not infer BaseECGDataset subclass from dataset_path: {dataset_path}"
     )

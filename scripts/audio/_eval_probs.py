@@ -5,7 +5,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
-from protossl.datasets import SpeechCommandsV2Dataset, infer_dataset_class_from_path
+from protossl.datasets import infer_dataset_class_from_path
 
 
 def parse_args():
@@ -26,9 +26,6 @@ def main(
     ds_cls, label_names, is_audio = infer_dataset_class_from_path(dataset_path)
     if not is_audio:
         raise ValueError("This eval script is meant for audio related work")
-    ignore_labels = None
-    if ds_cls == SpeechCommandsV2Dataset:
-        ignore_labels = ["_silence_"]  # only compute accuracy over 35 classes
     test_ds = ds_cls(
         dataset_path=dataset_path,
         split="test",
@@ -36,28 +33,13 @@ def main(
     )
     assert test_ds.labels is not None and label_names is not None
 
-    # ensure one-hot targets are multiclass
     y = test_ds.labels.numpy()  # (N, n_labels)
+    y_prob: np.ndarray = np.load(probs_npy, allow_pickle=True)  # (N, n_labels)
+
+    # ensure one-hot targets are multiclass
     assert y.ndim == 2, "Expected 2D matrix (N, num_classes)"
     assert (y.sum(axis=-1) == 1).all(), "Rows must sum to 1"
     assert (y >= 0).all() and (y <= 1).all(), "Values must be 0 or 1"
-
-    # mask out ignored labels, we're just computing accuracy so argmax will remain the same
-    y_prob: np.ndarray = np.load(probs_npy, allow_pickle=True)  # (N, n_labels)
-    if ignore_labels is not None:
-        for ignore in ignore_labels:
-            assert (
-                ignore in label_names
-            ), f"{ignore} is not a valid label to ignore (not in full label list)"
-            idx = label_names.index(ignore)
-            if y_prob[:, idx].sum() > 0:
-                print(f"====================eval_probs=====================")
-                print(f"Ignored label ({ignore}) only applies to predicted ")
-                print(f"probabilities but has non-zero entries in the ground truth!")
-                print(f"By ignoring this label, the model will always be wrong")
-                print(f"and penalized for instances of this ignored label!")
-                print(f"===================================================")
-            y_prob[:, idx] = -np.inf
 
     os.makedirs(output_path, exist_ok=True)
     assert not os.path.exists(os.path.join(output_path, "metrics.csv"))

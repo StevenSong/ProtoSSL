@@ -1463,3 +1463,16 @@ ESC_50_TARGETS = [
     "water_drops",
     "wind",
 ]
+
+URBANSOUND8K_TARGETS = [
+    "air_conditioner",
+    "car_horn",
+    "children_playing",
+    "dog_bark",
+    "drilling",
+    "engine_idling",
+    "gun_shot",
+    "jackhammer",
+    "siren",
+    "street_music",
+]
