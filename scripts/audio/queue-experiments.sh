@@ -4,25 +4,18 @@ scripts=(
     "1-run-blackbox-direct.sh"
     "2-run-labsup-proto-direct.sh"
     "3-run-protossl-audioset-pila.sh"
-    # "4-run-labsup-proto-audioset-rila.sh"
+    "4-run-labsup-proto-audioset-rila.sh"
 )
 
-# speechcommands v2 (these take a while to run)
-# export DATASET_PATH=/opt/gpudata/audio/speech-commands-v2
-# export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-speechcmds
-# for script in "${scripts[@]}"; do
-#     sbatch $script
-# done
-
 # esc50
-# for i in {0..4}; do
-#     export ESC_TEST_FOLD=$i
-#     export DATASET_PATH=/opt/gpudata/audio/ESC-50
-#     export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-esc50-fold$i
-#     for script in "${scripts[@]}"; do
-#         sbatch $script
-#     done
-# done
+for i in {0..4}; do
+    export ESC_TEST_FOLD=$i
+    export DATASET_PATH=/opt/gpudata/audio/ESC-50
+    export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-esc50-fold$i
+    for script in "${scripts[@]}"; do
+        sbatch $script
+    done
+done
 
 # urbansound8k
 for i in {0..9}; do
@@ -32,4 +25,11 @@ for i in {0..9}; do
     for script in "${scripts[@]}"; do
         sbatch $script
     done
+done
+
+# speechcommands v2 (these take a while to run)
+export DATASET_PATH=/opt/gpudata/audio/speech-commands-v2
+export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-speechcmds
+for script in "${scripts[@]}"; do
+    sbatch $script
 done
