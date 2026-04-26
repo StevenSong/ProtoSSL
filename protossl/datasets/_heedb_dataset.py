@@ -50,8 +50,8 @@ class HeedbECGDataset(BaseTSDataset):
         df = get_heedb_metadata(dataset_path)
 
         df = df[df["split"] == split].reset_index(drop=True)
-        self.source_ids = torch.as_tensor(df["source_id"].to_numpy())
-        self.sample_ids = torch.as_tensor(df["sample_id"].to_numpy())
+        self.source_ids = torch.as_tensor(df["patient_id"].to_numpy())
+        self.sample_ids = torch.as_tensor(df["ecg_id"].to_numpy())
         self.labels = torch.as_tensor(get_heedb_labels(dataset_path, df, label_subset))
         self._df = df
 
@@ -138,7 +138,7 @@ def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
     mgb = mgb[(mgb["AgeAtAcquisition"] >= 18) & (mgb["SexDSC"].notna())]
     mgb = mgb.rename(
         columns={
-            "BDSPPatientID": "source_id",
+            "BDSPPatientID": "patient_id",
             "SexDSC": "sex",
             "AgeAtAcquisition": "age",
             "FileName": "fpath",
@@ -159,14 +159,14 @@ def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
     ]
     emory = emory.rename(
         columns={
-            "BDSPPatientID": "source_id",
+            "BDSPPatientID": "patient_id",
             "Sex": "sex",
             "AgeAtAcquisition": "age",
             "FileName": "fpath",
         }
     )
-    assert (emory["source_id"].astype(int) == emory["source_id"]).all()
-    emory["source_id"] = emory["source_id"].astype(int)
+    assert (emory["patient_id"].astype(int) == emory["patient_id"]).all()
+    emory["patient_id"] = emory["patient_id"].astype(int)
 
     # bad files on emory side
     emory_exclude = {"WFDB/2013/MUSE_20200225_081000_06000"}
@@ -177,12 +177,12 @@ def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
     # join together
     mgb["source"] = "mgb"
     emory["source"] = "emory"
-    assert len(set(mgb["source_id"]) & set(emory["source_id"])) == 0
+    assert len(set(mgb["patient_id"]) & set(emory["patient_id"])) == 0
     df = pd.concat([mgb, emory], ignore_index=True)  # MGB, then EUH
-    df.index.name = "sample_id"
+    df.index.name = "ecg_id"
     df["year"] = df["fpath"].str[1:].str.split("/").str[1].astype(int)
     df = df.reset_index()[
-        ["sample_id", "source_id", "age", "sex", "year", "source", "fpath"]
+        ["ecg_id", "patient_id", "age", "sex", "year", "source", "fpath"]
     ]
 
     # emory data ends in 2018 so val/test are all MGB data

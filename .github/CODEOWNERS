@@ -76,6 +76,8 @@ scripts/3-run-protossl-heedb-pila.sh @StevenSong
 scripts/4-run-labsup-proto-heedb-rila.sh @StevenSong
 scripts/5-run-ecgfounder-logreg.sh @StevenSong
 scripts/6-run-protossl-heedb-pia.sh @StevenSong
+scripts/7-run-protossl-heedb-pit.sh @StevenSong
+scripts/8-run-protossl-heedb-pip.sh @StevenSong
 scripts/ablations @StevenSong
 scripts/audio @StevenSong
 scripts/ecgfounder/_compute_ecgfounder_embeddings.py @StevenSong

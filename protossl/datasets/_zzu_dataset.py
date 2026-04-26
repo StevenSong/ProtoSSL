@@ -31,10 +31,10 @@ def get_zzu_dataframe(dataset_path: str) -> pd.DataFrame:
 
     # convert string IDs to numerical IDs:
     # all patient IDs are 6 digits, all ECG IDs are patient ID + 2 digits
-    df["sample_id"] = df["sample_id"].str.replace("[^0-9]", "", regex=True)
-    df["sample_id"] = ("1" + df["sample_id"]).astype(int)
-    df["source_id"] = df["source_id"].str.replace("[^0-9]", "", regex=True)
-    df["source_id"] = ("1" + df["source_id"]).astype(int)
+    df["ECG_ID"] = df["ECG_ID"].str.replace("[^0-9]", "", regex=True)
+    df["ECG_ID"] = ("1" + df["ECG_ID"]).astype(int)
+    df["Patient_ID"] = df["Patient_ID"].str.replace("[^0-9]", "", regex=True)
+    df["Patient_ID"] = ("1" + df["Patient_ID"]).astype(int)
 
     for label, sublabels in ZZU_TARGETS.items():
         df[label] = df[sublabels].max(axis=1)  # make coarse labels
@@ -58,8 +58,8 @@ class ZzuECGDataset(BaseTSDataset):
         df = get_zzu_dataframe(dataset_path)
         df = df[df["split"] == split]
 
-        self.source_ids = torch.as_tensor(df["source_id"].to_numpy())
-        self.sample_ids = torch.as_tensor(df["sample_id"].to_numpy())
+        self.source_ids = torch.as_tensor(df["Patient_ID"].to_numpy())
+        self.sample_ids = torch.as_tensor(df["ECG_ID"].to_numpy())
         self.labels = torch.as_tensor(
             df[list(ZZU_TARGETS)].to_numpy(), dtype=torch.long
         )

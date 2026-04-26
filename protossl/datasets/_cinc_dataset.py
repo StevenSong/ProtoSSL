@@ -41,8 +41,8 @@ class CincECGDataset(BaseTSDataset):
         df = pd.read_csv(_path / "georgia.csv")
         df = df[df["split"] == split]
 
-        self.source_ids = torch.as_tensor(df["source_id"].to_numpy())
-        self.sample_ids = torch.as_tensor(df["sample_id"].to_numpy())
+        self.source_ids = torch.as_tensor(df["patient_id"].to_numpy())
+        self.sample_ids = torch.as_tensor(df["ecg_id"].to_numpy())
         self.labels = torch.as_tensor(df[targets].to_numpy(), dtype=torch.long)
 
         def load_transform_data_fn() -> torch.Tensor:
