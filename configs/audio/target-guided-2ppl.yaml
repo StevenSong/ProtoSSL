@@ -14,7 +14,7 @@ trainer:
       init_args:
         monitor: val_loss
         mode: min
-        patience: 10 # check reduce lr on plateau
+        patience: 20 # check reduce lr on plateau
     - class_path: lightning.pytorch.callbacks.LearningRateMonitor
       init_args:
         logging_interval: epoch
@@ -24,7 +24,7 @@ trainer:
         mode: min
         save_last: True
     - class_path: PredictionWriter
-  max_epochs: 5
+  max_epochs: 1000
   log_every_n_steps: 1
 optimizer:
   class_path: torch.optim.AdamW
@@ -35,7 +35,7 @@ lr_scheduler:
   class_path: lightning.pytorch.cli.ReduceLROnPlateau
   init_args:
     monitor: val_loss
-    patience: 5 # check early stopping
+    patience: 10 # check early stopping
 model:
   class_path: LitModel
   init_args:
@@ -47,7 +47,8 @@ model:
     partial_overlap: 0.5
     prototype_h: 1
     prototype_w: 1
-    n_prototypes_per_label: 5
+    n_prototypes_per_label: 2
+    # model_kwargs: '{"label_type": "multiclass", "use_default_weights": True}' # granularly set these on each stage
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
@@ -55,6 +56,5 @@ data:
     # dataset_path: /path/to/dataset
     sampling_rate: 32000
     batch_size: 128
-    num_workers: 12
-    prefetch_factor: 2
-# pipeline_stage: learn-prototypes-supervised|project-prototypes-supervised|compute-embeddings|train-classifier
+    num_workers: 4
+# pipeline_stage: learn-prototypes-supervised|learn-prototype-assignments|project-prototypes-supervised|compute-embeddings|train-classifier

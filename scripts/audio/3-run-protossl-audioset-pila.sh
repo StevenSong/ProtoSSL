@@ -29,6 +29,8 @@ export REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
 : "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
 : "${REPO_ROOT:?Env var REPO_ROOT must be set prior to script execution}"
 : "${SEED:=42}"
+: "${PPL:=5ppl}"
+echo "Using PPL=$PPL"
 echo "Using SEED=$SEED"
 echo "Using DATASET_PATH=$DATASET_PATH"
 echo "Using RUN_DIR=$RUN_DIR"
@@ -43,7 +45,7 @@ python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage learn-prototype-assignments \
     --assignment-strategy ilp_effect_size \
-    --config $REPO_ROOT/configs/audio/target-guided-5ppl.yaml \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --model.n_prototypes 2635 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
@@ -54,7 +56,7 @@ python -m protossl.trainer \
 python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/audio/target-guided-5ppl.yaml \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
@@ -63,7 +65,7 @@ python -m protossl.trainer \
 python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage compute-embeddings \
-    --config $REPO_ROOT/configs/audio/target-guided-5ppl.yaml \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
@@ -87,7 +89,7 @@ EXP_NAME="$EXP_NAME-ft"
 python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage learn-prototypes-supervised \
-    --config $REPO_ROOT/configs/audio/target-guided-5ppl.yaml \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
@@ -97,7 +99,7 @@ python -m protossl.trainer \
 python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/audio/target-guided-5ppl.yaml \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
@@ -106,7 +108,7 @@ python -m protossl.trainer \
 python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage compute-embeddings \
-    --config $REPO_ROOT/configs/audio/target-guided-5ppl.yaml \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \

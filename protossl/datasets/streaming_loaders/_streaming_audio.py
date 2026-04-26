@@ -9,7 +9,7 @@ from datasets import Dataset as HFDataset
 from datasets.features import Audio
 from scipy.signal import resample_poly
 
-from .._utils import IndexedParquetDataset
+from .._utils import IndexedParquetDataset, TypedDataset
 from ._streaming_base import StreamingWaveformsBase
 
 
@@ -20,6 +20,7 @@ class StreamingAudioWaveforms(StreamingWaveformsBase):
         wav_paths: list[Path] | None = None,
         hf_ds: HFDataset | None = None,
         parquet_indexer: IndexedParquetDataset | None = None,
+        typed_ds: TypedDataset | None = None,
         sampling_rate: int,
         clip_seconds: float = 10.0,
         use_cache: bool = True,
@@ -35,14 +36,23 @@ class StreamingAudioWaveforms(StreamingWaveformsBase):
         self.wav_paths = wav_paths
         self.hf_ds = hf_ds
         self.parquet_indexer = parquet_indexer
-        if wav_paths is None and hf_ds is None and parquet_indexer is None:
+        self.typed_ds = typed_ds
+        if (
+            wav_paths is None
+            and hf_ds is None
+            and parquet_indexer is None
+            and typed_ds is None
+        ):
             raise ValueError(
-                "Must provide one of wav_paths, hf_ds, or parquet_indexer, all were None"
+                "Must provide one of wav_paths, hf_ds, parquet_indexer, or get_samp, all were None"
             )
-        if sum([s is not None for s in [wav_paths, hf_ds, parquet_indexer]]) > 1:
+        if (
+            sum([s is not None for s in [wav_paths, hf_ds, parquet_indexer, typed_ds]])
+            > 1
+        ):
             # mutually exclusive data read options
             raise ValueError(
-                "Can only provide one of wav_paths, hf_ds, or parquet_indexer, got multiple"
+                "Can only provide one of wav_paths, hf_ds, parquet_indexer, or get_samp, got multiple"
             )
         if hf_ds is not None:
             if "audio" not in hf_ds.features:
@@ -71,12 +81,16 @@ class StreamingAudioWaveforms(StreamingWaveformsBase):
             desc = "in-memory huggingface dataset"
         elif self.parquet_indexer is not None:
             desc = "custom parquet indexing of streaming huggingface dataset"
+        elif self.typed_ds is not None:
+            desc = "client specified loading method"
         else:
             raise ValueError("Unknown streaming method")
         print(f"================StreamingAudioWaveforms================")
         print(f"Loading and transforming audio data using {desc}.")
         if use_cache:
             print("Using in-memory cache to speed up fast, repeated reads.")
+        if do_augmentation:
+            print("Doing augmentation")
         print(f"=======================================================")
 
     @property
@@ -87,6 +101,8 @@ class StreamingAudioWaveforms(StreamingWaveformsBase):
             n = len(self.hf_ds)
         elif self.parquet_indexer is not None:
             n = len(self.parquet_indexer)
+        elif self.typed_ds is not None:
+            n = len(self.typed_ds)
         else:
             raise ValueError("Unknown how to get shape")
         return (n, 1, self.target_len)
@@ -127,6 +143,8 @@ class StreamingAudioWaveforms(StreamingWaveformsBase):
                     print(e)
                     x = torch.zeros([1, self.target_len], dtype=torch.float32)
                     source_sr = self.sampling_rate
+            elif self.typed_ds is not None:
+                x, source_sr = self.typed_ds[i]
             else:
                 raise ValueError("Unknown how to load waveform")
         cache[i] = (x, source_sr)  # refresh or place in cache

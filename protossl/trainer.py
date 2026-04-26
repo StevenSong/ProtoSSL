@@ -103,6 +103,7 @@ class LitData(LightningDataModule):
                     split="train",
                     sampling_rate=sampling_rate,
                     label_subset=label_subset,
+                    **data_kwargs,
                 )
             else:
                 assert self.train_ds is not None, "Not sure how train_ds is None"
@@ -119,7 +120,7 @@ class LitData(LightningDataModule):
                     )
                 else:
                     assert isinstance(self.train_ds, BaseTSDataset)
-                    self.train_ds = PCLRWrapperDataset(self.train_ds)
+                    self.train_ds = PCLRWrapperDataset(self.train_ds, **data_kwargs)
 
         if stage in ["fit", "validate"]:
             self.val_ds = self.ds_cls(
@@ -127,6 +128,7 @@ class LitData(LightningDataModule):
                 split="val",
                 sampling_rate=sampling_rate,
                 label_subset=label_subset,
+                **data_kwargs,
             )
             if wrap_contrastive:
                 if self.is_audio:
@@ -141,7 +143,7 @@ class LitData(LightningDataModule):
                     )
                 else:
                     assert isinstance(self.val_ds, BaseTSDataset)
-                    self.val_ds = PCLRWrapperDataset(self.val_ds)
+                    self.val_ds = PCLRWrapperDataset(self.val_ds, **data_kwargs)
 
         if stage in ["test", "predict"]:
             self.test_ds = self.ds_cls(
@@ -149,6 +151,7 @@ class LitData(LightningDataModule):
                 split="test",
                 sampling_rate=sampling_rate,
                 label_subset=label_subset,
+                **data_kwargs,
             )
             if wrap_contrastive:
                 raise ValueError(
@@ -378,6 +381,7 @@ class LitModel(LightningModule):
             or pipeline_stage == "project-prototypes-supervised"
             or pipeline_stage == "compute-embeddings"
         ):
+            self._batch_counter = 0
             if (
                 _n_prototypes is None
                 or pretrained_weights is None
@@ -534,6 +538,8 @@ class LitModel(LightningModule):
             pipeline_stage == "project-prototypes"
             or pipeline_stage == "project-prototypes-supervised"
         ):
+            print(self._batch_counter, flush=True)
+            self._batch_counter += 1
             assert isinstance(self.model, PrototypeProjector)
             if stage != "predict":
                 raise ValueError(

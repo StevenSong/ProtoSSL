@@ -11,7 +11,7 @@
 
 set -e
 
-export DATASET_PATH=/opt/gpudata/audioset
+export DATASET_PATH=/opt/gpudata/audio/audioset
 export RUN_DIR=/opt/gpu_working/steven/protossl-audio
 export REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
 
@@ -32,7 +32,7 @@ echo "======================================"
 echo "Stage 1: self-supervised learn-prototypes"
 echo "======================================"
 
-srun python -m pass_pclr.trainer \
+srun python -m protossl.trainer \
     --pipeline-stage learn-prototypes \
     --config $REPO_ROOT/configs/audio/pretrain-unsupervised.yaml \
     --trainer.logger.save_dir $RUN_DIR \

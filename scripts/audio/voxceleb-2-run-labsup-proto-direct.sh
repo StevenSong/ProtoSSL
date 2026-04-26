@@ -13,16 +13,9 @@ set -e
 
 export REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
 
-# export ESC_TEST_FOLD=0
-# export DATASET_PATH=/opt/gpudata/audio/ESC-50
-# export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-esc50-fold$ESC_TEST_FOLD
-
-# export US8K_TEST_FOLD=0
-# export DATASET_PATH=/opt/gpudata/audio/UrbanSound8K
-# export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-us8k-fold$US8K_TEST_FOLD
-
-# export DATASET_PATH=/opt/gpudata/audio/speech-commands-v2
-# export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-speechcmds
+export DATASET_PATH=/opt/gpudata/audio/VoxCeleb1
+export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-voxceleb
+export PPL=2ppl
 
 # set these env vars prior to executing this script
 : "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
@@ -40,14 +33,14 @@ cd $REPO_ROOT/scripts/audio
 # experiment parameters
 EXP_NAME="labsup-proto-direct"
 
-python -m protossl.trainer \
-    --seed_everything $SEED \
-    --pipeline-stage learn-prototypes-supervised \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-    --trainer.logger.save_dir $RUN_DIR/ \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.model_kwargs '{"label_type": "multiclass", "use_default_weights": True}'
+# python -m protossl.trainer \
+#     --seed_everything $SEED \
+#     --pipeline-stage learn-prototypes-supervised \
+#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+#     --trainer.logger.save_dir $RUN_DIR/ \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.model_kwargs '{"label_type": "multiclass", "use_default_weights": True}'
 
 python -m protossl.trainer \
     --seed_everything $SEED \
@@ -60,18 +53,15 @@ python -m protossl.trainer \
 
 python -m protossl.trainer \
     --seed_everything $SEED \
-    --pipeline-stage compute-embeddings \
+    --pipeline-stage train-classifier \
     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
+    --model.model_kwargs '{"label_type": "multiclass"}' \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
 
-python _linear_probe.py \
---random-seed $SEED \
---dataset-path $DATASET_PATH \
---prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
---output-path $RUN_DIR/$EXP_NAME
+cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
 
 python _eval_probs.py \
 --dataset-path $DATASET_PATH \

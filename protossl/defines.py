@@ -1476,3 +1476,20 @@ URBANSOUND8K_TARGETS = [
     "siren",
     "street_music",
 ]
+
+# these are just the speaker IDs, indexed from 1
+VOXCELEB1_ID_TARGETS = [str(x) for x in range(1, 1252)]
+
+# following SUPERB (https://arxiv.org/pdf/2105.01051), only use 4 labels
+IEMOCAP_TARGETS = [
+    "angry",
+    # "disgust", # do not use disgust, not present in enough cross val folds
+    # "excited",
+    # "fear",
+    # "frustrated",
+    "happy",
+    "neutral",
+    # "other",
+    "sad",
+    # "surprise",
+]

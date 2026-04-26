@@ -1,6 +1,31 @@
+from collections.abc import Callable
+
 import numpy as np
 import pyarrow.parquet as pq
+import torch
 from datasets import Features
+
+
+class TypedDataset:
+    def __init__(
+        self,
+        get_samp: Callable[
+            [int],  # index
+            tuple[
+                torch.Tensor,  # waveform
+                int,  # sampling rate
+            ],
+        ],
+        n: int,
+    ):
+        self.get_samp = get_samp
+        self.n = n
+
+    def __getitem__(self, i) -> tuple[torch.Tensor, int]:
+        return self.get_samp(i)
+
+    def __len__(self):
+        return self.n
 
 
 class IndexedParquetDataset:
