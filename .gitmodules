@@ -4,3 +4,6 @@
 [submodule "user-study/images"]
 	path = user-study/images
 	url = git@github.com:StevenSong/protossl-user-study-images.git
+[submodule "external/vuno-ST-MEM"]
+	path = external/vuno-ST-MEM
+	url = git@github.com:vuno/ST-MEM.git

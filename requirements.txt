@@ -1,6 +1,7 @@
 cachetools
 datasets[audio]==4.0.0
 detect-secrets
+einops
 fastdigest
 h5py
 ipywidgets

@@ -16,7 +16,7 @@ cd $REPO_ROOT/scripts
 # experiment parameters
 EXP_NAME="ecgfounder-logreg"
 
-python ecgfounder/_compute_ecgfounder_embeddings.py \
+python ecg-fms/_compute_ecgfounder_embeddings.py \
 --dataset-path $DATASET_PATH \
 --output-path $RUN_DIR/$EXP_NAME
 
