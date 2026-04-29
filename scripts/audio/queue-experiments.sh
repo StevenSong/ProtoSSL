@@ -7,6 +7,13 @@ scripts=(
     "4-run-labsup-proto-audioset-rila.sh"
 )
 
+voxceleb_scripts=(
+    "1-run-blackbox-direct.sh"
+    "voxceleb-2-run-labsup-proto-direct.sh"
+    "voxceleb-3-run-protossl-audioset-pila.sh"
+    "voxceleb-4-run-labsup-proto-audioset-rila.sh"
+)
+
 # esc50
 for i in {0..4}; do
     export ESC_TEST_FOLD=$i
@@ -48,7 +55,7 @@ done
 export DATASET_PATH=/opt/gpudata/audio/VoxCeleb1
 export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-voxceleb
 export PPL=2ppl
-for script in "${scripts[@]}"; do
+for script in "${voxceleb_scripts[@]}"; do
     sbatch $script
 done
 unset PPL

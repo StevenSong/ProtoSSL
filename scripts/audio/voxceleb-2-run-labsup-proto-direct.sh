@@ -33,14 +33,14 @@ cd $REPO_ROOT/scripts/audio
 # experiment parameters
 EXP_NAME="labsup-proto-direct"
 
-# python -m protossl.trainer \
-#     --seed_everything $SEED \
-#     --pipeline-stage learn-prototypes-supervised \
-#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-#     --trainer.logger.save_dir $RUN_DIR/ \
-#     --trainer.logger.name $EXP_NAME \
-#     --data.dataset_path $DATASET_PATH \
-#     --model.model_kwargs '{"label_type": "multiclass", "use_default_weights": True}'
+python -m protossl.trainer \
+    --seed_everything $SEED \
+    --pipeline-stage learn-prototypes-supervised \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+    --trainer.logger.save_dir $RUN_DIR/ \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $DATASET_PATH \
+    --model.model_kwargs '{"label_type": "multiclass", "use_default_weights": True}'
 
 python -m protossl.trainer \
     --seed_everything $SEED \
@@ -64,6 +64,11 @@ python -m protossl.trainer \
 cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
 
 python _eval_probs.py \
+--dataset-path $DATASET_PATH \
+--probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
+
+python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME

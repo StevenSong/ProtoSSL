@@ -34,26 +34,26 @@ cd $REPO_ROOT/scripts/audio
 EXP_NAME="labsup-proto-audioset-rila"
 PRETRAIN_RUN="$RUN_DIR/../prosup-audioset"
 
-# python -m protossl.trainer \
-#     --seed_everything $SEED \
-#     --pipeline-stage learn-prototype-assignments \
-#     --assignment-strategy ilp_effect_size \
-#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-#     --model.n_prototypes 2635 \
-#     --trainer.logger.save_dir $RUN_DIR \
-#     --trainer.logger.name $EXP_NAME \
-#     --data.dataset_path $DATASET_PATH \
-#     --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
-#     --model.model_kwargs '{"label_type": "multiclass"}'
+python -m protossl.trainer \
+    --seed_everything $SEED \
+    --pipeline-stage learn-prototype-assignments \
+    --assignment-strategy ilp_effect_size \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+    --model.n_prototypes 2635 \
+    --trainer.logger.save_dir $RUN_DIR \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $DATASET_PATH \
+    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
+    --model.model_kwargs '{"label_type": "multiclass"}'
 
-# python -m protossl.trainer \
-#     --seed_everything $SEED \
-#     --pipeline-stage project-prototypes-supervised \
-#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-#     --trainer.logger.save_dir $RUN_DIR \
-#     --trainer.logger.name $EXP_NAME \
-#     --data.dataset_path $DATASET_PATH \
-#     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
+python -m protossl.trainer \
+    --seed_everything $SEED \
+    --pipeline-stage project-prototypes-supervised \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+    --trainer.logger.save_dir $RUN_DIR \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $DATASET_PATH \
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
 
 python -m protossl.trainer \
     --seed_everything $SEED \
@@ -68,6 +68,11 @@ python -m protossl.trainer \
 cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
 
 python _eval_probs.py \
+--dataset-path $DATASET_PATH \
+--probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
+
+python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
@@ -108,6 +113,11 @@ python -m protossl.trainer \
 cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
 
 python _eval_probs.py \
+--dataset-path $DATASET_PATH \
+--probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
+
+python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
