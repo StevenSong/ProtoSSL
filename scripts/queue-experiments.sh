@@ -2,7 +2,8 @@
 
 set -e
 
-declare -a DATASETS=("echonext" "ptbxl" "cinc" "mimic" "zzu" "code15")
+# declare -a DATASETS=("echonext" "ptbxl" "cinc" "mimic" "zzu" "code15")
+declare -a DATASETS=("echonext")
 declare -A DATASET_DIRS=(
     ["echonext"]="echonext"
     ["ptbxl"]="ptb-xl"
@@ -42,8 +43,8 @@ for dataset in "${DATASETS[@]}"; do
     for suffix in "${suffixes[@]}"; do
         echo "SUFFIX: $suffix"
 
-        # cache_id=$(submit_job "$suffix" 0-run-cache-data.sh)
-        # echo $cache_id
+        cache_id=$(submit_job "$suffix" 0-run-cache-data.sh)
+        echo $cache_id
 
         # submit_job "$suffix" 1-run-blackbox-direct.sh "--dependency=afterok:$cache_id"
         # submit_job "$suffix" 2-run-labsup-proto-direct.sh "--dependency=afterok:$cache_id"
@@ -51,11 +52,18 @@ for dataset in "${DATASETS[@]}"; do
         # submit_job "$suffix" 4-run-labsup-proto-heedb-rila.sh "--dependency=afterok:$cache_id"
 
         # submit_job "$suffix" 5-1-run-ecgfounder-logreg.sh # does not depend on same 100 Hz cache (takes 500 Hz)
-        submit_job "$suffix" 5-2-run-stmem-logreg.sh # does not depend on same 100 Hz cache (takes 250 Hz)
+        # submit_job "$suffix" 5-2-run-stmem-logreg.sh # does not depend on same 100 Hz cache (takes 250 Hz)
 
         # ablation
-        # submit_job "$suffix" 6-run-protossl-heedb-pia.sh "--dependency=afterok:$cache_id"
-        # submit_job "$suffix" 7-run-protossl-heedb-pit.sh "--dependency=afterok:$cache_id"
-        # submit_job "$suffix" 8-run-protossl-heedb-pip.sh "--dependency=afterok:$cache_id"
+        submit_job "$suffix" 6-run-protossl-heedb-pia.sh "--dependency=afterok:$cache_id"
+        submit_job "$suffix" 7-run-protossl-heedb-pit.sh "--dependency=afterok:$cache_id"
+        submit_job "$suffix" 8-run-protossl-heedb-pip.sh "--dependency=afterok:$cache_id"
+
+        # start with pretrained encoder
+        # patches_id=$(submit_job "$suffix" 9-0-run-ecgfounder-patches.sh)
+        # echo $patches_id
+        # submit_job "$suffix" 9-1-run-ecgfounder-lap.sh "--dependency=afterok:$patches_id"
+        # submit_job "$suffix" 9-2-run-ecgfounder-clustering.sh "--dependency=afterok:$patches_id"
+        # submit_job "$suffix" 9-3-run-ecgfounder-random.sh "--dependency=afterok:$patches_id"
     done
 done
