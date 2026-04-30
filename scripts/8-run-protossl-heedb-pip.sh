@@ -18,9 +18,9 @@ EXP_NAME="protossl-heedb-pip"
 PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb-no-attn"
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/target-unguided.yaml \
     --seed_everything $SEED \
     --pipeline-stage compute-embeddings \
-    --config $REPO_ROOT/configs/target-unguided.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \

@@ -18,18 +18,18 @@ EXP_NAME="protossl-heedb-pit"
 PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb-no-attn"
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/target-unguided.yaml \
     --seed_everything $SEED \
     --pipeline-stage project-prototypes \
-    --config $REPO_ROOT/configs/target-unguided.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/target-unguided.yaml \
     --seed_everything $SEED \
     --pipeline-stage compute-embeddings \
-    --config $REPO_ROOT/configs/target-unguided.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
