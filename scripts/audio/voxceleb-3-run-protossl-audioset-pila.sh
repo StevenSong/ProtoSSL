@@ -35,10 +35,10 @@ EXP_NAME="protossl-audioset-pila"
 PRETRAIN_RUN="$RUN_DIR/../pass-audioset"
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --seed_everything $SEED \
     --pipeline-stage learn-prototype-assignments \
     --assignment-strategy ilp_effect_size \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --model.n_prototypes 2635 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
@@ -47,18 +47,18 @@ python -m protossl.trainer \
     --model.model_kwargs '{"label_type": "multiclass"}'
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --seed_everything $SEED \
     --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --seed_everything $SEED \
     --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
@@ -82,9 +82,9 @@ PRETRAIN_RUN=$RUN_DIR/$EXP_NAME
 EXP_NAME="$EXP_NAME-ft"
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --seed_everything $SEED \
     --pipeline-stage learn-prototypes-supervised \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
@@ -92,18 +92,18 @@ python -m protossl.trainer \
     --model.model_kwargs '{"label_type": "multiclass", "use_default_weights": True}'
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --seed_everything $SEED \
     --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR/ \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --seed_everything $SEED \
     --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
