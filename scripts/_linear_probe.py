@@ -43,7 +43,9 @@ def main(
     label_subset: list[str] | None = None,
     random_seed: int = 42,
 ):
-    ds_cls, label_names = infer_dataset_class_from_path(dataset_path)
+    ds_cls, label_names, is_audio = infer_dataset_class_from_path(dataset_path)
+    if is_audio:
+        raise ValueError("This linear probe script is meant for ECG related work")
     assert label_names is not None
 
     train_ds = ds_cls(

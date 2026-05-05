@@ -29,6 +29,7 @@ python -m protossl.trainer \
     --config $REPO_ROOT/configs/pretrain-unsupervised.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
+    --model.model_kwargs '{"do_softmax": True, "do_weighted_sum": True}' \
     --trainer.max_epochs 100 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \

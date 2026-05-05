@@ -22,16 +22,20 @@ class PrototypeProjector(PretrainedMixin, nn.Module):
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        prototype_h: int | None = None,
+        prototype_w: int | None = None,
     ):
         super().__init__()
         self.encoder = PrototypeEncoder(
             backbone_type=backbone_type,
             n_prototypes=n_prototypes,
             conv_type=conv_type,
-            prototytpe_type=prototype_type,
+            prototype_type=prototype_type,
             input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,
+            prototype_h=prototype_h,
+            prototype_w=prototype_w,
         )
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)

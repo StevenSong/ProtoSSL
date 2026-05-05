@@ -52,4 +52,5 @@ data:
     # dataset_path: /path/to/dataset
     batch_size: 512
     num_workers: 4
+contrastive_pair_mode: pclr
 # pipeline_stage: learn-prototypes|project-prototypes|compute-embeddings|train-classifier

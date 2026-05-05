@@ -18,7 +18,7 @@ from ..defines import (
     SPLIT_T,
     STANDARD_LEAD_ORDER,
 )
-from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
+from ._base_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 
 ptbxl_lead_order = [l.lower() for l in PTBXL_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
@@ -56,7 +56,7 @@ class PtbxlECGDataset(BaseTSDataset):
         label_subset: list[str] | None = None,
     ):
         _path = Path(dataset_path)
-        df = pd.read_csv(_path / "ptbxl_database.csv", index_col="sample_id")
+        df = pd.read_csv(_path / "ptbxl_database.csv", index_col="ecg_id")
         if split == "train":
             mask = ~df["strat_fold"].isin({VAL_FOLD, TEST_FOLD})
         elif split == "val":
@@ -67,7 +67,7 @@ class PtbxlECGDataset(BaseTSDataset):
             raise ValueError(f"Unknown split: {split}")
         df = df[mask]
 
-        self.source_ids = torch.as_tensor(df["source_id"].astype(int).to_numpy())
+        self.source_ids = torch.as_tensor(df["patient_id"].astype(int).to_numpy())
         self.sample_ids = torch.as_tensor(df.index.to_numpy())
         self.labels = torch.as_tensor(
             get_ptbxl_labels(df, label_subset),

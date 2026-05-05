@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX
+from ..defines import BACKBONE_T, CONV_T, LABEL_T, PROT_T, SIM_MAX
 from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
 
@@ -15,43 +15,65 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         conv_type: CONV_T,
         prototype_type: PROT_T,
         n_prototypes_per_label: int,
+        label_type: LABEL_T = "binary-multilabel",
         label_weights: torch.Tensor,
         label_cooccurrence: torch.Tensor,
         pretrained_weights: str | None = None,
         input_channels: int = 12,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
+        prototype_h: int | None = None,
+        prototype_w: int | None = None,
+        use_default_weights: bool = False,
     ):
         super().__init__()
         self.n_prototypes_per_label = n_prototypes_per_label
-        self.n_binary_labels = label_weights.shape[0]
+        self.n_labels = label_weights.shape[0]
         self.register_buffer("label_weights", label_weights, persistent=False)
         self.register_buffer("label_cooccurrence", label_cooccurrence, persistent=False)
         self.encoder = PrototypeEncoder(
             backbone_type=backbone_type,
-            n_prototypes=self.n_binary_labels * n_prototypes_per_label,
+            n_prototypes=self.n_labels * n_prototypes_per_label,
             conv_type=conv_type,
-            prototytpe_type=prototype_type,
+            prototype_type=prototype_type,
             input_channels=input_channels,
             partial_len=partial_len,
             partial_overlap=partial_overlap,
+            prototype_h=prototype_h,
+            prototype_w=prototype_w,
         )
+        if label_type == "binary-multilabel":
+            n_outputs_per_label = 2
+        elif label_type == "multiclass":
+            print(f"===========PrototypeSupervisor.__init__============")
+            print(
+                f"Using multiclass mode for classifier (instead of binary multilabel)"
+            )
+            print(f"===================================================")
+            n_outputs_per_label = 1
+        else:
+            raise ValueError(f"Unknown how to handle label_type={label_type}")
+        self.label_type: LABEL_T = label_type
         self.cls = nn.Linear(
             in_features=self.encoder.emb_dim,
-            out_features=self.n_binary_labels * 2,
+            out_features=self.n_labels * n_outputs_per_label,
         )
 
-        # these values were taken from ProtoECGNet experiments
-        self.lam_clst = 0.004
-        self.lam_sep = 0.0004
-        self.lam_cntrst = 300.0
-        self.lam_div = 250.0
-
-        # original ProtoPNet coefficients
-        # self.lam_clst = 0.8
-        # self.lam_sep = 0.08
-        # self.lam_cntrst = 100.0
-        # self.lam_div = 0.0
+        if use_default_weights:
+            print(f"===========PrototypeSupervisor.__init__============")
+            print(f"Using default loss weights (and ignoring label co-occurrence term)")
+            print(f"===================================================")
+            # original ProtoPNet coefficients
+            self.lam_clst = 0.8
+            self.lam_sep = 0.08
+            self.lam_div = 100
+            self.lam_cntrst = 0  # no label co-occurrence loss
+        else:
+            # ProtoECGNet paper
+            self.lam_clst = 0.004
+            self.lam_sep = 0.0004
+            self.lam_div = 250.0
+            self.lam_cntrst = 300.0
 
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
@@ -61,23 +83,30 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
 
         sims: torch.Tensor = self.encoder(x)  # (B, P)
         label_weights: torch.Tensor = self.label_weights  # type: ignore
+        logits = self.cls(sims)  # (B, [2]L)
 
-        # binary cross entropy loss
-        logits = self.cls(sims)  # (B, 2 * L)
-        losses = []
-        for i in range(self.n_binary_labels):
-            i = i * 2
-            per_label_logits = logits[:, i : i + 2]  # (B, 2)
-            wt = torch.ones(2, dtype=label_weights.dtype, device=label_weights.device)
-            wt[1] = label_weights[i // 2]  # use weights: [1, pos_weight]
-            per_label_loss = F.cross_entropy(
-                input=per_label_logits,  # (B, 2)
-                target=y[:, i // 2],  # (B,)
-                weight=wt,  # (2,)
-            )
-            losses.append(per_label_loss)
-        # NOTE: Eq 3 in ProtoECGNet paper does not show mean reduction over classes but seems like it should be based on their codebase
-        bce_loss = torch.stack(losses).mean()
+        if self.label_type == "binary-multilabel":
+            # binary cross entropy loss
+            losses = []
+            for i in range(self.n_labels):
+                i = i * 2
+                per_label_logits = logits[:, i : i + 2]  # (B, 2)
+                wt = torch.ones(
+                    2, dtype=label_weights.dtype, device=label_weights.device
+                )
+                wt[1] = label_weights[i // 2]  # use weights: [1, pos_weight]
+                per_label_loss = F.cross_entropy(
+                    input=per_label_logits,  # (B, 2)
+                    target=y[:, i // 2],  # (B,)
+                    weight=wt,  # (2,)
+                )
+                losses.append(per_label_loss)
+            # NOTE: Eq 3 in ProtoECGNet paper does not show mean reduction over classes but seems like it should be based on their codebase
+            cls_loss = torch.stack(losses).mean()
+        elif self.label_type == "multiclass":
+            cls_loss = F.cross_entropy(logits, y.argmax(dim=-1), weight=label_weights)
+        else:
+            raise ValueError(f"Unknown forward for label_type={self.label_type}")
 
         # clustering loss
         # use repeat_interleave as all prototypes for a given label should be contiguous
@@ -121,7 +150,7 @@ class PrototypeSupervisor(PretrainedMixin, nn.Module):
         cntrst_loss = (pos_weighted_sims - neg_weighted_sims) / n_prot**0.5
 
         return {
-            "BCE": bce_loss,
+            "Classification": cls_loss,
             "Clustering": self.lam_clst * clst_loss,
             "Separation": self.lam_sep * sep_loss,
             "Diversity": self.lam_div * div_loss,

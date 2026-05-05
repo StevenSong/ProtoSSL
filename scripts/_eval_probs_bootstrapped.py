@@ -82,7 +82,9 @@ def main(
     bootstrap_frac: float = 0.5,
     n_jobs: int = 24,
 ):
-    ds_cls, src_label_names = infer_dataset_class_from_path(dataset_path)
+    ds_cls, src_label_names, is_audio = infer_dataset_class_from_path(dataset_path)
+    if is_audio:
+        raise ValueError("This eval script is meant for ECG related work")
     test_ds = ds_cls(
         dataset_path=dataset_path,
         split="test",
@@ -112,7 +114,7 @@ def main(
         for target_col in label_names
     ]
 
-    results = pqdm(kwargs, worker, argument_type="kwargs", n_jobs=n_jobs)
+    results = pqdm(kwargs, worker, argument_type="kwargs", n_jobs=n_jobs)  # type: ignore
     metrics = {label_name: results[l] for l, label_name in enumerate(label_names)}
 
     metrics = pd.DataFrame.from_dict(metrics, orient="index")
