@@ -18,10 +18,10 @@ EXP_NAME="protossl-heedb-pia"
 PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb-no-attn"
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --seed_everything $SEED \
     --pipeline-stage learn-prototype-assignments \
     --assignment-strategy protopool \
-    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --model.n_prototypes 1000 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
@@ -29,18 +29,18 @@ python -m protossl.trainer \
     --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes/latest/best.ckpt
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --seed_everything $SEED \
     --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
 
 python -m protossl.trainer \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --seed_everything $SEED \
     --pipeline-stage compute-embeddings \
-    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
@@ -61,3 +61,51 @@ python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
+
+# now fine-tune
+PRETRAIN_RUN=$RUN_DIR/$EXP_NAME
+EXP_NAME="$EXP_NAME-ft"
+
+python -m protossl.trainer \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
+    --seed_everything $SEED \
+    --pipeline-stage learn-prototypes-supervised \
+    --trainer.logger.save_dir $RUN_DIR/ \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $DATASET_PATH \
+    --model.pretrained_weights $PRETRAIN_RUN/learn-prototype-assignments/latest/assigned.ckpt
+
+python -m protossl.trainer \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
+    --seed_everything $SEED \
+    --pipeline-stage project-prototypes-supervised \
+    --trainer.logger.save_dir $RUN_DIR/ \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $DATASET_PATH \
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
+
+python -m protossl.trainer \
+    --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
+    --seed_everything $SEED \
+    --pipeline-stage compute-embeddings \
+    --trainer.logger.save_dir $RUN_DIR \
+    --trainer.logger.name $EXP_NAME \
+    --data.dataset_path $DATASET_PATH \
+    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
+
+python _linear_probe.py \
+--random-seed $SEED \
+--dataset-path $DATASET_PATH \
+--prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
+--output-path $RUN_DIR/$EXP_NAME
+
+python _eval_probs.py \
+--dataset-path $DATASET_PATH \
+--probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
+
+python _eval_probs_bootstrapped.py \
+--dataset-path $DATASET_PATH \
+--probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
+

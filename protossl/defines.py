@@ -13,6 +13,9 @@ STAGE_T = Literal[
     "train-classifier",
 ]
 
+LABEL_T = Literal["binary-multilabel", "multiclass"]
+SPLIT_T = Literal["train", "val", "test"]
+PROT_T = Literal["global", "partial"]
 ASSIGN_T = Literal[
     "protopool",
     "ilp_effect_size",
@@ -20,7 +23,8 @@ ASSIGN_T = Literal[
     "ilp_effect_size_lr_or_scaled",
     "ilp_effect_size_multiple_allowed",
 ]
-SPLIT_T = Literal["train", "val", "test"]
+CONTRASTIVE_T = Literal["pclr", "cola", "clar", "cola+clar"]
+CONV_T = Literal["1D", "2D", "PANNS"]
 BACKBONE_T = Literal[
     "resnet18",
     "resnet34",
@@ -28,9 +32,37 @@ BACKBONE_T = Literal[
     "resnet101",
     "resnet152",
     "net1d",
+    # PANNs backbones (audio)
+    "Cnn14",
+    "Cnn14_no_specaug",
+    "Cnn14_no_dropout",
+    "Cnn6",
+    "Cnn10",
+    "ResNet22",
+    "ResNet38",
+    "ResNet54",
+    "Cnn14_emb512",
+    "Cnn14_emb128",
+    "Cnn14_emb32",
+    "MobileNetV1",
+    "MobileNetV2",
+    "LeeNet11",
+    "LeeNet24",
+    "DaiNet19",
+    "Res1dNet31",
+    "Res1dNet51",
+    "Wavegram_Cnn14",
+    "Wavegram_Logmel_Cnn14",
+    "Wavegram_Logmel128_Cnn14",
+    "Cnn14_16k",
+    "Cnn14_8k",
+    "Cnn14_mixup_time_domain",
+    "Cnn14_mel32",
+    "Cnn14_mel128",
+    "Cnn14_DecisionLevelMax",
+    "Cnn14_DecisionLevelAvg",
+    "Cnn14_DecisionLevelAtt",
 ]
-CONV_T = Literal["1D", "2D"]
-PROT_T = Literal["global", "partial"]
 
 STANDARD_LEAD_ORDER = [
     "I",
@@ -412,7 +444,6 @@ HEEDB_MGB_CLIPPED_STDS = [
     0.2110454711343999,
 ]
 
-# TODO: replace Emory values w real ones
 HEEDB_EUH_LOWERS = [
     -0.7038517368573582,
     -1.1687722073608027,
@@ -1340,3 +1371,34 @@ AUDIOSET_TARGETS = {
     "/m/06bz3": "Radio",
     "/m/07hvw1": "Field recording",
 }
+
+
+URBANSOUND8K_TARGETS = [
+    "air_conditioner",
+    "car_horn",
+    "children_playing",
+    "dog_bark",
+    "drilling",
+    "engine_idling",
+    "gun_shot",
+    "jackhammer",
+    "siren",
+    "street_music",
+]
+
+# these are just the speaker IDs, indexed from 1
+VOXCELEB1_ID_TARGETS = [str(x) for x in range(1, 1252)]
+
+# following SUPERB (https://arxiv.org/pdf/2105.01051), only use 4 labels
+IEMOCAP_TARGETS = [
+    "angry",
+    # "disgust", # do not use disgust, not present in enough cross val folds
+    # "excited",
+    # "fear",
+    # "frustrated",
+    "happy",
+    "neutral",
+    # "other",
+    "sad",
+    # "surprise",
+]

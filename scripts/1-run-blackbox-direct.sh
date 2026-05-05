@@ -17,8 +17,8 @@ cd $REPO_ROOT/scripts
 EXP_NAME="blackbox-direct"
 
 python -m protossl.trainer \
-    --seed_everything $SEED \
     --config $REPO_ROOT/configs/target-blackbox.yaml \
+    --seed_everything $SEED \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH

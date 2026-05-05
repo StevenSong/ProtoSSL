@@ -1,4 +1,7 @@
+cachetools
+datasets[audio]==4.0.0
 detect-secrets
+einops
 fastdigest
 h5py
 ipywidgets
@@ -15,11 +18,15 @@ pre-commit
 scikit-learn
 seaborn
 tensorboard
+timm
+torchlibrosa
 wandb
 wfdb==4.2.0
 # not the best form to use extra index url, but acceptable risk for research repo
 # see: https://medium.com/@alex.birsan/dependency-confusion-4a5d60fec610
---extra-index-url https://download.pytorch.org/whl/cu126
-torch==2.6.0
-torchaudio==2.6.0
-torchvision==0.21.0
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.7.0
+torchaudio==2.7.0
+torchcodec==0.4.0
+torchvision==0.22.0
+nvidia-npp-cu12

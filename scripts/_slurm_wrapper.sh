@@ -5,6 +5,7 @@ source "$(dirname "$CONDA_EXE")/../etc/profile.d/conda.sh"
 conda activate protossl
 # echo WOULD RUN:
 # echo $1
+# echo "SEED=$SEED"
 # echo "DATASET_PATH=$DATASET_PATH"
 # echo "RUN_DIR=$RUN_DIR"
 

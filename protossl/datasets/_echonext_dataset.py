@@ -12,7 +12,7 @@ from ..defines import (
     SPLIT_T,
     STANDARD_LEAD_ORDER,
 )
-from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
+from ._base_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 
 # signals arent saved with data, but should be correct given this code from the authors:
 # https://github.com/PierreElias/IntroECG/blob/0aceefed08cbf52ad2458d4a02936cd8fdf87ec8/7-EchoNext%20Minimodel/parse_xml.py#L112

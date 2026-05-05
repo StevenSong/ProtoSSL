@@ -17,7 +17,7 @@ from ..defines import (
     SPLIT_T,
     STANDARD_LEAD_ORDER,
 )
-from ._base_ecg_dataset import BaseTSDataset, load_cached_data, validate_label_subset
+from ._base_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 
 code15_lead_order = [l.lower() for l in CODE15_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
@@ -41,7 +41,7 @@ class Code15ECGDataset(BaseTSDataset):
         df = pd.read_csv(_path / "labels.csv")
         df = df[df["split"] == split]
 
-        self.source_ids = torch.as_tensor(df["source_id"].to_numpy())
+        self.source_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.sample_ids = torch.as_tensor(df["exam_id"].to_numpy())
         self.labels = torch.as_tensor(df[targets].to_numpy(), dtype=torch.long)
 

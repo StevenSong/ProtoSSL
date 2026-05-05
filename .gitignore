@@ -217,5 +217,5 @@ temp/
 outputs*/
 OLD/
 slurm-logs/
-plot/figs/
+results/figs/
 ecgfounder-checkpoint/

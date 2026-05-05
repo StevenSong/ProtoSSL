@@ -1,0 +1,63 @@
+# lightning.pytorch==2.6.0
+seed_everything: 42
+trainer:
+  devices: 1
+  precision: 32
+  logger:
+    class_path: protossl.lightning_utils.StrictWandbLogger
+    init_args:
+      project: ProtoSSL-Audio
+      # save_dir: /path/to/runs/
+      # name: exp-name
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        monitor: val_loss
+        mode: min
+        patience: 10 # check reduce lr on plateau
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: epoch
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        monitor: val_loss
+        mode: min
+        save_last: True
+    - class_path: PredictionWriter
+  max_epochs: 5
+  log_every_n_steps: 1
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    lr: 0.001
+    weight_decay: 0.01
+lr_scheduler:
+  class_path: lightning.pytorch.cli.ReduceLROnPlateau
+  init_args:
+    monitor: val_loss
+    patience: 5 # check early stopping
+model:
+  class_path: LitModel
+  init_args:
+    backbone_type: Cnn14
+    conv_type: PANNS
+    input_channels: 1
+    prototype_type: partial
+    partial_len: 32000 # 1-second @ 32 kHz
+    partial_overlap: 0.5
+    prototype_h: 1
+    prototype_w: 1
+    n_prototypes: 2635 # 527 audioset labels, comparing to 5 prototypes per label for supervised pretraining
+    model_kwargs: '{"cola_loss_weight": 2, "clar_loss_weight": 1, "koleo_loss_weight": 1}'
+    # pretrained_weights: /path/to/weights
+data:
+  class_path: LitData
+  init_args:
+    # dataset_path: /path/to/dataset
+    sampling_rate: 32000
+    batch_size: 128
+    num_workers: 12
+    prefetch_factor: 2
+    data_kwargs: '{"cola_view_seconds": 2}'
+contrastive_pair_mode: cola+clar
+# pipeline_stage: learn-prototypes|project-prototypes|compute-embeddings|train-classifier

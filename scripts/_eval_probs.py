@@ -27,7 +27,9 @@ def main(
     output_path: str,
     label_subset: list[str] | None = None,
 ):
-    ds_cls, src_label_names = infer_dataset_class_from_path(dataset_path)
+    ds_cls, src_label_names, is_audio = infer_dataset_class_from_path(dataset_path)
+    if is_audio:
+        raise ValueError("This eval script is meant for ECG related work")
     test_ds = ds_cls(
         dataset_path=dataset_path,
         split="test",
