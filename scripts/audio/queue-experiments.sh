@@ -14,16 +14,6 @@ voxceleb_scripts=(
     "voxceleb-4-run-labsup-proto-audioset-rila.sh"
 )
 
-# esc50
-for i in {0..4}; do
-    export ESC_TEST_FOLD=$i
-    export DATASET_PATH=/opt/gpudata/audio/ESC-50
-    export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-esc50-fold$i
-    for script in "${scripts[@]}"; do
-        sbatch $script
-    done
-done
-
 # iemocap
 for i in {0..4}; do
     export IEMOCAP_TEST_FOLD=$i
@@ -42,13 +32,6 @@ for i in {0..9}; do
     for script in "${scripts[@]}"; do
         sbatch $script
     done
-done
-
-# speechcommands v2 (these take a while to run)
-export DATASET_PATH=/opt/gpudata/audio/speech-commands-v2
-export RUN_DIR=/opt/gpu_working/steven/protossl-audio/runs-speechcmds
-for script in "${scripts[@]}"; do
-    sbatch $script
 done
 
 # voxceleb1 (these take even longer to run)

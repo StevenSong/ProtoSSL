@@ -26,13 +26,11 @@ protossl/datasets/_base_dataset.py @StevenSong
 protossl/datasets/_cinc_dataset.py @StevenSong
 protossl/datasets/_code15_dataset.py @StevenSong
 protossl/datasets/_echonext_dataset.py @StevenSong
-protossl/datasets/_esc_50_dataset.py @StevenSong
 protossl/datasets/_heedb_dataset.py @StevenSong
 protossl/datasets/_iemocap_dataset.py @StevenSong
 protossl/datasets/_mimic_dataset.py @StevenSong
 protossl/datasets/_pclr_wrapper_dataset.py @StevenSong
 protossl/datasets/_ptbxl_dataset.py @StevenSong
-protossl/datasets/_speech_commands_dataset.py @StevenSong
 protossl/datasets/_urbansound8k_dataset.py @StevenSong
 protossl/datasets/_utils.py @StevenSong
 protossl/datasets/_voxceleb1id_dataset.py @StevenSong
@@ -90,7 +88,6 @@ scripts/9-0-run-ecgfounder-patches.sh @StevenSong
 scripts/9-1-run-ecgfounder-lap.sh @StevenSong
 scripts/9-2-run-ecgfounder-clustering.sh @StevenSong
 scripts/9-3-run-ecgfounder-random.sh @StevenSong
-scripts/ablations @StevenSong
 scripts/audio @StevenSong
 scripts/ecg-fms/_compute_ecgfounder_embeddings.py @StevenSong
 scripts/ecg-fms/_compute_stmem_embeddings.py @StevenSong
