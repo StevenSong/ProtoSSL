@@ -104,7 +104,6 @@ scripts/pretrain/run-prosup-heedb-pretrain.sh @StevenSong
 scripts/prototypes-from-fms @StevenSong
 scripts/queue-experiments.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105
-user-study/analyze_results.ipynb @StevenSong
 user-study/images @StevenSong
 user-study/metadata.csv @StevenSong
 user-study/prepare_samples.ipynb @StevenSong
