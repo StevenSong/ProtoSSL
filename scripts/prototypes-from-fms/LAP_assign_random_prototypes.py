@@ -11,6 +11,7 @@ torch.set_num_threads(n_threads)
 torch.set_num_interop_threads(n_threads)
 
 from protossl.datasets import infer_dataset_class_from_path
+from protossl.models.helpers import build_association_matrix, solve_assignment_ilp
 
 
 def parse_args():
@@ -20,6 +21,7 @@ def parse_args():
     parser.add_argument("--prototypes-per-label", type=int, required=True)
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--random-seed", type=int, default=42)
+    parser.add_argument("--n-init-protos", type=int)
     return parser.parse_args()
 
 
@@ -30,6 +32,7 @@ def main(
     prototypes_per_label: int,
     output_path: str,
     random_seed: int = 42,
+    n_init_protos: int | None = None,
 ):
     ds_cls, _, is_audio = infer_dataset_class_from_path(dataset_path)
     assert not is_audio, "ECG only script"
@@ -56,11 +59,40 @@ def main(
     N, L, H = X_train.shape
     _N, C = y_train.shape
     assert N == _N
+    if n_init_protos is None:
+        n_init_protos = C * K
+    assert n_init_protos >= C * K
 
     rng = torch.manual_seed(random_seed)
-    protos = nn.init.trunc_normal_(  # (C, K, H)
-        torch.empty(C, K, H), std=0.02, generator=rng
+    protos = nn.init.trunc_normal_(  # (P, H)
+        torch.empty(n_init_protos, H), std=0.02, generator=rng
     )
+
+    protos_norm = F.normalize(protos, dim=-1)
+    X_norm = F.normalize(X_train, dim=-1)
+
+    sims = torch.einsum("nlh,ph->nlp", X_norm, protos_norm)  # (N, L, P)
+    sims = sims.max(dim=1).values  # (N, P)
+
+    Q, valid_class_mask = build_association_matrix(
+        sims.numpy(),
+        y_train.numpy(),
+        n_min=1,  # min positive samples
+        trim=0.10,
+        eps=1e-6,
+        n_neg_repeats=10,  # number of resample repeats
+        balanced_negative_sampling=True,
+        weight_effects_using_lr=None,
+    )
+    result = solve_assignment_ilp(
+        Q,
+        n_prototypes_per_label=K,
+        max_classes_per_prototype=1,
+        valid_class_mask=valid_class_mask,
+    )
+    idxs = result.selected_indices_by_class  # (C, K)
+    assert len(set(idxs.flatten())) == C * K
+    protos = protos[idxs.flatten()].view(C, K, H)  # (C, K, H)
 
     # project prototypes to be real samples
     protos_norm = F.normalize(protos, dim=-1)  # (C, K, H)
@@ -108,4 +140,5 @@ if __name__ == "__main__":
         prototypes_per_label=args.prototypes_per_label,
         output_path=args.output_path,
         random_seed=args.random_seed,
+        n_init_protos=args.n_init_protos,
     )

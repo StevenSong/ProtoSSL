@@ -66,6 +66,7 @@ class PtbxlECGDataset(BaseTSDataset):
         else:
             raise ValueError(f"Unknown split: {split}")
         df = df[mask]
+        self._df = df.reset_index(drop=True)
 
         self.source_ids = torch.as_tensor(df["patient_id"].astype(int).to_numpy())
         self.sample_ids = torch.as_tensor(df.index.to_numpy())

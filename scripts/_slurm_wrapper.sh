@@ -15,4 +15,8 @@ python3() { srun -u python3 "$@"; }
 export -f python
 export -f python3
 
-bash $1
+case "$1" in
+    *.sh) bash "$1" "${@:2}" ;;
+    *.py) python3 "$1" "${@:2}" ;;
+    *)    echo "Unsupported extension" >&2; exit 1 ;;
+esac

@@ -57,6 +57,7 @@ class ZzuECGDataset(BaseTSDataset):
             )
         df = get_zzu_dataframe(dataset_path)
         df = df[df["split"] == split]
+        self._df = df.reset_index(drop=True)
 
         self.source_ids = torch.as_tensor(df["Patient_ID"].to_numpy())
         self.sample_ids = torch.as_tensor(df["ECG_ID"].to_numpy())

@@ -19,7 +19,7 @@ cd $REPO_ROOT/scripts
 # experiment parameters
 EXP_NAME="ecgfounder-clustering"
 
-python prototypes-from-fms/prototype_clustering.py \
+python prototypes-from-fms/SK_OT_prototype_clustering.py \
 --random-seed $SEED \
 --dataset-path $DATASET_PATH \
 --patch-embeddings $RUN_DIR/ecgfounder-patches \

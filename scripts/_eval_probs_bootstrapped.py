@@ -19,7 +19,6 @@ def parse_args():
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--label-subset", nargs="+")
     parser.add_argument("--n-bootstraps", type=int, default=1000)
-    parser.add_argument("--bootstrap-frac", type=float, default=0.5)
     parser.add_argument("--n-jobs", type=int, default=24)
     args = parser.parse_args()
     return args
@@ -29,9 +28,8 @@ def worker(
     y_test: np.ndarray,
     y_prob: np.ndarray,
     n_bootstraps: int,
-    bootstrap_frac: float,
 ) -> dict:
-    bootstrap_n = int(len(y_test) * bootstrap_frac)
+    bootstrap_n = len(y_test)
     label_pos_frac = y_test.sum() / len(y_test)
     label_metrics = dict()
     pos_idxs = np.argwhere(y_test).squeeze(1)
@@ -79,7 +77,6 @@ def main(
     output_path: str,
     label_subset: list[str] | None = None,
     n_bootstraps: int = 1000,
-    bootstrap_frac: float = 0.5,
     n_jobs: int = 24,
 ):
     ds_cls, src_label_names, is_audio = infer_dataset_class_from_path(dataset_path)
@@ -109,7 +106,6 @@ def main(
             "y_test": test_targets[:, src_label_names.index(target_col)],
             "y_prob": target_probs[:, src_label_names.index(target_col)],
             "n_bootstraps": n_bootstraps,
-            "bootstrap_frac": bootstrap_frac,
         }
         for target_col in label_names
     ]
@@ -123,7 +119,7 @@ def main(
     _labels = [x for x in label_names if x != composite_target]
     metrics.loc["Multilabel Averaged"] = metrics.loc[_labels].mean()
 
-    metrics_path = os.path.join(output_path, "metrics-bootstrapped.csv")
+    metrics_path = os.path.join(output_path, "metrics-bootstrapped-v2.csv")
     metrics.to_csv(metrics_path)
     print(f"Saved metrics to {metrics_path}")
 
@@ -136,6 +132,5 @@ if __name__ == "__main__":
         output_path=args.output_path,
         label_subset=args.label_subset,
         n_bootstraps=args.n_bootstraps,
-        bootstrap_frac=args.bootstrap_frac,
         n_jobs=args.n_jobs,
     )

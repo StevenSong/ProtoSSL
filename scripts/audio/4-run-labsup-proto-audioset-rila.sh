@@ -30,46 +30,46 @@ cd $REPO_ROOT/scripts/audio
 EXP_NAME="labsup-proto-audioset-rila"
 PRETRAIN_RUN="$RUN_DIR/../prosup-audioset"
 
-python -m protossl.trainer \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-    --seed_everything $SEED \
-    --pipeline-stage learn-prototype-assignments \
-    --assignment-strategy ilp_effect_size \
-    --model.n_prototypes 2635 \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
-    --model.model_kwargs '{"label_type": "multiclass"}'
+# python -m protossl.trainer \
+#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+#     --seed_everything $SEED \
+#     --pipeline-stage learn-prototype-assignments \
+#     --assignment-strategy ilp_effect_size \
+#     --model.n_prototypes 2635 \
+#     --trainer.logger.save_dir $RUN_DIR \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt \
+#     --model.model_kwargs '{"label_type": "multiclass"}'
 
-python -m protossl.trainer \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-    --seed_everything $SEED \
-    --pipeline-stage project-prototypes-supervised \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
+# python -m protossl.trainer \
+#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+#     --seed_everything $SEED \
+#     --pipeline-stage project-prototypes-supervised \
+#     --trainer.logger.save_dir $RUN_DIR \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototype-assignments/latest/assigned.ckpt
 
-python -m protossl.trainer \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-    --seed_everything $SEED \
-    --pipeline-stage compute-embeddings \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
+# python -m protossl.trainer \
+#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+#     --seed_everything $SEED \
+#     --pipeline-stage compute-embeddings \
+#     --trainer.logger.save_dir $RUN_DIR \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
 
-python _linear_probe.py \
---random-seed $SEED \
---dataset-path $DATASET_PATH \
---prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
---output-path $RUN_DIR/$EXP_NAME
+# python _linear_probe.py \
+# --random-seed $SEED \
+# --dataset-path $DATASET_PATH \
+# --prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
+# --output-path $RUN_DIR/$EXP_NAME
 
-python _eval_probs.py \
---dataset-path $DATASET_PATH \
---probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
---output-path $RUN_DIR/$EXP_NAME
+# python _eval_probs.py \
+# --dataset-path $DATASET_PATH \
+# --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
+# --output-path $RUN_DIR/$EXP_NAME
 
 python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
@@ -80,44 +80,44 @@ python _eval_probs_bootstrapped.py \
 PRETRAIN_RUN=$RUN_DIR/$EXP_NAME
 EXP_NAME="$EXP_NAME-ft"
 
-python -m protossl.trainer \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-    --seed_everything $SEED \
-    --pipeline-stage learn-prototypes-supervised \
-    --trainer.logger.save_dir $RUN_DIR/ \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $PRETRAIN_RUN/learn-prototype-assignments/latest/assigned.ckpt \
-    --model.model_kwargs '{"label_type": "multiclass", "use_default_weights": True}'
+# python -m protossl.trainer \
+#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+#     --seed_everything $SEED \
+#     --pipeline-stage learn-prototypes-supervised \
+#     --trainer.logger.save_dir $RUN_DIR/ \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.pretrained_weights $PRETRAIN_RUN/learn-prototype-assignments/latest/assigned.ckpt \
+#     --model.model_kwargs '{"label_type": "multiclass", "use_default_weights": True}'
 
-python -m protossl.trainer \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-    --seed_everything $SEED \
-    --pipeline-stage project-prototypes-supervised \
-    --trainer.logger.save_dir $RUN_DIR/ \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
+# python -m protossl.trainer \
+#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+#     --seed_everything $SEED \
+#     --pipeline-stage project-prototypes-supervised \
+#     --trainer.logger.save_dir $RUN_DIR/ \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
 
-python -m protossl.trainer \
-    --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-    --seed_everything $SEED \
-    --pipeline-stage compute-embeddings \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
+# python -m protossl.trainer \
+#     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
+#     --seed_everything $SEED \
+#     --pipeline-stage compute-embeddings \
+#     --trainer.logger.save_dir $RUN_DIR \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $DATASET_PATH \
+#     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt
 
-python _linear_probe.py \
---random-seed $SEED \
---dataset-path $DATASET_PATH \
---prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
---output-path $RUN_DIR/$EXP_NAME
+# python _linear_probe.py \
+# --random-seed $SEED \
+# --dataset-path $DATASET_PATH \
+# --prototype-embeddings $RUN_DIR/$EXP_NAME/compute-embeddings/latest \
+# --output-path $RUN_DIR/$EXP_NAME
 
-python _eval_probs.py \
---dataset-path $DATASET_PATH \
---probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
---output-path $RUN_DIR/$EXP_NAME
+# python _eval_probs.py \
+# --dataset-path $DATASET_PATH \
+# --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
+# --output-path $RUN_DIR/$EXP_NAME
 
 python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
