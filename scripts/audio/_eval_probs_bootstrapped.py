@@ -5,7 +5,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import scipy.stats as st
-from sklearn.model_selection import train_test_split
+from sklearn.utils import resample
 
 from protossl.datasets import infer_dataset_class_from_path
 
@@ -16,7 +16,6 @@ def parse_args():
     parser.add_argument("--probs-npy", required=True)
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--n-bootstraps", type=int, default=1000)
-    parser.add_argument("--bootstrap-frac", type=float, default=0.5)
     args = parser.parse_args()
     return args
 
@@ -27,7 +26,6 @@ def main(
     probs_npy: str,
     output_path: str,
     n_bootstraps: int = 1000,
-    bootstrap_frac: float = 0.5,
 ):
     ds_cls, label_names, is_audio = infer_dataset_class_from_path(dataset_path)
     if not is_audio:
@@ -48,21 +46,24 @@ def main(
     assert (y >= 0).all() and (y <= 1).all(), "Values must be 0 or 1"
 
     os.makedirs(output_path, exist_ok=True)
-    assert not os.path.exists(os.path.join(output_path, "metrics-bootstrapped.csv"))
+    assert not os.path.exists(os.path.join(output_path, "metrics-bootstrapped-v2.csv"))
 
     y_true = y.argmax(axis=-1)  # convert to multiclass
     y_pred = y_prob.argmax(axis=-1)
 
-    bootstrap_n = int(len(y_true) * bootstrap_frac)
+    bootstrap_n = len(y_true)
     bootstrapped_metrics = defaultdict(lambda: defaultdict(list))
     for b in range(n_bootstraps):
-        bootstrap_y_true, _, bootstrap_y_pred, _ = train_test_split(
+        temp = resample(
             y_true,
             y_pred,
-            train_size=bootstrap_n,
+            replace=True,
+            n_samples=bootstrap_n,
             random_state=b,
             stratify=y_true,
         )
+        assert temp is not None
+        bootstrap_y_true, bootstrap_y_pred = temp
         acc = (bootstrap_y_true == bootstrap_y_pred).sum() / len(bootstrap_y_true)
         bootstrapped_metrics["Multiclass"]["Accuracy"].append(acc)
 
@@ -79,7 +80,7 @@ def main(
     metrics = pd.DataFrame.from_dict(metrics, orient="index")
     metrics.index.name = "Label"
 
-    metrics_path = os.path.join(output_path, "metrics-bootstrapped.csv")
+    metrics_path = os.path.join(output_path, "metrics-bootstrapped-v2.csv")
     metrics.to_csv(metrics_path)
     print(f"Saved metrics to {metrics_path}")
 
@@ -91,5 +92,4 @@ if __name__ == "__main__":
         probs_npy=args.probs_npy,
         output_path=args.output_path,
         n_bootstraps=args.n_bootstraps,
-        bootstrap_frac=args.bootstrap_frac,
     )

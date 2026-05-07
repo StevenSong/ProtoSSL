@@ -41,6 +41,7 @@ class EchoNextECGDataset(BaseTSDataset):
         df = pd.read_csv(_path / "EchoNext_metadata_100k.csv")
         df = df.rename(columns=mapping)
         split_mask = df["split"] == split
+        self._df = df.loc[split_mask].reset_index(drop=True)
         id_df = df.loc[split_mask, ["patient_key", "ecg_key"]].reset_index(drop=True)
         label_df = df.loc[split_mask, target_cols].reset_index(drop=True)
 

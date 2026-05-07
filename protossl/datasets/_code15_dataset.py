@@ -40,6 +40,7 @@ class Code15ECGDataset(BaseTSDataset):
         _path = Path(dataset_path)
         df = pd.read_csv(_path / "labels.csv")
         df = df[df["split"] == split]
+        self._df = df.reset_index(drop=True)
 
         self.source_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.sample_ids = torch.as_tensor(df["exam_id"].to_numpy())

@@ -17,13 +17,14 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="ecgfounder-random"
+EXP_NAME="ecgfounder-random-1000-init"
 
-python prototypes-from-fms/only_project_random_prototypes.py \
+python prototypes-from-fms/Rand_assign_random_prototypes.py \
 --random-seed $SEED \
 --dataset-path $DATASET_PATH \
 --patch-embeddings $RUN_DIR/ecgfounder-patches \
 --prototypes-per-label $PPL \
+--n-init-protos 1000 \
 --output-path $RUN_DIR/$EXP_NAME
 
 python _linear_probe.py \
