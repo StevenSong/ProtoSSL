@@ -80,7 +80,7 @@ STANDARD_LEAD_ORDER = [
 ]
 
 CACHE_DIR = os.environ.get(
-    "CACHE_DIR", os.path.join(os.path.expanduser("~"), ".cache/pass_pclr_cache")
+    "CACHE_DIR", os.path.join(os.path.expanduser("~"), ".cache/protossl_cache")
 )
 
 # EchoNext per-lead stats not defined because data comes prenormalized
