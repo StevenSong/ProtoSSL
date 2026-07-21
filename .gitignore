@@ -219,3 +219,4 @@ OLD/
 slurm-logs/
 results/figs/
 ecgfounder-checkpoint/
+configs/multi-arm-heedb/wandb

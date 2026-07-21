@@ -1,3 +1,5 @@
+from typing import get_args
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -35,7 +37,7 @@ class PrototypeContraster(PretrainedMixin, nn.Module):
     ):
         super().__init__()
 
-        if contrastive_pair_mode not in CONTRASTIVE_T:
+        if contrastive_pair_mode not in get_args(CONTRASTIVE_T):
             raise ValueError(f"Unknown contrastive_pair_mode={contrastive_pair_mode}.")
         if any(
             [x < 0 for x in [cola_loss_weight, clar_loss_weight, koleo_loss_weight]]

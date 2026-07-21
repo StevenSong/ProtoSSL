@@ -47,8 +47,7 @@ model:
     partial_overlap: 0.5
     prototype_h: 1
     prototype_w: 1
-    n_prototypes: 2635 # 527 audioset labels, comparing to 5 prototypes per label for supervised pretraining
-    model_kwargs: '{"cola_loss_weight": 2, "clar_loss_weight": 1, "koleo_loss_weight": 1}'
+    n_prototypes_per_label: 12
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
@@ -58,6 +57,4 @@ data:
     batch_size: 128
     num_workers: 12
     prefetch_factor: 2
-    data_wrapper_kwargs: '{"cola_view_seconds": 2}'
-contrastive_pair_mode: cola+clar
-# pipeline_stage: learn-prototypes|project-prototypes|compute-embeddings|train-classifier
+# pipeline_stage: learn-prototypes-supervised|project-prototypes-supervised|compute-embeddings|train-classifier

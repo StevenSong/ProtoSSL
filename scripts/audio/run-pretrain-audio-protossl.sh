@@ -12,7 +12,7 @@
 set -e
 
 export DATASET_PATH=/opt/gpudata/audio/audioset
-export RUN_DIR=/opt/gpu_working/steven/protossl-audio
+export RUN_DIR=/opt/gpu_working/steven/protossl-audio-outputs
 export REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
 
 : "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
@@ -26,29 +26,15 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="prosup-audioset"
+EXP_NAME="protossl-audioset-v2"
 
 echo "======================================"
-echo "Stage 1: learn-prototypes-supervised"
-echo "======================================"
-
-# srun python -m protossl.trainer \
-#     --pipeline-stage learn-prototypes-supervised \
-#     --config $REPO_ROOT/configs/audio/pretrain-supervised.yaml \
-#     --trainer.logger.save_dir $RUN_DIR \
-#     --trainer.logger.name $EXP_NAME \
-#     --data.dataset_path $DATASET_PATH \
-#     --model.model_kwargs '{"use_default_weights": True}'
-
-echo "======================================"
-echo "Stage 2: project prototypes supervised"
+echo "Stage 1: self-supervised learn-prototypes"
 echo "======================================"
 
 srun python -m protossl.trainer \
-    --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/audio/pretrain-supervised.yaml \
+    --pipeline-stage learn-prototypes \
+    --config $REPO_ROOT/configs/audio/pretrain-unsupervised-v2.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH \
-    --data.data_kwargs '{"augment_train": False}' \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt
+    --data.dataset_path $DATASET_PATH

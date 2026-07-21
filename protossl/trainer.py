@@ -54,6 +54,7 @@ class LitData(LightningDataModule):
         assignment_strategy: ASSIGN_T | None = None,
         contrastive_pair_mode: CONTRASTIVE_T | None = None,
         data_kwargs: dict = dict(),
+        data_wrapper_kwargs: dict = dict(),
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -94,6 +95,7 @@ class LitData(LightningDataModule):
         label_subset: list[str] | None = self.hparams.label_subset  # type: ignore
         contrastive_pair_mode: CONTRASTIVE_T | None = self.hparams.contrastive_pair_mode  # type: ignore
         data_kwargs: dict = self.hparams.data_kwargs  # type: ignore
+        data_wrapper_kwargs: dict = self.hparams.data_wrapper_kwargs  # type: ignore
         wrap_contrastive = pipeline_stage == "learn-prototypes"
 
         if stage == "fit":
@@ -116,11 +118,13 @@ class LitData(LightningDataModule):
                     self.train_ds = AudioSetContrastiveWrapperDataset(
                         self.train_ds,
                         pair_mode=contrastive_pair_mode,
-                        **data_kwargs,
+                        **data_wrapper_kwargs,
                     )
                 else:
                     assert isinstance(self.train_ds, BaseTSDataset)
-                    self.train_ds = PCLRWrapperDataset(self.train_ds, **data_kwargs)
+                    self.train_ds = PCLRWrapperDataset(
+                        self.train_ds, **data_wrapper_kwargs
+                    )
 
         if stage in ["fit", "validate"]:
             self.val_ds = self.ds_cls(
@@ -139,11 +143,11 @@ class LitData(LightningDataModule):
                     self.val_ds = AudioSetContrastiveWrapperDataset(
                         self.val_ds,
                         pair_mode=contrastive_pair_mode,
-                        **data_kwargs,
+                        **data_wrapper_kwargs,
                     )
                 else:
                     assert isinstance(self.val_ds, BaseTSDataset)
-                    self.val_ds = PCLRWrapperDataset(self.val_ds, **data_kwargs)
+                    self.val_ds = PCLRWrapperDataset(self.val_ds, **data_wrapper_kwargs)
 
         if stage in ["test", "predict"]:
             self.test_ds = self.ds_cls(
