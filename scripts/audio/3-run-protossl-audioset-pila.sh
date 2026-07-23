@@ -28,14 +28,14 @@ cd $REPO_ROOT/scripts/audio
 
 # experiment parameters
 EXP_NAME="protossl-audioset-pila"
-PRETRAIN_RUN="$RUN_DIR/../../protossl-audioset-v2"
+PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../protossl-audioset-v2.BAK")
 
 python -m protossl.trainer \
     --seed_everything $SEED \
     --pipeline-stage learn-prototype-assignments \
     --assignment-strategy ilp_effect_size \
     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
-    --model.n_prototypes 2635 \
+    --model.n_prototypes 6324 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \

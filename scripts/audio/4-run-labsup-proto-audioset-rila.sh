@@ -28,14 +28,14 @@ cd $REPO_ROOT/scripts/audio
 
 # experiment parameters
 EXP_NAME="labsup-proto-audioset-rila"
-PRETRAIN_RUN="$RUN_DIR/../../supproto-audioset-v2"
+PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../supproto-audioset-v2.BAK")
 
 python -m protossl.trainer \
     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \
     --seed_everything $SEED \
     --pipeline-stage learn-prototype-assignments \
     --assignment-strategy ilp_effect_size \
-    --model.n_prototypes 2635 \
+    --model.n_prototypes 6324 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \

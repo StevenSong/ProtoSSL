@@ -37,4 +37,5 @@ srun python -m protossl.trainer \
     --config $REPO_ROOT/configs/audio/pretrain-unsupervised-v2.yaml \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $DATASET_PATH
+    --data.dataset_path $DATASET_PATH \
+    --resume-from-checkpoint $RUN_DIR/$EXP_NAME/learn-prototypes/v2-s73uvkdj/best.ckpt

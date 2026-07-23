@@ -38,7 +38,8 @@ srun python -m protossl.trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --model.model_kwargs '{"use_default_weights": True}'
+    --model.model_kwargs '{"use_default_weights": True}' \
+    --resume-from-checkpoint $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/v1-iw8u33te/best.ckpt
 
 echo "======================================"
 echo "Stage 2: project prototypes supervised"
