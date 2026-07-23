@@ -3,14 +3,7 @@
 .gitmodules @StevenSong
 .pre-commit-config.yaml @StevenSong
 .secrets.baseline @StevenSong
-configs/audio @StevenSong
-configs/multi-arm-heedb @StevenSong
-configs/pretrain-supervised.yaml @StevenSong
-configs/pretrain-unsupervised.yaml @StevenSong
-configs/target-blackbox.yaml @StevenSong
-configs/target-guided-14ppl.yaml @StevenSong
-configs/target-guided-5ppl.yaml @StevenSong
-configs/target-unguided.yaml @StevenSong
+configs/ @StevenSong
 data-preprocessing/ @StevenSong
 env.yaml @StevenSong
 external/PierreElias-IntroECG @StevenSong
@@ -95,12 +88,7 @@ scripts/ecg-fms/_compute_stmem_embeddings.py @StevenSong
 scripts/echonext/_tabular_logreg.py @StevenSong
 scripts/echonext/run-columbia-minimodel.sh @StevenSong
 scripts/echonext/run-tabular-logreg.sh @StevenSong
-scripts/pretrain/_cache_heedb.py @StevenSong
-scripts/pretrain/_compute_heedb_normalizations.py @StevenSong
-scripts/pretrain/run-heedb-normalizations.sh @StevenSong
-scripts/pretrain/run-pass-heedb-pretrain-no-attn.sh @StevenSong
-scripts/pretrain/run-pass-heedb-pretrain.sh @StevenSong
-scripts/pretrain/run-prosup-heedb-pretrain.sh @StevenSong
+scripts/pretrain/ @StevenSong
 scripts/prototypes-from-fms @StevenSong
 scripts/queue-experiments.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105

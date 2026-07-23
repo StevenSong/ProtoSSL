@@ -1,10 +1,19 @@
 #!/bin/bash
 
+#SBATCH --cpus-per-task=24
+#SBATCH --mem-per-gpu=500gb
+#SBATCH --gpus-per-node=1
+#SBATCH --nodes=1
+#SBATCH -w kg35-nvl02
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=0
+#SBATCH --output /home/songs1/slurm-logs/protossl-heedb-150-%j.out
+
 set -e
 
 PRETRAIN_DATASET=/opt/gpudata/ecg/heedb
-RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs
-REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
+RUN_DIR=/home/songs1/protossl-ecg-outputs-rebuttal
+REPO_ROOT=/home/songs1/ProtoSSL
 
 # set these env vars prior to executing this script
 : "${PRETRAIN_DATASET:?Env var PRETRAIN_DATASET must be set prior to script execution}"
@@ -15,17 +24,21 @@ echo "Using RUN_DIR=$RUN_DIR"
 echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
+# submit job with 500GB of memory
 export HIGH_MEMORY=1
 
+# toggle HEEDB label set
+export USE_HEEDB_150=1
+
 # experiment parameters
-EXP_NAME="prosup-pretrain-heedb"
+EXP_NAME="supproto-heedb-150"
 BACKBONE=resnet18
 CONV=2D
 
 # pretrain via label supervised prototype learning
 python -m protossl.trainer \
     --pipeline-stage learn-prototypes-supervised \
-    --config $REPO_ROOT/configs/pretrain-supervised.yaml \
+    --config $REPO_ROOT/configs/pretrain-supervised-heedb-150.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
     --trainer.max_epochs 100 \
@@ -38,7 +51,7 @@ python -m protossl.trainer \
 # project in the pretraining dataset
 python -m protossl.trainer \
     --pipeline-stage project-prototypes-supervised \
-    --config $REPO_ROOT/configs/pretrain-supervised.yaml \
+    --config $REPO_ROOT/configs/pretrain-supervised-heedb-150.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
     --trainer.logger.save_dir $RUN_DIR \
@@ -50,7 +63,7 @@ python -m protossl.trainer \
 
 python -m protossl.trainer \
     --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/pretrain-supervised.yaml \
+    --config $REPO_ROOT/configs/pretrain-supervised-heedb-150.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
     --trainer.logger.save_dir $RUN_DIR \
