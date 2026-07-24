@@ -68,11 +68,8 @@ scripts/0-run-cache-data.sh @StevenSong
 scripts/1-run-blackbox-direct.sh @StevenSong
 scripts/2-run-labsup-proto-direct.sh @StevenSong
 scripts/2-z-* @StevenSong
-scripts/3-run-protossl-heedb-pila.sh @StevenSong
-scripts/3-z-* @StevenSong
-scripts/4-run-labsup-proto-heedb-rila.sh @StevenSong
-scripts/4-y-* @StevenSong
-scripts/4-z-* @StevenSong
+scripts/3-* @StevenSong
+scripts/4-* @StevenSong
 scripts/5-1-run-ecgfounder-logreg.sh @StevenSong
 scripts/5-2-run-stmem-logreg.sh @StevenSong
 scripts/6-run-protossl-heedb-pia.sh @StevenSong
