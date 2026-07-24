@@ -38,7 +38,7 @@ lr_scheduler:
     patience: 3 # check early stopping
 model:
   class_path: LitModel
-  init_args:
+  # init_args:
     # backbone_type: resnet18
     # conv_type: 2D
     # pretrained_weights: /path/to/weights
