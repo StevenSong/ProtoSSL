@@ -19,7 +19,7 @@ cd $REPO_ROOT/scripts
 export HIGH_MEMORY=1
 
 # experiment parameters
-EXP_NAME="pass-pretrain-heedb-no-attn"
+EXP_NAME="pass-pretrain-heedb-w-attn"
 BACKBONE=resnet18
 CONV=2D
 
@@ -29,6 +29,7 @@ python -m protossl.trainer \
     --config $REPO_ROOT/configs/pretrain-unsupervised.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
+    --model.model_kwargs '{"do_softmax": True, "do_weighted_sum": True}' \
     --trainer.max_epochs 100 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \

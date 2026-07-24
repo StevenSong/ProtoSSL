@@ -41,13 +41,12 @@ python -m protossl.trainer \
     --config $REPO_ROOT/configs/pretrain-unsupervised-heedb-150.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
-    --model.model_kwargs '{"do_softmax": True, "do_weighted_sum": True}' \
     --trainer.max_epochs 100 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $PRETRAIN_DATASET
 
-project in the pretraining dataset
+# project in the pretraining dataset
 python -m protossl.trainer \
     --pipeline-stage project-prototypes \
     --config $REPO_ROOT/configs/pretrain-unsupervised-heedb-150.yaml \
