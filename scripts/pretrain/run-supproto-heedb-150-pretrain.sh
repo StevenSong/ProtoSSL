@@ -7,7 +7,7 @@
 #SBATCH -w kg35-nvl02
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=0
-#SBATCH --output /home/songs1/slurm-logs/protossl-heedb-150-%j.out
+#SBATCH --output /home/songs1/slurm-logs/supproto-heedb-150-%j.out
 
 set -e
 

@@ -13,3 +13,6 @@ class StreamingWaveformsBase(ABC):
     @abstractmethod
     def shape(self) -> tuple[int, ...]:
         pass
+
+    def __len__(self) -> int:
+        return self.shape[0]
