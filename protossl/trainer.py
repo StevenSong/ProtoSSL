@@ -31,6 +31,7 @@ from .lightning_utils import check_final_link
 from .models import (
     BaseClassifier,
     BlackboxClassifier,
+    BlackboxContraster,
     PrototypeAssigner,
     PrototypeClassifier,
     PrototypeContraster,
@@ -96,7 +97,7 @@ class LitData(LightningDataModule):
         contrastive_pair_mode: CONTRASTIVE_T | None = self.hparams.contrastive_pair_mode  # type: ignore
         data_kwargs: dict = self.hparams.data_kwargs  # type: ignore
         data_wrapper_kwargs: dict = self.hparams.data_wrapper_kwargs  # type: ignore
-        wrap_contrastive = pipeline_stage == "learn-prototypes"
+        wrap_contrastive = pipeline_stage in {"learn-prototypes", "train-contraster"}
 
         if stage == "fit":
             if not hasattr(self, "train_ds"):
@@ -322,6 +323,19 @@ class LitModel(LightningModule):
                 contrastive_pair_mode=contrastive_pair_mode,
                 **model_kwargs,
             )
+        elif pipeline_stage == "train-contraster":
+            if contrastive_pair_mode is None:
+                raise ValueError(
+                    "pipeline_stage=train-contraster must specify contrastive_pair_mode"
+                )
+            self.model = BlackboxContraster(
+                backbone_type=backbone_type,
+                conv_type=conv_type,
+                pretrained_weights=pretrained_weights,
+                input_channels=input_channels,
+                contrastive_pair_mode=contrastive_pair_mode,
+                **model_kwargs,
+            )
         elif pipeline_stage == "learn-prototypes-supervised":
             if (
                 n_prototypes_per_label is None
@@ -512,6 +526,30 @@ class LitModel(LightningModule):
             if contrastive_pair_mode == "cola+clar":
                 loss_terms = self.model(
                     batch["x1"], batch["x2"], batch["x1_clar"], batch["x2_clar"]
+                )
+            else:
+                loss_terms = self.model(batch["x1"], batch["x2"])
+
+            loss = self._log_and_composite_losses(
+                stage=stage,
+                losses=loss_terms,
+                batch_size=batch_size,
+                log=log,
+                sync_dist=sync_dist,
+            )
+        elif pipeline_stage == "train-contraster":
+            assert isinstance(self.model, BlackboxContraster)
+            assert contrastive_pair_mode is not None
+            if stage not in ["train", "val"]:
+                raise ValueError(
+                    f"Cannot use _common_step with pipeline_stage=train-contraster and (lightning) stage={stage}"
+                )
+
+            preds = None
+
+            if contrastive_pair_mode == "cola+clar":
+                raise NotImplementedError(
+                    f"BlackboxContraster does not yet support contrastive_pair_mode=cola+clar"
                 )
             else:
                 loss_terms = self.model(batch["x1"], batch["x2"])
@@ -1009,6 +1047,7 @@ def run():
     if (
         pipeline_stage == "learn-prototypes"
         or pipeline_stage == "learn-prototypes-supervised"
+        or pipeline_stage == "train-contraster"
     ):
         cli.trainer.fit(
             model=cli.model,

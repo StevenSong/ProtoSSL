@@ -34,6 +34,7 @@ protossl/lightning_utils.py @StevenSong
 protossl/models/__init__.py @StevenSong
 protossl/models/_base_classifier.py @StevenSong
 protossl/models/_blackbox_classifier.py @StevenSong
+protossl/models/_blackbox_contraster.py @StevenSong
 protossl/models/_pretrained_utils.py @StevenSong
 protossl/models/_prototype_assigner.py @StevenSong
 protossl/models/_prototype_classifier.py @StevenSong
