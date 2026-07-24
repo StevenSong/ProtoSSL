@@ -42,15 +42,17 @@ for seed in "${SEEDS[@]}"; do
         for suffix in "${suffixes[@]}"; do
             echo "SUFFIX: $suffix"
 
-            cache_id=$(submit_job "$suffix" 0-run-cache-data.sh)
-            echo $cache_id
+            # cache_id=$(submit_job "$suffix" 0-run-cache-data.sh)
+            # echo $cache_id
 
             # submit_job "$suffix" 1-run-blackbox-direct.sh "--dependency=afterok:$cache_id"
             # submit_job "$suffix" 2-run-labsup-proto-direct.sh "--dependency=afterok:$cache_id"
             # submit_job "$suffix" 3-run-protossl-heedb-pila.sh "--dependency=afterok:$cache_id"
             # submit_job "$suffix" 4-run-supproto-heedb-rila.sh "--dependency=afterok:$cache_id"
-            submit_job "$suffix" 3-run-protossl-heedb-150-pila.sh "--dependency=afterok:$cache_id"
-            submit_job "$suffix" 4-run-supproto-heedb-150-rila.sh "--dependency=afterok:$cache_id"
+            # submit_job "$suffix" 3-run-protossl-heedb-150-pila.sh "--dependency=afterok:$cache_id"
+            # submit_job "$suffix" 4-run-supproto-heedb-150-rila.sh "--dependency=afterok:$cache_id"
+            submit_job "$suffix" 3-run-protossl-heedb-150-1050-pila.sh "--dependency=afterok:25565"
+            submit_job "$suffix" 4-run-supproto-heedb-150-1050-rila.sh "--dependency=afterok:25564"
 
             # submit_job "$suffix" 5-1-run-ecgfounder-logreg.sh # does not depend on same 100 Hz cache (takes 500 Hz)
             # submit_job "$suffix" 5-2-run-stmem-logreg.sh # does not depend on same 100 Hz cache (takes 250 Hz)
