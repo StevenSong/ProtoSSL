@@ -580,7 +580,6 @@ class LitModel(LightningModule):
             pipeline_stage == "project-prototypes"
             or pipeline_stage == "project-prototypes-supervised"
         ):
-            print(self._batch_counter, flush=True)
             self._batch_counter += 1
             assert isinstance(self.model, PrototypeProjector)
             if stage != "predict":
