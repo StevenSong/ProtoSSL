@@ -76,8 +76,7 @@ scripts/5-2-run-stmem-logreg.sh @StevenSong
 scripts/5-3-run-pclr-logreg.sh @StevenSong
 scripts/6-run-protossl-heedb-pia.sh @StevenSong
 scripts/6-z-* @StevenSong
-scripts/7-run-protossl-heedb-pit.sh @StevenSong
-scripts/8-run-protossl-heedb-pip.sh @StevenSong
+scripts/7-* @StevenSong
 scripts/9-0-run-ecgfounder-patches.sh @StevenSong
 scripts/9-1-run-ecgfounder-lap.sh @StevenSong
 scripts/9-2-run-ecgfounder-clustering.sh @StevenSong
