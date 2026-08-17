@@ -2,7 +2,7 @@
 
 set -e
 
-declare -a DATASETS=("echonext")
+declare -a DATASETS=("zzu")
 # declare -a DATASETS=("echonext" "ptbxl" "cinc" "mimic" "zzu" "code15")
 declare -a SEEDS=(42 67 70 73 99)
 declare -A DATASET_DIRS=(
@@ -18,7 +18,8 @@ declare -a SUFFIXES_ptbxl=("" "-8k" "-4k" "-2k" "-1k" "-512" "-256")
 declare -a SUFFIXES_code15=("" "-32k" "-16k" "-8k" "-4k" "-2k" "-1k" "-512" "-256")
 declare -a SUFFIXES_cinc=("" "-4k" "-2k" "-1k" "-512" "-256")
 declare -a SUFFIXES_mimic=("" "-32k" "-16k" "-8k" "-4k" "-2k" "-1k" "-512" "-256")
-declare -a SUFFIXES_zzu=("" "-4k" "-2k" "-1k" "-512" "-256")
+declare -a SUFFIXES_zzu=("")
+# declare -a SUFFIXES_zzu=("" "-4k" "-2k" "-1k" "-512" "-256")
 
 source _submit_job.sh
 
@@ -50,7 +51,7 @@ for seed in "${SEEDS[@]}"; do
             # submit_job "$suffix" 2-run-labsup-proto-direct.sh "--dependency=afterok:$cache_id"
             # submit_job "$suffix" 3-run-protossl-heedb-pila.sh "--dependency=afterok:$cache_id"
             # submit_job "$suffix" 4-run-supproto-heedb-rila.sh "--dependency=afterok:$cache_id"
-            # submit_job "$suffix" 3-run-protossl-heedb-150-pila.sh "--dependency=afterok:$cache_id"
+            submit_job "$suffix" 3-run-protossl-heedb-150-pila.sh
             # submit_job "$suffix" 4-run-supproto-heedb-150-rila.sh "--dependency=afterok:$cache_id"
             # submit_job "$suffix" 3-run-protossl-heedb-150-1050-pila.sh "--dependency=afterok:$cache_id"
             # submit_job "$suffix" 4-run-supproto-heedb-150-1050-rila.sh "--dependency=afterok:$cache_id"
@@ -59,7 +60,7 @@ for seed in "${SEEDS[@]}"; do
             # submit_job "$suffix" 5-2-run-stmem-logreg.sh # does not depend on same 100 Hz cache (takes 250 Hz)
             # submit_job "$suffix" 5-3-run-pclr-logreg.sh "--dependency=afterok:$cache_id"
 
-            if [ "$dataset" == "echonext" ]; then
+            # if [ "$dataset" == "echonext" ]; then
             #     echo "Ablations"
             #     # prototypes per label
             #     submit_job "$suffix" 2-z-run-labsup-proto-direct-7ppl.sh "--dependency=afterok:$cache_id"
@@ -81,7 +82,7 @@ for seed in "${SEEDS[@]}"; do
             #     submit_job "$suffix" 7-1-run-protossl-heedb-pit.sh "--dependency=afterok:$cache_id"
             #     submit_job "$suffix" 7-2-run-protossl-heedb-pip.sh "--dependency=afterok:$cache_id"
             #     submit_job "$suffix" 7-3-run-protossl-heedb-latent.sh "--dependency=afterok:$cache_id"
-                submit_job "$suffix" 7-3-run-protossl-heedb-latent.sh
+                # submit_job "$suffix" 7-3-run-protossl-heedb-latent.sh
 
             #     # start with pretrained encoder
             #     patches_id=$(submit_job "$suffix" 9-0-run-ecgfounder-patches.sh)
@@ -89,7 +90,7 @@ for seed in "${SEEDS[@]}"; do
             #     submit_job "$suffix" 9-1-run-ecgfounder-lap.sh "--dependency=afterok:$patches_id"
             #     submit_job "$suffix" 9-2-run-ecgfounder-clustering.sh "--dependency=afterok:$patches_id"
             #     submit_job "$suffix" 9-3-run-ecgfounder-random.sh "--dependency=afterok:$patches_id"
-            fi
+            # fi
         done
     done
 done

@@ -1,10 +1,19 @@
 #!/bin/bash
 
+#SBATCH --cpus-per-task=24
+#SBATCH --mem-per-gpu=500gb
+#SBATCH --gpus-per-node=1
+#SBATCH --nodes=1
+#SBATCH -w kg35-nvl02
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=0
+#SBATCH --output /home/songs1/slurm-logs/protossl-heedb-no-koleo-%j.out
+
 set -e
 
 PRETRAIN_DATASET=/opt/gpudata/ecg/heedb
-RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs
-REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
+RUN_DIR=/opt/gpu_working/steven/protossl-ecg-outputs-rebuttal
+REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
 
 # set these env vars prior to executing this script
 : "${PRETRAIN_DATASET:?Env var PRETRAIN_DATASET must be set prior to script execution}"
@@ -19,7 +28,7 @@ cd $REPO_ROOT/scripts
 export HIGH_MEMORY=1
 
 # experiment parameters
-EXP_NAME="pass-pretrain-heedb-w-attn"
+EXP_NAME="protossl-heedb-no-koleo"
 BACKBONE=resnet18
 CONV=2D
 
@@ -29,7 +38,7 @@ python -m protossl.trainer \
     --config $REPO_ROOT/configs/pretrain-unsupervised.yaml \
     --model.backbone_type $BACKBONE \
     --model.conv_type $CONV \
-    --model.model_kwargs '{"do_softmax": True, "do_weighted_sum": True}' \
+    --model.model_kwargs '{"koleo_loss_weight": 0.0}' \
     --trainer.max_epochs 100 \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
@@ -46,19 +55,19 @@ python -m protossl.trainer \
     --data.dataset_path $PRETRAIN_DATASET \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes/latest/best.ckpt
 
-python -m protossl.trainer \
-    --pipeline-stage train-classifier \
-    --config $REPO_ROOT/configs/pretrain-unsupervised.yaml \
-    --model.backbone_type $BACKBONE \
-    --model.conv_type $CONV \
-    --trainer.logger.save_dir $RUN_DIR \
-    --trainer.logger.name $EXP_NAME \
-    --data.dataset_path $PRETRAIN_DATASET \
-    --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes/latest/proj.ckpt
+# python -m protossl.trainer \
+#     --pipeline-stage train-classifier \
+#     --config $REPO_ROOT/configs/pretrain-unsupervised.yaml \
+#     --model.backbone_type $BACKBONE \
+#     --model.conv_type $CONV \
+#     --trainer.logger.save_dir $RUN_DIR \
+#     --trainer.logger.name $EXP_NAME \
+#     --data.dataset_path $PRETRAIN_DATASET \
+#     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes/latest/proj.ckpt
 
-python _eval_probs.py \
---dataset-path $PRETRAIN_DATASET \
---probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
---output-path $RUN_DIR/$EXP_NAME
+# python _eval_probs.py \
+# --dataset-path $PRETRAIN_DATASET \
+# --probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
+# --output-path $RUN_DIR/$EXP_NAME
 
-cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
+# cp $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
