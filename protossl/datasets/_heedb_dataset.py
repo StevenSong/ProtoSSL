@@ -1,5 +1,7 @@
+import hashlib
 import os
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -24,6 +26,17 @@ from ..defines import (
 from ._base_dataset import BaseTSDataset, load_cached_data, validate_label_subset
 from .streaming_loaders import StreamingECGWaveforms
 
+# fmt: off
+LABEL_SRC_MAPPING = {
+    "original_muse":      ("diagnoses_acquisition.csv", "codes_software"),
+    "original_physician": ("diagnoses_acquisition.csv", "codes_physician"),
+    "new_muse":           ("diagnoses_v24.csv",         "codes"),
+}
+# fmt: on
+LABEL_SRC_T = Literal["original_muse", "original_physician", "new_muse"]
+HEEDB_SPLIT_T = Literal["by-year", "by-label"]
+BY_LABEL_SPLIT_HASH = "373878c0ce8ff856a22b738dbbac4830476568b8c482b5d597ab9624ae3bacaf"  # pragma: allowlist secret
+
 heedb_lead_order = [l.lower() for l in HEEDB_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
 assert all([c == s for c, s in zip(heedb_lead_order, standard_lead_order)])
@@ -34,8 +47,8 @@ HIGH_MEMORY = os.environ.get("HIGH_MEMORY", None) is not None
 
 # global cache variables
 FULL_META = None
-MGB_FNAME_TO_CODE = None
-EUH_FNAME_TO_CODE = None
+MGB_FNAME_TO_CODE: dict[str, dict[str, str]] = dict()
+EUH_FNAME_TO_CODE: dict[str, dict[str, str]] = dict()
 
 
 class HeedbECGDataset(BaseTSDataset):
@@ -46,13 +59,17 @@ class HeedbECGDataset(BaseTSDataset):
         split: SPLIT_T,
         sampling_rate: int,
         label_subset: list[str] | None = None,
+        label_src: LABEL_SRC_T = "original_physician",
+        heedb_split_type: HEEDB_SPLIT_T = "by-year",
     ):
-        df = get_heedb_metadata(dataset_path)
+        df = get_heedb_metadata(dataset_path, heedb_split_type=heedb_split_type)
 
         df = df[df["split"] == split].reset_index(drop=True)
         self.source_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.sample_ids = torch.as_tensor(df["ecg_id"].to_numpy())
-        self.labels = torch.as_tensor(get_heedb_labels(dataset_path, df, label_subset))
+        self.labels = torch.as_tensor(
+            get_heedb_labels(dataset_path, df, label_subset, label_src)
+        )
         self._df = df
 
         streaming_ecgs = StreamingECGWaveforms(
@@ -111,7 +128,11 @@ class HeedbECGDataset(BaseTSDataset):
             self.waveforms = load_cached_data(
                 load_transform_data_fn=load_transform_data_fn,
                 dataset_path=dataset_path,
-                split=split,
+                split=(
+                    split
+                    if heedb_split_type == "by-year"
+                    else f"{split}-{heedb_split_type}"
+                ),  # type: ignore
                 sampling_rate=sampling_rate,
             )
 
@@ -120,7 +141,11 @@ class HeedbECGDataset(BaseTSDataset):
         assert self.source_ids.shape[0] == self.labels.shape[0]
 
 
-def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
+def get_heedb_metadata(
+    heedb_path: str,
+    *,  # enforce kwargs
+    heedb_split_type: HEEDB_SPLIT_T = "by-year",
+) -> pd.DataFrame:
     _path = Path(heedb_path)
     global FULL_META
     if FULL_META is not None:
@@ -185,11 +210,29 @@ def get_heedb_metadata(heedb_path: str) -> pd.DataFrame:
         ["ecg_id", "patient_id", "age", "sex", "year", "source", "fpath"]
     ]
 
-    # emory data ends in 2018 so val/test are all MGB data
-    df["split"] = "no-split"
-    df.loc[~df["year"].isin([2021, 2022]), "split"] = "train"
-    df.loc[df["year"] == 2021, "split"] = "val"
-    df.loc[df["year"] == 2022, "split"] = "test"
+    df["split"] = "train"
+    if heedb_split_type == "by-year":
+        # emory data ends in 2018 so val/test are all MGB data
+        df.loc[df["year"] == 2021, "split"] = "val"
+        df.loc[df["year"] == 2022, "split"] = "test"
+    elif heedb_split_type == "by-label":
+        # law of large numbers, we just generate random splits and it's close enough
+        # to splits which preserve independent label prevalence (need to check about cooccurrence)
+        n = int(len(df) * 0.05)
+        rng = np.random.default_rng(42)
+        val_test_idxs = rng.choice(len(df), size=n * 2, replace=False)
+        digest = hashlib.sha256(val_test_idxs.tobytes()).hexdigest()
+        if digest != BY_LABEL_SPLIT_HASH:
+            raise ValueError(
+                "Randomly generated split for preserving label prevalence has changed!"
+            )
+
+        df.loc[val_test_idxs[:n], "split"] = "val"
+        df.loc[val_test_idxs[n:], "split"] = "test"
+    else:
+        raise ValueError(
+            f"Unknown how to create splits for HEEDB split type: {heedb_split_type}"
+        )
 
     full_paths = []
     for f, src in zip(df["fpath"], df["source"]):
@@ -213,39 +256,41 @@ def get_heedb_labels(
     heedb_path: str,
     meta: pd.DataFrame,
     label_subset: list[str] | None = None,
+    label_src: LABEL_SRC_T = "original_physician",
 ) -> np.ndarray:
     print("=================make_heedb_labels=================")
     targets = HEEDB_TARGETS
     if label_subset is not None:
         validate_label_subset(label_subset, list(HEEDB_TARGETS))
         targets = {label: HEEDB_TARGETS[label] for label in label_subset}
-    global MGB_FNAME_TO_CODE
-    global EUH_FNAME_TO_CODE
 
-    def make_fname_to_code(institution) -> dict[str, str]:
+    def make_fname_to_code(institution, label_csv, label_col) -> dict[str, str]:
         if institution == "mgb":
             subdir = "I0001"
         elif institution == "emory":
             subdir = "I0006"
         else:
             raise ValueError(f"Unknown subdir for institution: {institution}")
-        df = pd.read_csv(
-            os.path.join(heedb_path, subdir, "12SL_diagnoses/diagnoses_acquisition.csv")
-        )
+        df = pd.read_csv(os.path.join(heedb_path, subdir, "12SL_diagnoses", label_csv))
         return {
             fname: code_str
             for fname, code_str in zip(
                 tqdm(
-                    df["FileName"], desc=f"Creating {institution} fname to code mapping"
+                    # v24 file names are prefixed with '.' and suffixed with '.hea\n'
+                    df["FileName"].str.strip(".").str.strip(".hea\n"),
+                    desc=f"Creating {institution} fname to code mapping",
                 ),
-                df["codes_physician"],
+                df[label_col],
             )
         }
 
-    if MGB_FNAME_TO_CODE is None:
-        MGB_FNAME_TO_CODE = make_fname_to_code("mgb")
-    if EUH_FNAME_TO_CODE is None:
-        EUH_FNAME_TO_CODE = make_fname_to_code("emory")
+    _label_csv, _label_col = LABEL_SRC_MAPPING[label_src]
+    if label_src not in MGB_FNAME_TO_CODE:
+        MGB_FNAME_TO_CODE[label_src] = make_fname_to_code("mgb", _label_csv, _label_col)
+    if label_src not in EUH_FNAME_TO_CODE:
+        EUH_FNAME_TO_CODE[label_src] = make_fname_to_code(
+            "emory", _label_csv, _label_col
+        )
     code_to_label = {c: k for k, cs in targets.items() for c in cs}
     label_to_idx = {k: i for i, k in enumerate(targets)}
 
@@ -257,9 +302,9 @@ def get_heedb_labels(
         )
     ):
         if institution == "mgb":
-            codes = MGB_FNAME_TO_CODE.get(fname, "MISSING")
+            codes = MGB_FNAME_TO_CODE[label_src].get(fname, "MISSING")
         elif institution == "emory":
-            codes = EUH_FNAME_TO_CODE.get(fname, "MISSING")
+            codes = EUH_FNAME_TO_CODE[label_src].get(fname, "MISSING")
         else:
             raise ValueError(f"Unknown institution: {institution}")
         if codes == "MISSING":
@@ -280,7 +325,7 @@ def get_heedb_labels(
                 continue
             data[meta_idx, label_idx] = 1
     print(
-        f"Of {len(meta)} ECGs and {len(MGB_FNAME_TO_CODE) + len(EUH_FNAME_TO_CODE)} annotations, "
+        f"Of {len(meta)} ECGs and {len(MGB_FNAME_TO_CODE[label_src]) + len(EUH_FNAME_TO_CODE[label_src])} annotations, "
         f"{count} matched ({len(meta)-count} ECG annotations were missing and filled with 0s)"
     )
     print("===================================================")

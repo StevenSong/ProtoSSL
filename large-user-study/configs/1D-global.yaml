@@ -40,10 +40,10 @@ lr_scheduler:
 model:
   class_path: LitModel
   init_args:
-    resnet_type: resnet18
+    backbone_type: resnet18
     conv_type: 1D
     prototype_type: global
-    # n_prototypes_per_label: tune this!
+    n_prototypes_per_label: 50
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
@@ -63,4 +63,4 @@ data:
       - VENTRICULAR TACHYCARDIA
       - VENTRICULAR-PACED RHYTHM
       - WITH SINUS ARRHYTHMIA
-pipeline_stage: learn-prototypes-supervised
+# pipeline_stage:

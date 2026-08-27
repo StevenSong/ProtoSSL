@@ -81,6 +81,7 @@ class LitData(LightningDataModule):
                 split="train",
                 sampling_rate=sampling_rate,
                 label_subset=label_subset,
+                **data_kwargs,
             )
             self.label_weights = self.train_ds.get_label_weights()
             self.label_cooccurrence = self.train_ds.get_label_cooccurrence()

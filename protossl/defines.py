@@ -11,6 +11,7 @@ STAGE_T = Literal[
     "project-prototypes-supervised",
     "compute-embeddings",
     "train-classifier",
+    "train-fusion-classifier",
     "train-contraster",
 ]
 

@@ -8,7 +8,7 @@ trainer:
     init_args:
       project: ProtoECGNet-HEEDB
       # save_dir: /path/to/runs/
-      name: ProtoECGNet-HEEDB-2D-Global
+      name: ProtoECGNet-HEEDB-Fusion
   callbacks:
     - class_path: lightning.pytorch.callbacks.EarlyStopping
       init_args:
@@ -39,11 +39,8 @@ lr_scheduler:
     patience: 3 # check early stopping
 model:
   class_path: LitModel
-  init_args:
-    resnet_type: resnet18
-    conv_type: 2D
-    prototype_type: global
-    # n_prototypes_per_label: tune this!
+  # init_args:
+    # blocks:
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
@@ -52,6 +49,4 @@ data:
     batch_size: 512
     num_workers: 4
     prefetch_factor: 4
-    label_subset:
-      - NORMAL SINUS RHYTHM
-pipeline_stage: learn-prototypes-supervised
+# pipeline_stage:

@@ -36,6 +36,7 @@ protossl/models/_base_classifier.py @StevenSong
 protossl/models/_blackbox_classifier.py @StevenSong
 protossl/models/_blackbox_contraster.py @StevenSong
 protossl/models/_pretrained_utils.py @StevenSong
+protossl/models/_protoecgnet.py @StevenSong
 protossl/models/_prototype_assigner.py @StevenSong
 protossl/models/_prototype_classifier.py @StevenSong
 protossl/models/_prototype_contraster.py @StevenSong
@@ -56,6 +57,7 @@ protossl/models/layers/_multi_input_linear.py @StevenSong
 protossl/models/layers/_panns_backbones.py @StevenSong
 protossl/plotting.py @StevenSong
 protossl/trainer.py @StevenSong
+protossl/protoecgnet_trainer.py @StevenSong
 pyproject.toml @StevenSong
 README.md @StevenSong @sahilsethi0105
 requirements.txt @StevenSong
@@ -95,3 +97,4 @@ user-study/metadata.csv @StevenSong
 user-study/prepare_samples.ipynb @StevenSong
 user-study/results.csv @StevenSong
 user-study/user_study_analysis.ipynb @sahilsethi0105
+large-user-study/ @StevenSong

@@ -40,12 +40,12 @@ lr_scheduler:
 model:
   class_path: LitModel
   init_args:
-    resnet_type: resnet18
+    backbone_type: resnet18
     conv_type: 2D
     prototype_type: partial
     partial_len: 100 # 1-second @ 100 Hz
     partial_overlap: 0.5
-    # n_prototypes_per_label: tune this!
+    n_prototypes_per_label: 50
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData
@@ -64,4 +64,4 @@ data:
       - PREMATURE VENTRICULAR COMPLEXES
       - RIGHT AXIS DEVIATION
       - RIGHT BUNDLE BRANCH BLOCK
-pipeline_stage: learn-prototypes-supervised
+# pipeline_stage:
