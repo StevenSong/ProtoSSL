@@ -12,8 +12,8 @@
 set -e
 
 DATASET_PATH=/opt/gpudata/ecg/heedb
-RUN_DIR=/opt/gpudata/steven/protoecgnet-heedb
-REPO_ROOT=/opt/gpudata/steven/ProtoSSL/large-user-study
+RUN_DIR=/opt/gpu_working/steven/protoecgnet-heedb
+REPO_ROOT=/opt/gpu_working/steven/ProtoSSL/large-user-study
 
 # set these env vars prior to executing this script
 : "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
