@@ -40,15 +40,15 @@ python -m protossl.protoecgnet_trainer \
     --model.branches+=protossl.models._protoecgnet.BranchCfg \
     --model.branches.name=1D-global \
     --model.branches.config=$REPO_ROOT/configs/1D-global.yaml \
-    --model.branches.pretrained_weights=$RUN_DIR/$EXP_NAME/1D-global/project-prototypes-supervised/latest/proj.ckpt \
+    --model.branches.pretrained_weights=$RUN_DIR/1D-global/project-prototypes-supervised/latest/proj.ckpt \
     --model.branches+=protossl.models._protoecgnet.BranchCfg \
     --model.branches.name=2D-global \
     --model.branches.config=$REPO_ROOT/configs/2D-global.yaml \
-    --model.branches.pretrained_weights=$RUN_DIR/$EXP_NAME/2D-global/project-prototypes-supervised/latest/proj.ckpt \
+    --model.branches.pretrained_weights=$RUN_DIR/2D-global/project-prototypes-supervised/latest/proj.ckpt \
     --model.branches+=protossl.models._protoecgnet.BranchCfg \
     --model.branches.name=2D-partial \
     --model.branches.config=$REPO_ROOT/configs/2D-partial.yaml \
-    --model.branches.pretrained_weights=$RUN_DIR/$EXP_NAME/2D-partial/project-prototypes-supervised/latest/proj.ckpt \
+    --model.branches.pretrained_weights=$RUN_DIR/2D-partial/project-prototypes-supervised/latest/proj.ckpt \
     --data.num_workers 8 \
     --data.prefetch_factor 4
 

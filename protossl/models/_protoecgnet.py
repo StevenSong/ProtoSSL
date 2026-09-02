@@ -1,8 +1,7 @@
 from collections import Counter
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 from typing import Literal
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

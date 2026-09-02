@@ -6,6 +6,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import scipy.stats as st
+from omegaconf import OmegaConf
 from pqdm.processes import pqdm
 from sklearn.metrics import average_precision_score, roc_auc_score
 
@@ -19,7 +20,9 @@ def parse_args():
     parser.add_argument("--data-kwargs", required=True)
     parser.add_argument("--probs-npy", required=True)
     parser.add_argument("--output-path", required=True)
-    parser.add_argument("--label-subset", nargs="+")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--label-subset", nargs="+")
+    group.add_argument("--label-subset-config")
     parser.add_argument("--n-bootstraps", type=int, default=1000)
     parser.add_argument("--n-jobs", type=int, default=24)
     args = parser.parse_args()
@@ -96,6 +99,11 @@ def main(
     assert test_ds.labels is not None and src_label_names is not None
     if label_subset is not None:
         label_names = label_subset
+        missing = set(label_subset) - set(src_label_names)
+        if len(missing) > 0:
+            raise ValueError(
+                f"{len(missing)} labels in subset not in source labels: {missing}"
+            )
     else:
         label_names = src_label_names
 
@@ -105,14 +113,18 @@ def main(
 
     test_targets = test_ds.labels.numpy()
     target_probs = np.load(probs_npy, allow_pickle=True)
+    assert (
+        test_targets.shape == target_probs.shape
+    ), f"Mismatched target/predicted shapes: {test_targets.shape} vs {target_probs.shape}"
 
     kwargs = [
         {
-            "y_test": test_targets[:, src_label_names.index(target_col)],
-            "y_prob": target_probs[:, src_label_names.index(target_col)],
+            # the test targets in this version are already aligned to the label subset order
+            "y_test": test_targets[:, i],
+            "y_prob": target_probs[:, i],
             "n_bootstraps": n_bootstraps,
         }
-        for target_col in label_names
+        for i in range(len(label_names))
     ]
 
     results = pqdm(kwargs, worker, argument_type="kwargs", n_jobs=n_jobs)  # type: ignore
@@ -131,6 +143,13 @@ def main(
 
 if __name__ == "__main__":
     args = parse_args()
+
+    # NOTE: overwrites label_subset with that found in config
+    if args.label_subset_config is not None:
+        c = OmegaConf.load(args.label_subset_config)
+        OmegaConf.set_struct(c, True)
+        args.label_subset = c.data.init_args.label_subset
+
     main(
         dataset_path=args.dataset_path,
         data_kwargs=args.data_kwargs,
