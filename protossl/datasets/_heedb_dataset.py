@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..defines import (
+    CACHE_DIR,
     HEEDB_EUH_CLIPPED_MEANS,
     HEEDB_EUH_CLIPPED_STDS,
     HEEDB_EUH_LOWERS,
@@ -62,9 +63,9 @@ class HeedbECGDataset(BaseTSDataset):
         label_src: LABEL_SRC_T = "original_physician",
         heedb_split_type: HEEDB_SPLIT_T = "by-year",
     ):
-        df = get_heedb_metadata(dataset_path, heedb_split_type=heedb_split_type)
+        full_df = get_heedb_metadata(dataset_path, heedb_split_type=heedb_split_type)
 
-        df = df[df["split"] == split].reset_index(drop=True)
+        df = full_df[full_df["split"] == split].reset_index(drop=True)
         self.source_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.sample_ids = torch.as_tensor(df["ecg_id"].to_numpy())
         self.labels = torch.as_tensor(
@@ -152,100 +153,110 @@ def get_heedb_metadata(
         return FULL_META.copy()
 
     print("================get_heedb_metadata=================")
-    print("reading HEEDB metadata")
+    print(f"using {heedb_split_type} splits")
 
-    # read harvard data
-    mgb = pd.read_csv(
-        _path / "I0001/metadata/metadata.csv",
-        usecols=["BDSPPatientID", "SexDSC", "AgeAtAcquisition", "FileName"],
-    )
-    mgb["AgeAtAcquisition"] = mgb["AgeAtAcquisition"] / 365.2425
-    mgb = mgb[(mgb["AgeAtAcquisition"] >= 18) & (mgb["SexDSC"].notna())]
-    mgb = mgb.rename(
-        columns={
-            "BDSPPatientID": "patient_id",
-            "SexDSC": "sex",
-            "AgeAtAcquisition": "age",
-            "FileName": "fpath",
-        }
-    )
-    print("read MGB data")
+    identifier = f"HEEDB_{heedb_path.rstrip(os.sep)}_{heedb_split_type}"
+    hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
+    cache_file = os.path.join(CACHE_DIR, f"{hashed}.csv")
+    if os.path.exists(cache_file):
+        print(f"reading HEEDB metadata from on-disk cache: {cache_file}")
+        df = pd.read_csv(cache_file)
+    else:
+        print(f"reading HEEDB metadata from source: {heedb_path}")
 
-    # read emory data, slight differences
-    emory = pd.read_csv(
-        _path / "I0006/metadata/metadata.csv",
-        usecols=["BDSPPatientID", "Sex", "AgeAtAcquisition", "FileName"],
-    )
-    emory["AgeAtAcquisition"] = emory["AgeAtAcquisition"] / 365.2425
-    emory = emory[
-        (emory["AgeAtAcquisition"] >= 18)
-        & (emory["Sex"].notna())
-        & (emory["BDSPPatientID"].notna())
-    ]
-    emory = emory.rename(
-        columns={
-            "BDSPPatientID": "patient_id",
-            "Sex": "sex",
-            "AgeAtAcquisition": "age",
-            "FileName": "fpath",
-        }
-    )
-    assert (emory["patient_id"].astype(int) == emory["patient_id"]).all()
-    emory["patient_id"] = emory["patient_id"].astype(int)
+        # read harvard data
+        mgb = pd.read_csv(
+            _path / "I0001/metadata/metadata.csv",
+            usecols=["BDSPPatientID", "SexDSC", "AgeAtAcquisition", "FileName"],
+        )
+        mgb["AgeAtAcquisition"] = mgb["AgeAtAcquisition"] / 365.2425
+        mgb = mgb[(mgb["AgeAtAcquisition"] >= 18) & (mgb["SexDSC"].notna())]
+        mgb = mgb.rename(
+            columns={
+                "BDSPPatientID": "patient_id",
+                "SexDSC": "sex",
+                "AgeAtAcquisition": "age",
+                "FileName": "fpath",
+            }
+        )
+        print("read MGB data")
 
-    # bad files on emory side
-    emory_exclude = {"WFDB/2013/MUSE_20200225_081000_06000"}
-    emory = emory[~emory["fpath"].isin(emory_exclude)]
+        # read emory data, slight differences
+        emory = pd.read_csv(
+            _path / "I0006/metadata/metadata.csv",
+            usecols=["BDSPPatientID", "Sex", "AgeAtAcquisition", "FileName"],
+        )
+        emory["AgeAtAcquisition"] = emory["AgeAtAcquisition"] / 365.2425
+        emory = emory[
+            (emory["AgeAtAcquisition"] >= 18)
+            & (emory["Sex"].notna())
+            & (emory["BDSPPatientID"].notna())
+        ]
+        emory = emory.rename(
+            columns={
+                "BDSPPatientID": "patient_id",
+                "Sex": "sex",
+                "AgeAtAcquisition": "age",
+                "FileName": "fpath",
+            }
+        )
+        assert (emory["patient_id"].astype(int) == emory["patient_id"]).all()
+        emory["patient_id"] = emory["patient_id"].astype(int)
 
-    print("read Emory data")
+        # bad files on emory side
+        emory_exclude = {"WFDB/2013/MUSE_20200225_081000_06000"}
+        emory = emory[~emory["fpath"].isin(emory_exclude)]
+        print("read Emory data")
 
-    # join together
-    mgb["source"] = "mgb"
-    emory["source"] = "emory"
-    assert len(set(mgb["patient_id"]) & set(emory["patient_id"])) == 0
-    df = pd.concat([mgb, emory], ignore_index=True)  # MGB, then EUH
-    df.index.name = "ecg_id"
-    df["year"] = df["fpath"].str[1:].str.split("/").str[1].astype(int)
-    df = df.reset_index()[
-        ["ecg_id", "patient_id", "age", "sex", "year", "source", "fpath"]
-    ]
+        # join together
+        mgb["source"] = "mgb"
+        emory["source"] = "emory"
+        assert len(set(mgb["patient_id"]) & set(emory["patient_id"])) == 0
+        df = pd.concat([mgb, emory], ignore_index=True)  # MGB, then EUH
+        df.index.name = "ecg_id"
+        df["year"] = df["fpath"].str[1:].str.split("/").str[1].astype(int)
+        df = df.reset_index()[
+            ["ecg_id", "patient_id", "age", "sex", "year", "source", "fpath"]
+        ]
 
-    df["split"] = "train"
-    if heedb_split_type == "by-year":
-        # emory data ends in 2018 so val/test are all MGB data
-        df.loc[df["year"] == 2021, "split"] = "val"
-        df.loc[df["year"] == 2022, "split"] = "test"
-    elif heedb_split_type == "by-label":
-        # law of large numbers, we just generate random splits and it's close enough
-        # to splits which preserve independent label prevalence (need to check about cooccurrence)
-        n = int(len(df) * 0.05)
-        rng = np.random.default_rng(42)
-        val_test_idxs = rng.choice(len(df), size=n * 2, replace=False)
-        digest = hashlib.sha256(val_test_idxs.tobytes()).hexdigest()
-        if digest != BY_LABEL_SPLIT_HASH:
+        df["split"] = "train"
+        if heedb_split_type == "by-year":
+            # emory data ends in 2018 so val/test are all MGB data
+            df.loc[df["year"] == 2021, "split"] = "val"
+            df.loc[df["year"] == 2022, "split"] = "test"
+        elif heedb_split_type == "by-label":
+            # law of large numbers, we just generate random splits and it's close enough
+            # to splits which preserve independent label prevalence (need to check about cooccurrence)
+            n = int(len(df) * 0.05)
+            rng = np.random.default_rng(42)
+            val_test_idxs = rng.choice(len(df), size=n * 2, replace=False)
+            digest = hashlib.sha256(val_test_idxs.tobytes()).hexdigest()
+            if digest != BY_LABEL_SPLIT_HASH:
+                raise ValueError(
+                    "Randomly generated split for preserving label prevalence has changed!"
+                )
+
+            df.loc[val_test_idxs[:n], "split"] = "val"
+            df.loc[val_test_idxs[n:], "split"] = "test"
+        else:
             raise ValueError(
-                "Randomly generated split for preserving label prevalence has changed!"
+                f"Unknown how to create splits for HEEDB split type: {heedb_split_type}"
             )
 
-        df.loc[val_test_idxs[:n], "split"] = "val"
-        df.loc[val_test_idxs[n:], "split"] = "test"
-    else:
-        raise ValueError(
-            f"Unknown how to create splits for HEEDB split type: {heedb_split_type}"
-        )
-
-    full_paths = []
-    for f, src in zip(df["fpath"], df["source"]):
-        if src == "mgb":
-            # harvard paths start with "/S...", the level just under WFDB
-            p = _path / "I0001/WFDB" / f[1:]
-        elif src == "emory":
-            # emory paths start with "WFDB/..."
-            p = _path / "I0006" / f
-        else:
-            raise ValueError(f"Unknown path structure for institution: {src}")
-        full_paths.append(p)
-    df["full_path"] = full_paths
+        full_paths = []
+        for f, src in zip(df["fpath"], df["source"]):
+            if src == "mgb":
+                # harvard paths start with "/S...", the level just under WFDB
+                p = _path / "I0001/WFDB" / f[1:]
+            elif src == "emory":
+                # emory paths start with "WFDB/..."
+                p = _path / "I0006" / f
+            else:
+                raise ValueError(f"Unknown path structure for institution: {src}")
+            full_paths.append(p)
+        df["full_path"] = full_paths
+        df.to_csv(cache_file, index=False)
+        print(f"saved HEEDB metadata to on-disk cache: {cache_file}")
 
     FULL_META = df.copy()
     print("===================================================")
@@ -284,49 +295,87 @@ def get_heedb_labels(
             )
         }
 
-    _label_csv, _label_col = LABEL_SRC_MAPPING[label_src]
-    if label_src not in MGB_FNAME_TO_CODE:
-        MGB_FNAME_TO_CODE[label_src] = make_fname_to_code("mgb", _label_csv, _label_col)
-    if label_src not in EUH_FNAME_TO_CODE:
-        EUH_FNAME_TO_CODE[label_src] = make_fname_to_code(
-            "emory", _label_csv, _label_col
-        )
-    code_to_label = {c: k for k, cs in targets.items() for c in cs}
-    label_to_idx = {k: i for i, k in enumerate(targets)}
+    meta_hash = hash_path_list(meta["fpath"])
+    identifier = f"HEEDB_labels_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_subset}_{label_src}"
+    hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
+    cache_file = os.path.join(CACHE_DIR, f"{hashed}.npy")
 
-    data = np.zeros((len(meta), len(targets)), dtype=np.long)
-    count = 0
-    for meta_idx, (fname, institution) in enumerate(
-        zip(
-            tqdm(meta["fpath"], desc="Converting code string to labels"), meta["source"]
+    if os.path.exists(cache_file):
+        print(f"reading HEEDB labels from on-disk cache: {cache_file}")
+        loaded = np.load(cache_file, allow_pickle=True).item()
+        data = loaded["data"]
+        n_ecgs, n_annots = loaded["n_ecgs"], loaded["n_annots"]
+        n_matched = loaded["n_matched"]
+        print("replaying below stats from cache:")
+    else:
+        print(f"reading HEEDB labels from source: {heedb_path}")
+        _label_csv, _label_col = LABEL_SRC_MAPPING[label_src]
+        if label_src not in MGB_FNAME_TO_CODE:
+            MGB_FNAME_TO_CODE[label_src] = make_fname_to_code(
+                "mgb", _label_csv, _label_col
+            )
+        if label_src not in EUH_FNAME_TO_CODE:
+            EUH_FNAME_TO_CODE[label_src] = make_fname_to_code(
+                "emory", _label_csv, _label_col
+            )
+        code_to_label = {c: k for k, cs in targets.items() for c in cs}
+        label_to_idx = {k: i for i, k in enumerate(targets)}
+
+        data = np.zeros((len(meta), len(targets)), dtype=np.long)
+        count = 0
+        for meta_idx, (fname, institution) in enumerate(
+            zip(
+                tqdm(meta["fpath"], desc="Converting code string to labels"),
+                meta["source"],
+            )
+        ):
+            if institution == "mgb":
+                codes = MGB_FNAME_TO_CODE[label_src].get(fname, "MISSING")
+            elif institution == "emory":
+                codes = EUH_FNAME_TO_CODE[label_src].get(fname, "MISSING")
+            else:
+                raise ValueError(f"Unknown institution: {institution}")
+            if codes == "MISSING":
+                # separate missing vs empty (below)
+                continue
+            count += 1
+            if isinstance(codes, float) and np.isnan(codes):
+                continue
+            assert isinstance(codes, str)
+            for code in codes.split(","):
+                # convert 12SL code to label
+                label = code_to_label.get(int(code), -1)
+                if label == -1:
+                    continue
+                # convert label to column idx
+                label_idx = label_to_idx.get(label, -1)  # type: ignore
+                if label_idx == -1:
+                    continue
+                data[meta_idx, label_idx] = 1
+
+        n_ecgs, n_matched = len(meta), count
+        n_annots = len(MGB_FNAME_TO_CODE[label_src]) + len(EUH_FNAME_TO_CODE[label_src])
+        np.save(
+            cache_file,
+            {  # type: ignore
+                "data": data,
+                "n_ecgs": n_ecgs,
+                "n_annots": n_annots,
+                "n_matched": n_matched,
+            },
         )
-    ):
-        if institution == "mgb":
-            codes = MGB_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-        elif institution == "emory":
-            codes = EUH_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-        else:
-            raise ValueError(f"Unknown institution: {institution}")
-        if codes == "MISSING":
-            # separate missing vs empty (below)
-            continue
-        count += 1
-        if isinstance(codes, float) and np.isnan(codes):
-            continue
-        assert isinstance(codes, str)
-        for code in codes.split(","):
-            # convert 12SL code to label
-            label = code_to_label.get(int(code), -1)
-            if label == -1:
-                continue
-            # convert label to column idx
-            label_idx = label_to_idx.get(label, -1)  # type: ignore
-            if label_idx == -1:
-                continue
-            data[meta_idx, label_idx] = 1
+        print(f"saved HEEDB labels to on-disk cache: {cache_file}")
     print(
-        f"Of {len(meta)} ECGs and {len(MGB_FNAME_TO_CODE[label_src]) + len(EUH_FNAME_TO_CODE[label_src])} annotations, "
-        f"{count} matched ({len(meta)-count} ECG annotations were missing and filled with 0s)"
+        f"Of {n_ecgs} ECGs and {n_annots} annotations, {n_matched} matched "
+        f"({n_ecgs-n_matched} ECG annotations were missing and filled with 0s)"
     )
     print("===================================================")
     return data
+
+
+def hash_path_list(paths: pd.Series, chunk=100_000) -> str:
+    m = hashlib.sha256()
+    for i in range(0, len(paths), chunk):
+        m.update("\0".join(paths.iloc[i : i + chunk]).encode())
+        m.update(b"\0")
+    return m.hexdigest()

@@ -12,21 +12,20 @@ trainer:
   callbacks:
     - class_path: lightning.pytorch.callbacks.EarlyStopping
       init_args:
-        monitor: val_loss
-        mode: min
+        monitor: val_ap
+        mode: max
         patience: 10 # check reduce lr on plateau
     - class_path: lightning.pytorch.callbacks.LearningRateMonitor
       init_args:
         logging_interval: epoch
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
-        monitor: val_loss
-        mode: min
+        monitor: val_ap
+        mode: max
         save_last: True
     - class_path: PredictionWriter
   max_epochs: 1000
   log_every_n_steps: 1
-  # val_check_interval: 0.25 # set for hyberband pruning
 optimizer:
   class_path: torch.optim.AdamW
   init_args:

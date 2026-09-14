@@ -8,17 +8,19 @@ from lightning.pytorch.callbacks import BasePredictionWriter
 from lightning.pytorch.cli import LightningCLI
 from lightning.pytorch.strategies import DDPStrategy, SingleDeviceStrategy
 from torch.utils.data import DataLoader
+from torchmetrics import MetricCollection
+from torchmetrics.classification import (
+    BinaryAUROC,
+    BinaryAveragePrecision,
+    MultilabelAUROC,
+    MultilabelAveragePrecision,
+)
 
 from .datasets import infer_dataset_class_from_path, validate_label_subset
 from .defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX, STAGE_T
 from .lightning_utils import check_final_link
 from .models import PrototypeProjector
-from .models._protoecgnet import (
-    BRANCHES_T,
-    LOSS_WEIGHT_T,
-    ProtoECGNet,
-    ProtoECGNetFusion,
-)
+from .models._protoecgnet import BRANCHES_T, ProtoECGNet, ProtoECGNetFusion
 
 torch.set_float32_matmul_precision("medium")
 
@@ -184,12 +186,35 @@ class LitModel(LightningModule):
         pretrained_weights: str | None = None,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
-        loss_weights: LOSS_WEIGHT_T | None = None,
+        lam_clst: float = 0.004,
+        lam_sep: float = 0.0004,
+        lam_div: float = 250.0,
+        lam_cntrst: float = 300,
+        lam_l1: float = 1e-4,
         branches: BRANCHES_T | None = None,
     ):
         super().__init__()
         self.lr = None
         self.save_hyperparameters()
+        n_labels = len(label_names)
+        if n_labels == 1:
+            metrics = MetricCollection(
+                {
+                    "ap": BinaryAveragePrecision(),
+                    "auroc": BinaryAUROC(),
+                }
+            )
+        else:
+            metrics = MetricCollection(
+                {
+                    "ap": MultilabelAveragePrecision(
+                        num_labels=n_labels, average="macro"
+                    ),
+                    "auroc": MultilabelAUROC(num_labels=n_labels, average="macro"),
+                }
+            )
+        self.val_metrics = metrics.clone(prefix="val_")
+        self.test_metrics = metrics.clone(prefix="test_")
 
         if pipeline_stage not in PROTOECGNET_PIPELINE_STAGES:
             raise ProtoECGNetTrainerError
@@ -203,9 +228,6 @@ class LitModel(LightningModule):
             assert prototype_type is not None, "prototype_type is None"
             assert n_prototypes_per_label is not None, "n_prototypes_per_label is None"
             # don't enforce default at litmodel, let model handle defaults
-            model_kwargs = dict()
-            if loss_weights is not None:
-                model_kwargs["loss_weights"] = loss_weights
             self.model = ProtoECGNet(
                 pipeline_stage=pipeline_stage,
                 backbone_type=backbone_type,
@@ -218,7 +240,11 @@ class LitModel(LightningModule):
                 pretrained_weights=pretrained_weights,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
-                **model_kwargs,
+                lam_clst=lam_clst,
+                lam_sep=lam_sep,
+                lam_div=lam_div,
+                lam_cntrst=lam_cntrst,
+                lam_l1=lam_l1,
             )
         elif (
             pipeline_stage == "project-prototypes-supervised"
@@ -248,9 +274,6 @@ class LitModel(LightningModule):
             assert prototype_type is not None, "prototype_type is None"
             assert n_prototypes_per_label is not None, "n_prototypes_per_label is None"
             # don't enforce default at litmodel, let model handle defaults
-            model_kwargs = dict()
-            if loss_weights is not None:
-                model_kwargs["loss_weights"] = loss_weights
             self.model = ProtoECGNet(
                 pipeline_stage=pipeline_stage,
                 backbone_type=backbone_type,
@@ -262,7 +285,11 @@ class LitModel(LightningModule):
                 pretrained_weights=pretrained_weights,
                 partial_len=partial_len,
                 partial_overlap=partial_overlap,
-                **model_kwargs,
+                lam_clst=lam_clst,
+                lam_sep=lam_sep,
+                lam_div=lam_div,
+                lam_cntrst=lam_cntrst,
+                lam_l1=lam_l1,
             )
             for param in self.model.encoder.parameters():
                 param.requires_grad = False
@@ -270,16 +297,13 @@ class LitModel(LightningModule):
             assert label_weights is not None, "label_weights is None"
             assert branches is not None, "branches is None"
             # don't enforce default at litmodel, let model handle defaults
-            model_kwargs = dict()
-            if loss_weights is not None:
-                model_kwargs["loss_weights"] = loss_weights
             self.model = ProtoECGNetFusion(
                 pipeline_stage=pipeline_stage,
                 label_names=label_names,
                 label_weights=label_weights,
                 branches=branches,
                 pretrained_weights=pretrained_weights,
-                **model_kwargs,
+                lam_l1=lam_l1,
             )
             for param in self.model.encoders.parameters():
                 param.requires_grad = False
@@ -325,6 +349,11 @@ class LitModel(LightningModule):
                 log=log,
                 sync_dist=sync_dist,
             )
+            probs = torch.stack([preds[l] for l in self.hparams.label_names], dim=1)  # type: ignore
+            if stage == "val":
+                self.val_metrics.update(probs, batch["label"])
+            elif stage == "test":
+                self.test_metrics.update(probs, batch["label"])
         elif pipeline_stage == "project-prototypes-supervised":
             self._batch_counter += 1
             assert isinstance(self.model, PrototypeProjector)
@@ -417,9 +446,19 @@ class LitModel(LightningModule):
         loss, _ = self._common_step(batch=batch, stage="val", sync_dist=True)
         return loss
 
+    def on_validation_epoch_end(self):
+        metrics = self.val_metrics.compute()
+        self.log_dict(metrics)
+        self.val_metrics.reset()
+
     def test_step(self, batch, batch_idx):
         loss, _ = self._common_step(batch=batch, stage="test", sync_dist=True)
         return loss
+
+    def on_test_epoch_end(self):
+        metrics = self.test_metrics.compute()
+        self.log_dict(metrics)
+        self.test_metrics.reset()
 
     def predict_step(self, batch, batch_idx):
         _, preds = self._common_step(batch=batch, stage="predict", log=False)
@@ -526,7 +565,13 @@ class PredictionWriter(BasePredictionWriter):
                         batch_label_prob: torch.Tensor = batch_probs[k]
                         probs[k].append(batch_label_prob.numpy())
                 to_save = np.stack([np.concatenate(v) for v in probs.values()]).T
-            save_name = "probs.npy"
+            if (
+                hasattr(pl_module, "prediction_split")
+                and pl_module.prediction_split is not None
+            ):
+                save_name = f"{pl_module.prediction_split}_probs.npy"
+            else:
+                save_name = "probs.npy"
         elif pipeline_stage == "compute-embeddings":
             assert (
                 hasattr(pl_module, "prediction_split")
@@ -675,9 +720,17 @@ def run():
             datamodule=cli.datamodule,
             ckpt_path=cli.config.resume_from_checkpoint,
         )
+        # hack to pass split name to prediction writer, not used anywhere else
+        cli.model.prediction_split = "val"
         cli.trainer.predict(
             model=cli.model,
-            datamodule=cli.datamodule,
+            dataloaders=cli.datamodule.val_dataloader(),
+        )
+        cli.model.prediction_split = "test"
+        cli.datamodule.setup("test")
+        cli.trainer.predict(
+            model=cli.model,
+            dataloaders=cli.datamodule.test_dataloader(),
         )
     else:
         raise ValueError(f"Unknown pipeline stage {pipeline_stage}")

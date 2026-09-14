@@ -1,6 +1,5 @@
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Literal
 
 import torch
 import torch.nn as nn
@@ -10,24 +9,6 @@ from omegaconf import OmegaConf
 from ..defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX, STAGE_T
 from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
-
-
-@dataclass
-class JointStageLambdas:
-    lam_clst: float
-    lam_sep: float
-    lam_div: float
-    lam_cntrst: float
-
-
-@dataclass
-class ClsStageLambdas:
-    lam_l1: float
-
-
-LOSS_WEIGHT_T = (
-    Literal["protopnet", "protoecgnet"] | JointStageLambdas | ClsStageLambdas
-)
 
 
 class ProtoECGNet(PretrainedMixin, nn.Module):
@@ -45,7 +26,12 @@ class ProtoECGNet(PretrainedMixin, nn.Module):
         pretrained_weights: str | None = None,
         partial_len: int | None = None,
         partial_overlap: float | None = None,
-        loss_weights: LOSS_WEIGHT_T = "protoecgnet",
+        # ProtoECGNet weights
+        lam_clst: float = 0.004,
+        lam_sep: float = 0.0004,
+        lam_div: float = 250.0,
+        lam_cntrst: float = 300,
+        lam_l1: float = 1e-4,
     ):
         super().__init__()
         if (
@@ -97,37 +83,11 @@ class ProtoECGNet(PretrainedMixin, nn.Module):
         with torch.no_grad():
             self.cls.weight.copy_(assign - 0.5 * off_class_mask)
 
-        if loss_weights == "protopnet":
-            # original ProtoPNet coefficients
-            self.lam_clst = 0.8
-            self.lam_sep = 0.08
-            self.lam_div = 100
-            self.lam_cntrst = 0  # no label co-occurrence loss
-            self.lam_l1 = 1e-4
-        elif loss_weights == "protoecgnet":
-            # ProtoECGNet paper
-            self.lam_clst = 0.004
-            self.lam_sep = 0.0004
-            self.lam_div = 250.0
-            self.lam_cntrst = 300
-            self.lam_l1 = 1e-4
-        elif (
-            isinstance(loss_weights, JointStageLambdas)
-            and pipeline_stage == "learn-prototypes-supervised"
-        ):
-            self.lam_clst = loss_weights.lam_clst
-            self.lam_sep = loss_weights.lam_sep
-            self.lam_div = loss_weights.lam_div
-            self.lam_cntrst = loss_weights.lam_cntrst
-        elif (
-            isinstance(loss_weights, ClsStageLambdas)
-            and pipeline_stage == "train-classifier"
-        ):
-            self.lam_l1 = loss_weights.lam_l1
-        else:
-            raise ValueError(
-                f"Unknown how to derive prototype loss weights (got {loss_weights}) for stage (got {pipeline_stage})"
-            )
+        self.lam_clst = lam_clst
+        self.lam_sep = lam_sep
+        self.lam_div = lam_div
+        self.lam_cntrst = lam_cntrst
+        self.lam_l1 = lam_l1
 
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
@@ -290,7 +250,7 @@ class ProtoECGNetFusion(PretrainedMixin, nn.Module):
         label_names: list[str],  # must have same ordering as input y to forward
         label_weights: torch.Tensor,
         branches: BRANCHES_T,
-        loss_weights: dict[str, float] | LOSS_WEIGHT_T = "protoecgnet",
+        lam_l1: float = 1e-4,
         pretrained_weights: str | None = None,
     ):
         super().__init__()
@@ -409,18 +369,7 @@ class ProtoECGNetFusion(PretrainedMixin, nn.Module):
         with torch.no_grad():
             self.cls.weight.copy_(assign - 0.5 * off_class_mask)
 
-        if loss_weights == "protopnet":
-            # original ProtoPNet coefficients
-            self.lam_l1 = 1e-4
-        elif loss_weights == "protoecgnet":
-            # ProtoECGNet paper
-            self.lam_l1 = 1e-4
-        elif isinstance(loss_weights, ClsStageLambdas):
-            self.lam_l1 = loss_weights.lam_l1
-        else:
-            raise ValueError(
-                f"Unknown how to derive prototype loss weights (got {loss_weights})"
-            )
+        self.lam_l1 = lam_l1
 
         # this should be a checkpoint for the outer fusion model i.e. all branches and final classifier
         if pretrained_weights is not None:
