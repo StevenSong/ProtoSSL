@@ -12,6 +12,7 @@ STAGE_T = Literal[
     "compute-embeddings",
     "train-classifier",
     "train-fusion-classifier",
+    "compute-fusion-embeddings",
     "train-contraster",
 ]
 

@@ -248,15 +248,22 @@ class ProtoECGNetFusion(PretrainedMixin, nn.Module):
         *,  # enforce kwargs
         pipeline_stage: STAGE_T,
         label_names: list[str],  # must have same ordering as input y to forward
-        label_weights: torch.Tensor,
+        label_weights: torch.Tensor | None,  # only needed for training
         branches: BRANCHES_T,
         lam_l1: float = 1e-4,
         pretrained_weights: str | None = None,
     ):
         super().__init__()
-        if pipeline_stage != "train-fusion-classifier":
+        if pipeline_stage not in {
+            "train-fusion-classifier",
+            "compute-fusion-embeddings",
+        }:
             raise ValueError(
                 f"Invalid pipeline_stage for ProtoECGNetFusion: {pipeline_stage}"
+            )
+        if pipeline_stage == "train-fusion-classifier" and label_weights is None:
+            raise ValueError(
+                "label_weights cannot be None for training-fusion-classifier stage"
             )
         self.pipeline_stage = pipeline_stage
         self.label_names = label_names
@@ -375,15 +382,27 @@ class ProtoECGNetFusion(PretrainedMixin, nn.Module):
         if pretrained_weights is not None:
             self.load_pretrained_weights(pretrained_weights)
 
+    def compute_prototype_sims(self, x: torch.Tensor) -> tuple[
+        torch.Tensor,  # (B, n_prototypes) prototype sims, ordered by label_names
+        torch.Tensor,  # (B, n_prototypes) which chunk resulted in each prototype sim
+    ]:
+        per_branch_sims, per_branch_chunks = [], []
+        for enc in self.encoders.values():
+            per_branch_sims.append(enc(x))
+            _, chunks = enc.get_last_embs_and_chunks()  # type: ignore
+            per_branch_chunks.append(chunks)
+        sims: torch.Tensor = torch.concat(per_branch_sims, dim=1)  # (B, R)
+        chunks: torch.Tensor = torch.concat(per_branch_chunks, dim=1)  # (B, R)
+        sims = sims[:, self.reverse_mask]  # type: ignore
+        chunks = chunks[:, self.reverse_mask]  # type: ignore
+        return sims, chunks
+
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> tuple[
         dict[str, torch.Tensor],  # losses
         dict[str, torch.Tensor],  # probs
     ]:
-        per_branch_sims = []
-        for enc in self.encoders.values():
-            per_branch_sims.append(enc(x))
-        sims: torch.Tensor = torch.concat(per_branch_sims, dim=1)  # (B, R)
-        sims = sims[:, self.reverse_mask]  # type: ignore
+        assert self.label_weights is not None, "label_weights is None"
+        sims, _ = self.compute_prototype_sims(x)  # (B, R)
         logits: torch.Tensor = self.cls(sims)  # (B, L)
         probs = logits.sigmoid()  # (B, L)
 

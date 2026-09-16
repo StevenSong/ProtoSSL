@@ -30,6 +30,7 @@ PROTOECGNET_PIPELINE_STAGES = [
     "compute-embeddings",
     "train-classifier",
     "train-fusion-classifier",
+    "compute-fusion-embeddings",
 ]
 
 ProtoECGNetTrainerError = ValueError(
@@ -137,6 +138,7 @@ class LitData(LightningDataModule):
                 not in {
                     "project-prototypes-supervised",
                     "compute-embeddings",
+                    "compute-fusion-embeddings",
                 }
             ),
             pin_memory=True,
@@ -307,6 +309,19 @@ class LitModel(LightningModule):
             )
             for param in self.model.encoders.parameters():
                 param.requires_grad = False
+        elif pipeline_stage == "compute-fusion-embeddings":
+            assert branches is not None, "branches is None"
+            # pretrained_weights (fusion ckpt) or per-branch weights validated by model
+            self.model = ProtoECGNetFusion(
+                pipeline_stage=pipeline_stage,
+                label_names=label_names,
+                label_weights=label_weights,
+                branches=branches,
+                pretrained_weights=pretrained_weights,
+                lam_l1=lam_l1,
+            )
+            for param in self.model.parameters():
+                param.requires_grad = False
         else:
             raise ValueError(f"Unknown pipeline_stage {pipeline_stage}")
 
@@ -412,6 +427,16 @@ class LitModel(LightningModule):
             # which chunks resulted in the prototype sims?
             _, chunks = self.model.get_last_embs_and_chunks()  # (B, n_prototypes)
 
+            preds = sims, chunks
+        elif pipeline_stage == "compute-fusion-embeddings":
+            assert isinstance(self.model, ProtoECGNetFusion)
+            if stage != "predict":
+                raise ValueError(
+                    f"Cannot use pipeline_stage=compute-fusion-embeddings with non-predict stage (got stage={stage}).\n"
+                )
+            loss = None
+            # (B, R) sims and chunks, concatenated across branches in label_names order
+            sims, chunks = self.model.compute_prototype_sims(batch["waveform"])
             preds = sims, chunks
         else:
             raise ValueError(
@@ -572,7 +597,10 @@ class PredictionWriter(BasePredictionWriter):
                 save_name = f"{pl_module.prediction_split}_probs.npy"
             else:
                 save_name = "probs.npy"
-        elif pipeline_stage == "compute-embeddings":
+        elif (
+            pipeline_stage == "compute-embeddings"
+            or pipeline_stage == "compute-fusion-embeddings"
+        ):
             assert (
                 hasattr(pl_module, "prediction_split")
                 and pl_module.prediction_split is not None
@@ -697,13 +725,21 @@ def run():
         )
         ckpt_path = os.path.join(cli.trainer.log_dir, "proj.ckpt")  # type: ignore
         cli.trainer.save_checkpoint(ckpt_path, weights_only=False)
-    elif pipeline_stage == "compute-embeddings":
+    elif (
+        pipeline_stage == "compute-embeddings"
+        or pipeline_stage == "compute-fusion-embeddings"
+    ):
         # hack to pass split name to prediction writer, not used anywhere else
         cli.model.prediction_split = "train"
         cli.datamodule.setup("fit")
         cli.trainer.predict(
             model=cli.model,
             dataloaders=cli.datamodule.train_dataloader(),
+        )
+        cli.model.prediction_split = "val"
+        cli.trainer.predict(
+            model=cli.model,
+            dataloaders=cli.datamodule.val_dataloader(),
         )
         cli.model.prediction_split = "test"
         cli.datamodule.setup("test")
