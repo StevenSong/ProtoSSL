@@ -242,6 +242,31 @@ class BranchCfg:
 BRANCHES_T = list[BranchCfg]
 
 
+def fusion_prototype_assignment(
+    label_names: list[str],
+    branches: BRANCHES_T,
+) -> torch.Tensor:
+    """
+    return (n_label, n_prototype) binary matrix of label --> prototype assignment,
+    rows ordered by label_names and columns ordered by prototypes regrouped in label_names order
+    (i.e. the column order after ProtoECGNetFusion's reverse_mask)
+    """
+    # number of prototypes per label depends on branch that it came from
+    label_to_ppl = {
+        label: branch.n_prototypes_per_label
+        for branch in branches
+        for label in branch.label_subset
+    }
+    total_prototypes = sum(label_to_ppl[label] for label in label_names)
+    assign = torch.zeros(len(label_names), total_prototypes)  # (L, R)
+    offset = 0
+    for row, label in enumerate(label_names):
+        chunk = label_to_ppl[label]
+        assign[row, offset : offset + chunk] = 1
+        offset += chunk
+    return assign
+
+
 class ProtoECGNetFusion(PretrainedMixin, nn.Module):
     def __init__(
         self,
@@ -270,7 +295,7 @@ class ProtoECGNetFusion(PretrainedMixin, nn.Module):
         total_labels = len(label_names)
         self.register_buffer("label_weights", label_weights, persistent=False)
         total_encoder_dim, branch_offset = 0, 0
-        encoders, label_to_ppl, label_to_slice = {}, {}, {}
+        encoders, label_to_slice = {}, {}
         for branch in branches:
             if pretrained_weights is None and branch.pretrained_weights is None:
                 raise ValueError(
@@ -314,7 +339,6 @@ class ProtoECGNetFusion(PretrainedMixin, nn.Module):
 
             # encoder branch --> cls mapping
             for branch_idx, label in enumerate(branch.label_subset):
-                label_to_ppl[label] = branch_ppl
                 # the column slice in the tensor concatenated from all encoders
                 label_to_slice[label] = (
                     branch_offset + branch_idx * branch_ppl,  # start
@@ -353,14 +377,10 @@ class ProtoECGNetFusion(PretrainedMixin, nn.Module):
 
         # mask pos/neg prototype class connections
         # let R be the total number of prototypes across all branches
-        assign = torch.zeros(total_labels, total_encoder_dim)  # (L, R)
-        offset = 0
         # the order of the `cls` weights is given by the order of `label_names`
-        for row, label in enumerate(label_names):
-            chunk = label_to_ppl[label]
-            assign[row, offset : offset + chunk] = 1
-            offset += chunk
-        off_class_mask = 1.0 - assign  # (L, P')
+        assign = fusion_prototype_assignment(label_names, branches)  # (L, R)
+        assert assign.shape == (total_labels, total_encoder_dim)
+        off_class_mask = 1.0 - assign  # (L, R)
         self.register_buffer("off_class_mask", off_class_mask, persistent=False)
 
         # binary multilabel classification output
