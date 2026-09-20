@@ -7,13 +7,21 @@ the prototype similarities. Training directly on the cached similarities is
 numerically the same objective as ProtoECGNetFusion.forward but skips the
 dataloaders and encoder forward passes, so an Optuna study is cheap to run.
 
-Tuned: lam_l1 (masked L1 on off-class weights), lr, weight_decay, batch_size.
+Tuned: lam_l1 (masked L1 on off-class weights), lr, weight_decay, batch_size,
+pos_weight_exp (label weights are raised to this power, 0 = unweighted,
+1 = the prevalence inversion the Lightning stages use).
+
+--drop-branches ablates whole branches out of the head without recomputing the
+embeddings: the cached similarities are laid out one contiguous block per label
+(ProtoECGNetFusion.reverse_mask order), so a dropped branch is a set of columns
+to skip, plus the labels only that branch covered.
 Fixed (matching configs/fusion.yaml): AdamW, ReduceLROnPlateau(val_loss,
 factor=0.1, patience=3), bias-free linear head with masked init (1 / -0.5).
 
-Model selection within a trial and across trials uses val macro AP. val_loss
-includes the lam_l1-scaled penalty, so it is not comparable across lam_l1 values
-(it is still used for the LR schedule within a trial, as in the Lightning config).
+Model selection within a trial and across trials uses val macro AP. val_loss is
+not comparable across trials - it includes the lam_l1-scaled penalty and its
+classification term is pos_weight_exp-weighted (it is still used for the LR
+schedule within a trial, as in the Lightning config).
 """
 
 import json
@@ -29,19 +37,22 @@ from torchmetrics.functional.classification import (
     multilabel_auroc,
     multilabel_average_precision,
 )
+from tqdm import trange
 
-from protossl.datasets import (
-    HeedbECGDataset,
-    get_heedb_labels,
-    get_heedb_metadata,
-    infer_dataset_class_from_path,
-)
+from protossl.datasets import HeedbECGDataset, infer_dataset_class_from_path
+from protossl.defines import SPLIT_T
 from protossl.models._protoecgnet import BranchCfg, fusion_prototype_assignment
 
 torch.set_float32_matmul_precision("medium")
 
 # baseline from configs/fusion.yaml + ProtoECGNetFusion defaults, enqueued as trial 0
-BASELINE_PARAMS = {"lam_l1": 1e-4, "lr": 1e-3, "weight_decay": 0.01, "batch_size": 512}
+BASELINE_PARAMS = {
+    "lam_l1": 1e-4,
+    "lr": 1e-3,
+    "weight_decay": 0.01,
+    "batch_size": 512,
+    "pos_weight_exp": 1.0,
+}
 
 
 def parse_args():
@@ -52,6 +63,18 @@ def parse_args():
         help="compute-fusion-embeddings log dir (has config.yaml and {split}_embeds.npy)",
     )
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument(
+        "--drop-branches",
+        nargs="+",
+        default=[],
+        metavar="NAME",
+        help=(
+            "branch names (as given to compute-fusion-embeddings) to ablate out of "
+            "the head: their prototype columns are skipped when loading the cached "
+            "similarities and any label only covered by a dropped branch is dropped "
+            "from the head. Needs a fresh --output-dir (the study is not comparable)"
+        ),
+    )
     parser.add_argument("--n-trials", type=int, default=50)
     parser.add_argument("--max-epochs", type=int, default=100)
     parser.add_argument("--early-stopping-patience", type=int, default=10)
@@ -75,7 +98,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_run_config(embeds_dir: str) -> dict:
+def load_run_config(embeds_dir: str, drop_branches: list[str]) -> dict:
     c = OmegaConf.load(os.path.join(embeds_dir, "config.yaml"))
     assert c.pipeline_stage == "compute-fusion-embeddings", c.pipeline_stage
     data_args = c.data.init_args
@@ -83,6 +106,7 @@ def load_run_config(embeds_dir: str) -> dict:
     ds_cls, label_names, _ = infer_dataset_class_from_path(dataset_path)
     if ds_cls != HeedbECGDataset:
         raise ValueError(f"Only HEEDB is supported, got: {ds_cls}")
+    assert label_names is not None
     label_subset = data_args.label_subset
     if label_subset is not None:
         label_subset = list(label_subset)
@@ -91,45 +115,93 @@ def load_run_config(embeds_dir: str) -> dict:
         BranchCfg(**b)  # type: ignore
         for b in OmegaConf.to_container(c.model.init_args.branches)  # type: ignore
     ]
+    unknown = set(drop_branches) - {b.name for b in branches}
+    if len(unknown) > 0:
+        raise ValueError(
+            f"--drop-branches has no such branch: {sorted(unknown)} "
+            f"(embeds run has {[b.name for b in branches]})"
+        )
+    # the cached similarities are in reverse_mask order: one contiguous block of
+    # n_prototypes_per_label columns per label, in label_names order, where the
+    # block size comes from the branch that label was trained in
+    label_to_ppl = {
+        label: branch.n_prototypes_per_label
+        for branch in branches
+        for label in branch.label_subset
+    }
+    dropped_labels = {
+        label
+        for branch in branches
+        if branch.name in drop_branches
+        for label in branch.label_subset
+    }
+    keep_cols, keep_labels, n_cols_cached = [], [], 0
+    for label in label_names:
+        chunk = label_to_ppl[label]
+        if label not in dropped_labels:
+            keep_cols.extend(range(n_cols_cached, n_cols_cached + chunk))
+            keep_labels.append(label)
+        n_cols_cached += chunk
+    if len(keep_labels) == 0:
+        raise ValueError("--drop-branches would drop every label")
+    if len(dropped_labels) > 0:
+        print(
+            f"dropping branches {drop_branches}: head keeps "
+            f"{len(keep_labels)}/{len(label_names)} labels and "
+            f"{len(keep_cols)}/{n_cols_cached} prototype columns, "
+            f"dropped labels: {sorted(dropped_labels)}"
+        )
+        branches = [b for b in branches if b.name not in drop_branches]
+        # keep_labels is in cached column order, so it doubles as the dataset
+        # label_subset (which sets both which label columns load and their order)
+        label_subset, label_names = keep_labels, keep_labels
     return {
         "dataset_path": dataset_path,
+        "sampling_rate": data_args.sampling_rate,
         "data_kwargs": OmegaConf.to_container(data_args.data_kwargs),
         "label_subset": label_subset,
         "label_names": label_names,
+        "n_cols_cached": n_cols_cached,
+        # None = load every cached column
+        "keep_cols": np.asarray(keep_cols) if len(dropped_labels) > 0 else None,
         "assign": fusion_prototype_assignment(label_names, branches),  # (L, R)
     }
 
 
-def load_labels(run_cfg: dict, split: str) -> torch.Tensor:
-    # same labels as HeedbECGDataset but without instantiating waveforms
-    data_kwargs = dict(run_cfg["data_kwargs"])
-    split_kwargs = {}
-    if "heedb_split_type" in data_kwargs:
-        split_kwargs["heedb_split_type"] = data_kwargs.pop("heedb_split_type")
-    unknown = set(data_kwargs) - {"label_src"}
-    if len(unknown) > 0:
-        raise ValueError(f"Unhandled data_kwargs: {unknown}")
-    df = get_heedb_metadata(run_cfg["dataset_path"], **split_kwargs)
-    df = df[df["split"] == split].reset_index(drop=True)
-    labels = get_heedb_labels(
-        run_cfg["dataset_path"], df, run_cfg["label_subset"], **data_kwargs
+def load_dataset(run_cfg: dict, split: SPLIT_T) -> HeedbECGDataset:
+    # with HIGH_MEMORY unset (checked in main), waveforms are streamed lazily so
+    # only labels/metadata are materialized - we only need the labels/weights
+    return HeedbECGDataset(
+        dataset_path=run_cfg["dataset_path"],
+        split=split,
+        sampling_rate=run_cfg["sampling_rate"],
+        label_subset=run_cfg["label_subset"],
+        **run_cfg["data_kwargs"],
     )
-    return torch.as_tensor(labels)
 
 
 def load_embeds(
     embeds_dir: str,
     split: str,
     device: str,
+    run_cfg: dict,
     chunk_rows: int = 500_000,
 ) -> torch.Tensor:
     arr = np.load(os.path.join(embeds_dir, f"{split}_embeds.npy"), mmap_mode="r")
-    print(f"loading {split} embeds {arr.shape} to {device}")
-    out = torch.empty(arr.shape, dtype=torch.float32, device=device)
+    assert arr.shape[1] == run_cfg["n_cols_cached"], (
+        f"{split} embeds have {arr.shape[1]} prototype columns, the embeds dir "
+        f"config implies {run_cfg['n_cols_cached']}"
+    )
+    cols = run_cfg["keep_cols"]
+    shape = arr.shape if cols is None else (arr.shape[0], len(cols))
+    print(f"loading {split} embeds {arr.shape} as {shape} to {device}")
+    out = torch.empty(shape, dtype=torch.float32, device=device)
     for i in range(0, arr.shape[0], chunk_rows):
-        out[i : i + chunk_rows].copy_(
-            torch.from_numpy(np.array(arr[i : i + chunk_rows]))
-        )
+        # subset on the host so dropped-branch columns never reach the GPU
+        chunk = np.array(arr[i : i + chunk_rows])
+        if cols is not None:
+            chunk = chunk[:, cols]
+        out[i : i + chunk_rows].copy_(torch.from_numpy(chunk))
     return out
 
 
@@ -174,6 +246,9 @@ def train_head(
     n_train, n_labels = Y_train.shape
     off_class_mask = 1.0 - assign
     lam_l1, batch_size = params["lam_l1"], params["batch_size"]
+    # exponent interpolates between unweighted (0) and full prevalence inversion
+    # (1, i.e. BaseTSDataset.get_label_weights as used by the Lightning stages)
+    pos_weight = pos_weight ** params["pos_weight_exp"]
 
     torch.manual_seed(seed)
     gen = torch.Generator(device=device).manual_seed(seed)
@@ -185,10 +260,11 @@ def train_head(
     )
 
     best_ap, best_epoch, best_W, best_metrics = -1.0, -1, None, {}
-    for epoch in range(max_epochs):
+    epoch = -1
+    for epoch in trange(max_epochs, desc="Epoch"):
         perm = torch.randperm(n_train, device=device, generator=gen)
         train_loss_sum = torch.zeros((), device=device)
-        for start in range(0, n_train, batch_size):
+        for start in trange(0, n_train, batch_size, desc="Step"):
             idx = perm[start : start + batch_size]
             logits = X_train[idx] @ W.T  # (B, L)
             cls_loss = F.binary_cross_entropy_with_logits(
@@ -252,14 +328,13 @@ def tune(args, run_cfg: dict, study: optuna.Study, trials_dir: str):
     device = args.device
     assign = run_cfg["assign"].to(device)
 
-    Y_train = load_labels(run_cfg, "train")
-    Y_val = load_labels(run_cfg, "val")
-    # same as BaseTSDataset.get_label_weights over the train split
-    per_label_count = Y_train.sum(dim=0)
-    pos_weight = ((Y_train.shape[0] - per_label_count) / per_label_count).float()
+    train_ds, val_ds = load_dataset(run_cfg, "train"), load_dataset(run_cfg, "val")
+    Y_train, Y_val = train_ds.labels, val_ds.labels
+    assert Y_train is not None and Y_val is not None
+    pos_weight = train_ds.get_label_weights().float()
 
-    X_train = load_embeds(args.embeds_dir, "train", device)
-    X_val = load_embeds(args.embeds_dir, "val", device)
+    X_train = load_embeds(args.embeds_dir, "train", device, run_cfg)
+    X_val = load_embeds(args.embeds_dir, "val", device, run_cfg)
     for X, Y in [(X_train, Y_train), (X_val, Y_val)]:
         assert X.shape[0] == Y.shape[0], f"{X.shape} vs {Y.shape}"
         assert X.shape[1] == assign.shape[1], f"{X.shape} vs {assign.shape}"
@@ -272,6 +347,7 @@ def tune(args, run_cfg: dict, study: optuna.Study, trials_dir: str):
             "lr": trial.suggest_float("lr", 1e-4, 3e-2, log=True),
             "weight_decay": trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True),
             "batch_size": trial.suggest_categorical("batch_size", [512, 2048, 8192]),
+            "pos_weight_exp": trial.suggest_float("pos_weight_exp", 0.0, 1.0),
         }
         print(f"trial {trial.number}: {params}", flush=True)
         W, metrics = train_head(
@@ -322,7 +398,8 @@ def export(args, run_cfg: dict, study: optuna.Study, trials_dir: str):
     selected = candidates.sort_values("off_class_frac").iloc[0]
     summary_cols = [
         "number", "value", "val_auroc", "lam_l1", "lr", "weight_decay",
-        "batch_size", "off_class_frac", "off_class_near_zero_frac", "best_epoch",
+        "batch_size", "pos_weight_exp", "off_class_frac",
+        "off_class_near_zero_frac", "best_epoch",
     ]  # fmt: skip
     print(done[summary_cols].head(20).to_string(index=False))
     print(
@@ -335,17 +412,24 @@ def export(args, run_cfg: dict, study: optuna.Study, trials_dir: str):
     W = W.to(args.device)
     torch.save({"cls.weight": W.cpu()}, os.path.join(args.output_dir, "cls.pt"))
     for split in ["val", "test"]:
-        X = load_embeds(args.embeds_dir, split, args.device)
+        X = load_embeds(args.embeds_dir, split, args.device, run_cfg)
         assert X.shape[1] == W.shape[1], f"{X.shape} vs {W.shape}"
         # column order is label_names, same layout as PredictionWriter probs
         probs = compute_logits(W, X).sigmoid().cpu().numpy()
         np.save(os.path.join(args.output_dir, f"{split}_probs.npy"), probs)
         del X
 
+    # the eval script reads the retained labels from here via --label-subset-config
+    labels_cfg = {"data": {"init_args": {"label_subset": run_cfg["label_names"]}}}
+    OmegaConf.save(
+        OmegaConf.create(labels_cfg), os.path.join(args.output_dir, "labels.yaml")
+    )
+
     selection = {
         "trial": int(selected["number"]),
         "ap_tolerance": args.ap_tolerance,
         "best_val_ap": float(best_ap),
+        "drop_branches": sorted(args.drop_branches),
         "label_names": run_cfg["label_names"],
         **{
             k: (v.item() if hasattr(v, "item") else v)
@@ -358,13 +442,34 @@ def export(args, run_cfg: dict, study: optuna.Study, trials_dir: str):
     print(f"exported selected head and probs to {args.output_dir}")
 
 
+def tag_dropped_branches(study: optuna.Study, drop_branches: list[str], where: str):
+    """
+    heads with different branches dropped have different shapes, so trials from one
+    ablation can neither be resumed nor selected against another - record the
+    ablation on the study and refuse to reuse a study that used a different one
+    """
+    dropped = sorted(drop_branches)
+    # studies predating --drop-branches have trials but no attr, i.e. dropped nothing
+    prev = study.user_attrs.get("drop_branches", [] if len(study.trials) > 0 else None)
+    if prev is not None and sorted(prev) != dropped:
+        raise ValueError(
+            f"study in {where} was run with drop_branches={sorted(prev)}, "
+            f"not {dropped}; use a fresh --output-dir"
+        )
+    study.set_user_attr("drop_branches", dropped)
+
+
 def main():
+    if os.environ.get("HIGH_MEMORY", None) is not None:
+        # this stage only needs the cached similarities, so materializing the
+        # waveform matrix would cost ~500 GB of RAM for nothing
+        raise ValueError("Do not set HIGH_MEMORY for this script")
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
     trials_dir = os.path.join(args.output_dir, "trials")
     os.makedirs(trials_dir, exist_ok=True)
 
-    run_cfg = load_run_config(args.embeds_dir)
+    run_cfg = load_run_config(args.embeds_dir, args.drop_branches)
     study = optuna.create_study(
         study_name="fusion-classifier",
         storage=f"sqlite:///{os.path.join(args.output_dir, 'study.db')}",
@@ -373,6 +478,7 @@ def main():
         sampler=optuna.samplers.TPESampler(seed=args.seed),
         pruner=optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=5),
     )
+    tag_dropped_branches(study, args.drop_branches, args.output_dir)
     if not args.export_only:
         tune(args, run_cfg, study, trials_dir)
         torch.cuda.empty_cache()  # release train embeds before export
