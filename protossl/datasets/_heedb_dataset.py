@@ -24,7 +24,12 @@ from ..defines import (
     SPLIT_T,
     STANDARD_LEAD_ORDER,
 )
-from ._base_dataset import BaseTSDataset, load_cached_data, validate_label_subset
+from ._base_dataset import (
+    BaseTSDataset,
+    get_cache_file,
+    load_cached_data,
+    validate_label_subset,
+)
 from .streaming_loaders import StreamingECGWaveforms
 
 # fmt: off
@@ -62,10 +67,25 @@ class HeedbECGDataset(BaseTSDataset):
         label_subset: list[str] | None = None,
         label_src: LABEL_SRC_T = "original_physician",
         heedb_split_type: HEEDB_SPLIT_T = "by-year",
+        drop_blank_overread: bool = False,
     ):
         full_df = get_heedb_metadata(dataset_path, heedb_split_type=heedb_split_type)
 
         df = full_df[full_df["split"] == split].reset_index(drop=True)
+        has_overread = None
+        if drop_blank_overread:
+            # HEEDB v5 likely has some errors with missing physician overreads,
+            # so a blank physician overread can't be told apart from a physician
+            # deleting every statement. Thus, treat these rows as unlabeled
+            # rather than all-negative. filtered after split assignment so splits
+            # are unchanged and ecg_id (sample_id) stays stable
+            if label_src != "original_physician":
+                raise ValueError(
+                    "drop_blank_overread only applies to label_src='original_physician', "
+                    f"got: {label_src}"
+                )
+            has_overread = get_heedb_overread_mask(dataset_path, df)
+            df = df[has_overread].reset_index(drop=True)
         self.source_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.sample_ids = torch.as_tensor(df["ecg_id"].to_numpy())
         self.labels = torch.as_tensor(
@@ -107,7 +127,35 @@ class HeedbECGDataset(BaseTSDataset):
             print("WARNING:")
             print("===================================================")
 
+            base_split = (
+                split
+                if heedb_split_type == "by-year"
+                else f"{split}-{heedb_split_type}"
+            )
+            unfiltered_cache = get_cache_file(
+                dataset_path=dataset_path,
+                split=base_split,  # type: ignore
+                sampling_rate=sampling_rate,
+            )
+            cache_split = (
+                base_split
+                if not drop_blank_overread
+                else f"{base_split}-drop-blank-overread"
+            )
+
             def load_transform_data_fn() -> torch.Tensor:
+                if drop_blank_overread and os.path.exists(unfiltered_cache):
+                    # rows of the unfiltered cache are the unfiltered split df in order, so
+                    # index it with the overread mask instead of re-streaming every file.
+                    # mmap keeps peak memory at roughly the size of the filtered tensor
+                    print(f"deriving filtered cache from: {unfiltered_cache}")
+                    X = torch.load(unfiltered_cache, mmap=True)
+                    assert has_overread is not None
+                    assert X.shape[0] == len(has_overread), (
+                        f"unfiltered cache has {X.shape[0]} rows, "
+                        f"expected {len(has_overread)}"
+                    )
+                    return X[torch.from_numpy(has_overread)]
                 # fmt: off
                 print("WARNING:")
                 print("WARNING: ABOUT TO LOAD ENTIRE HEEDB WAVEFORM MATRIX INTO MEMORY TO CACHE")
@@ -129,11 +177,7 @@ class HeedbECGDataset(BaseTSDataset):
             self.waveforms = load_cached_data(
                 load_transform_data_fn=load_transform_data_fn,
                 dataset_path=dataset_path,
-                split=(
-                    split
-                    if heedb_split_type == "by-year"
-                    else f"{split}-{heedb_split_type}"
-                ),  # type: ignore
+                split=cache_split,  # type: ignore
                 sampling_rate=sampling_rate,
             )
 
@@ -275,26 +319,6 @@ def get_heedb_labels(
         validate_label_subset(label_subset, list(HEEDB_TARGETS))
         targets = {label: HEEDB_TARGETS[label] for label in label_subset}
 
-    def make_fname_to_code(institution, label_csv, label_col) -> dict[str, str]:
-        if institution == "mgb":
-            subdir = "I0001"
-        elif institution == "emory":
-            subdir = "I0006"
-        else:
-            raise ValueError(f"Unknown subdir for institution: {institution}")
-        df = pd.read_csv(os.path.join(heedb_path, subdir, "12SL_diagnoses", label_csv))
-        return {
-            fname: code_str
-            for fname, code_str in zip(
-                tqdm(
-                    # v24 file names are prefixed with '.' and suffixed with '.hea\n'
-                    df["FileName"].str.strip(".").str.strip(".hea\n"),
-                    desc=f"Creating {institution} fname to code mapping",
-                ),
-                df[label_col],
-            )
-        }
-
     meta_hash = hash_path_list(meta["fpath"])
     targets_hash = hashlib.md5("\0".join(targets).encode("utf-8")).hexdigest()[:8]
     identifier = f"HEEDB_labels_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_src}_{targets_hash}"
@@ -310,15 +334,7 @@ def get_heedb_labels(
         print("replaying below stats from cache:")
     else:
         print(f"reading HEEDB labels from source: {heedb_path}")
-        _label_csv, _label_col = LABEL_SRC_MAPPING[label_src]
-        if label_src not in MGB_FNAME_TO_CODE:
-            MGB_FNAME_TO_CODE[label_src] = make_fname_to_code(
-                "mgb", _label_csv, _label_col
-            )
-        if label_src not in EUH_FNAME_TO_CODE:
-            EUH_FNAME_TO_CODE[label_src] = make_fname_to_code(
-                "emory", _label_csv, _label_col
-            )
+        load_fname_to_code(heedb_path, label_src)  # caches in global vars
         code_to_label = {c: k for k, cs in targets.items() for c in cs}
         label_to_idx = {k: i for i, k in enumerate(targets)}
 
@@ -372,6 +388,103 @@ def get_heedb_labels(
     )
     print("===================================================")
     return data
+
+
+def make_fname_to_code(
+    heedb_path: str,
+    institution: str,
+    label_csv: str,
+    label_col: str,
+) -> dict[str, str]:
+    if institution == "mgb":
+        subdir = "I0001"
+    elif institution == "emory":
+        subdir = "I0006"
+    else:
+        raise ValueError(f"Unknown subdir for institution: {institution}")
+    df = pd.read_csv(os.path.join(heedb_path, subdir, "12SL_diagnoses", label_csv))
+    return {
+        fname: code_str
+        for fname, code_str in zip(
+            tqdm(
+                # v24 file names are prefixed with '.' and suffixed with '.hea\n'
+                df["FileName"].str.strip(".").str.strip(".hea\n"),
+                desc=f"Creating {institution} fname to code mapping",
+            ),
+            df[label_col],
+        )
+    }
+
+
+def load_fname_to_code(heedb_path: str, label_src: LABEL_SRC_T):
+    # populates the global per-institution caches for this label source
+    _label_csv, _label_col = LABEL_SRC_MAPPING[label_src]
+    if label_src not in MGB_FNAME_TO_CODE:
+        MGB_FNAME_TO_CODE[label_src] = make_fname_to_code(
+            heedb_path, "mgb", _label_csv, _label_col
+        )
+    if label_src not in EUH_FNAME_TO_CODE:
+        EUH_FNAME_TO_CODE[label_src] = make_fname_to_code(
+            heedb_path, "emory", _label_csv, _label_col
+        )
+
+
+def get_heedb_overread_mask(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
+    """
+    Boolean mask over `meta` rows, True where the ECG has a non-blank physician
+    overread (`codes_physician` in diagnoses_acquisition.csv). Rows whose file isn't
+    in the diagnoses table at all are also False, but are counted separately.
+    """
+    print("==============get_heedb_overread_mask==============")
+    label_src: LABEL_SRC_T = "original_physician"
+    meta_hash = hash_path_list(meta["fpath"])
+    identifier = (
+        f"HEEDB_overread_mask_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_src}"
+    )
+    hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
+    cache_file = os.path.join(CACHE_DIR, f"{hashed}.npy")
+
+    if os.path.exists(cache_file):
+        print(f"reading HEEDB overread mask from on-disk cache: {cache_file}")
+        loaded = np.load(cache_file, allow_pickle=True).item()
+        mask = loaded["mask"]
+        n_blank, n_missing = loaded["n_blank"], loaded["n_missing"]
+        print("replaying below stats from cache:")
+    else:
+        print(f"reading HEEDB physician overreads from source: {heedb_path}")
+        load_fname_to_code(heedb_path, label_src)
+        mask = np.zeros(len(meta), dtype=bool)
+        n_blank, n_missing = 0, 0
+        for meta_idx, (fname, institution) in enumerate(
+            zip(
+                tqdm(meta["fpath"], desc="Checking physician overreads"), meta["source"]
+            )
+        ):
+            if institution == "mgb":
+                codes = MGB_FNAME_TO_CODE[label_src].get(fname, "MISSING")
+            elif institution == "emory":
+                codes = EUH_FNAME_TO_CODE[label_src].get(fname, "MISSING")
+            else:
+                raise ValueError(f"Unknown institution: {institution}")
+            if codes == "MISSING":
+                n_missing += 1
+            elif not isinstance(codes, str) or codes.strip() == "":
+                # pandas reads an empty field as NaN
+                n_blank += 1
+            else:
+                mask[meta_idx] = True
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        np.save(
+            cache_file,
+            {"mask": mask, "n_blank": n_blank, "n_missing": n_missing},  # type: ignore
+        )
+        print(f"saved HEEDB overread mask to on-disk cache: {cache_file}")
+    print(
+        f"Of {len(meta)} ECGs, keeping {mask.sum()} with a physician overread, dropping "
+        f"{n_blank} with a blank overread and {n_missing} not found in the diagnoses table"
+    )
+    print("===================================================")
+    return mask
 
 
 def hash_path_list(paths: pd.Series, chunk=100_000) -> str:

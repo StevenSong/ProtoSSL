@@ -42,7 +42,7 @@ model:
     backbone_type: resnet18
     conv_type: 2D
     prototype_type: global
-    n_prototypes_per_label: 256
+    n_prototypes_per_label: 50
     # pretrained_weights: /path/to/weights
 data:
   class_path: LitData

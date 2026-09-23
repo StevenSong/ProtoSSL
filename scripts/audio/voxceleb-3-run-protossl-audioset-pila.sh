@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --cpus-per-task=24
-#SBATCH --mem-per-gpu=200gb
+#SBATCH --mem-per-gpu=100gb
 #SBATCH --gpus-per-node=1
 #SBATCH --nodes=1
 #SBATCH -w kg35-nvl01
@@ -32,7 +32,7 @@ cd $REPO_ROOT/scripts/audio
 
 # experiment parameters
 EXP_NAME="protossl-audioset-pila"
-PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../protossl-audioset-v2.BAK")
+PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../protossl-audioset-v2")
 
 python -m protossl.trainer \
     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \

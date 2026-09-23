@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --cpus-per-task=24
-#SBATCH --mem-per-gpu=200gb
+#SBATCH --mem-per-gpu=100gb
 #SBATCH --gpus-per-node=1
 #SBATCH --nodes=1
 #SBATCH -w kg35-nvl01

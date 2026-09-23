@@ -9,7 +9,7 @@ scripts=(
 
 voxceleb_scripts=(
     # "1-run-blackbox-direct.sh"
-    # "voxceleb-2-run-labsup-proto-direct.sh"
+    "voxceleb-2-run-labsup-proto-direct.sh"
     "voxceleb-3-run-protossl-audioset-pila.sh"
     "voxceleb-4-run-labsup-proto-audioset-rila.sh"
 )

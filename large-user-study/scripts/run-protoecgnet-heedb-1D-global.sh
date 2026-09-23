@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --cpus-per-task=24
-#SBATCH --mem-per-gpu=500gb
+#SBATCH --mem-per-gpu=450gb
 #SBATCH --gpus-per-node=1
 #SBATCH --nodes=1
 #SBATCH -w kg35-nvl01
@@ -12,7 +12,7 @@
 set -e
 
 DATASET_PATH=/opt/gpudata/ecg/heedb
-RUN_DIR=/opt/gpu_working/steven/protoecgnet-heedb
+RUN_DIR=/opt/gpu_working/steven/protoecgnet-heedb-overread
 REPO_ROOT=/opt/gpu_working/steven/ProtoSSL/large-user-study
 
 # set these env vars prior to executing this script
@@ -37,7 +37,7 @@ python -m protossl.protoecgnet_trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --data.data_kwargs '{"heedb_split_type": "by-label"}' \
+    --data.data_kwargs '{"heedb_split_type": "by-label", "drop_blank_overread": True}' \
     --data.num_workers 8 \
     --data.prefetch_factor 4
 
@@ -48,7 +48,7 @@ python -m protossl.protoecgnet_trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --data.data_kwargs '{"heedb_split_type": "by-label"}' \
+    --data.data_kwargs '{"heedb_split_type": "by-label", "drop_blank_overread": True}' \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/learn-prototypes-supervised/latest/best.ckpt \
     --data.num_workers 8 \
     --data.prefetch_factor 4
@@ -59,14 +59,14 @@ python -m protossl.protoecgnet_trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --data.data_kwargs '{"heedb_split_type": "by-label"}' \
+    --data.data_kwargs '{"heedb_split_type": "by-label", "drop_blank_overread": True}' \
     --model.pretrained_weights $RUN_DIR/$EXP_NAME/project-prototypes-supervised/latest/proj.ckpt \
     --data.num_workers 8 \
     --data.prefetch_factor 4
 
 python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
---data-kwargs '{"heedb_split_type": "by-label"}' \
+--data-kwargs '{"heedb_split_type": "by-label", "drop_blank_overread": True}' \
 --probs-npy $RUN_DIR/$EXP_NAME/train-classifier/latest/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 

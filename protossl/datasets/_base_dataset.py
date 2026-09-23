@@ -19,6 +19,18 @@ if INVALIDATE_CACHE:
         shutil.rmtree(CACHE_DIR)
 
 
+def get_cache_file(
+    *,  # enforce kwargs
+    dataset_path: str,
+    split: SPLIT_T,
+    sampling_rate: int,
+) -> str:
+    # use a short hash of the source dataest path to distinguish different sources (e.g. if using different dataset subsets)
+    identifier = f"{dataset_path.rstrip(os.sep)}_{split}_{sampling_rate}"
+    hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
+    return os.path.join(CACHE_DIR, f"{hashed}.pt")
+
+
 def load_cached_data(
     *,  # enforce kwargs
     load_transform_data_fn: Callable[[], torch.Tensor],
@@ -28,11 +40,9 @@ def load_cached_data(
 ):
     # loading and processing can be time intensive, so cache transformed data if it doesn't already exist
     os.makedirs(CACHE_DIR, exist_ok=True)
-
-    # use a short hash of the source dataest path to distinguish different sources (e.g. if using different dataset subsets)
-    identifier = f"{dataset_path.rstrip(os.sep)}_{split}_{sampling_rate}"
-    hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
-    cache_file = os.path.join(CACHE_DIR, f"{hashed}.pt")
+    cache_file = get_cache_file(
+        dataset_path=dataset_path, split=split, sampling_rate=sampling_rate
+    )
 
     print("=================load_cached_data==================")
     print(f"Dataset parameters: ({dataset_path}, {split}, {sampling_rate}Hz)")
