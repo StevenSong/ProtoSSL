@@ -296,7 +296,8 @@ def get_heedb_labels(
         }
 
     meta_hash = hash_path_list(meta["fpath"])
-    identifier = f"HEEDB_labels_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_subset}_{label_src}"
+    targets_hash = hashlib.md5("\0".join(targets).encode("utf-8")).hexdigest()[:8]
+    identifier = f"HEEDB_labels_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_src}_{targets_hash}"
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     cache_file = os.path.join(CACHE_DIR, f"{hashed}.npy")
 
