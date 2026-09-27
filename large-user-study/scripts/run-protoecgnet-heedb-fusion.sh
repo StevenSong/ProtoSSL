@@ -55,7 +55,7 @@ python -m protossl.protoecgnet_trainer \
 python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
 --data-kwargs '{"heedb_split_type": "by-label", "drop_blank_overread": True}' \
---probs-npy $RUN_DIR/$EXP_NAME/train-fusion-classifier/latest/probs.npy \
+--probs-npy $RUN_DIR/$EXP_NAME/train-fusion-classifier/latest/test_probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 
-cp $RUN_DIR/$EXP_NAME/train-fusion-classifier/latest/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
+cp $RUN_DIR/$EXP_NAME/train-fusion-classifier/latest/test_probs.npy $RUN_DIR/$EXP_NAME/test_probs.npy
