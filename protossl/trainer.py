@@ -1035,7 +1035,7 @@ def run():
             raise ValueError("seed_everything must be 42 or greater")
     if not isinstance(cli.trainer.strategy, (DDPStrategy, SingleDeviceStrategy)):
         # NOTE: to implement support for other distributed startegies, should check
-        # the places noted in this GH issue: https://github.com/StevenSong/ecg-prototype-fm/issues/63
+        # the places noted in this GH issue: https://github.com/StevenSong/ProtoSSL/issues/63
         raise ValueError(
             f"Only single device or DDP training strategies are supported, got: {cli.trainer.strategy}"
         )

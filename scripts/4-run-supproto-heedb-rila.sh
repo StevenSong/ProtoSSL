@@ -14,8 +14,8 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="labsup-proto-heedb-rila"
-PRETRAIN_RUN="$RUN_DIR/../prosup-pretrain-heedb"
+EXP_NAME="supproto-heedb-rila"
+PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../supproto-heedb")
 
 if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
 

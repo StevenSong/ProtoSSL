@@ -31,7 +31,7 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts/audio
 
 # experiment parameters
-EXP_NAME="labsup-proto-audioset-rila"
+EXP_NAME="supproto-audioset-rila"
 PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../supproto-audioset-v2")
 
 python -m protossl.trainer \

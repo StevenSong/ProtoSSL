@@ -8,7 +8,7 @@ authors = [
   { name="Steven Song", email="songs1@uchicago.edu" },
   { name="Sahil Sethi", email="sethis@uchicago.edu" },
 ]
-description = "ProtoSSL: Interpretable Prototype Learning from Unlabeled Time-Series Data"
+description = "ProtoSSL: Self-Supervised Pretraining and Downstream Transfer for Projection-Based Prototype Models"
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ["version", "dependencies"]

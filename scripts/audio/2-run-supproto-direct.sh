@@ -27,7 +27,7 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts/audio
 
 # experiment parameters
-EXP_NAME="labsup-proto-direct"
+EXP_NAME="supproto-direct"
 
 # python -m protossl.trainer \
 #     --config $REPO_ROOT/configs/audio/target-guided-$PPL.yaml \

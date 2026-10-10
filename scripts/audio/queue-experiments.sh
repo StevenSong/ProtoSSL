@@ -1,17 +1,17 @@
 #!/bin/bash
 
 scripts=(
-    # "1-run-blackbox-direct.sh"
-    # "2-run-labsup-proto-direct.sh"
+    "1-run-blackbox-direct.sh"
+    "2-run-supproto-direct.sh"
     "3-run-protossl-audioset-pila.sh"
-    "4-run-labsup-proto-audioset-rila.sh"
+    "4-run-supproto-audioset-rila.sh"
 )
 
 voxceleb_scripts=(
-    # "1-run-blackbox-direct.sh"
-    "voxceleb-2-run-labsup-proto-direct.sh"
+    "1-run-blackbox-direct.sh"
+    "voxceleb-2-run-supproto-direct.sh"
     "voxceleb-3-run-protossl-audioset-pila.sh"
-    "voxceleb-4-run-labsup-proto-audioset-rila.sh"
+    "voxceleb-4-run-supproto-audioset-rila.sh"
 )
 
 # iemocap

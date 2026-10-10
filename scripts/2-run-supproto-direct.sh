@@ -14,7 +14,7 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="labsup-proto-direct"
+EXP_NAME="supproto-direct"
 
 python -m protossl.trainer \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \

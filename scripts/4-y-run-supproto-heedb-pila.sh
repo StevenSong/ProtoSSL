@@ -14,27 +14,25 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="labsup-proto-heedb-rila-28ppl"
-PRETRAIN_RUN="$RUN_DIR/../prosup-pretrain-heedb"
+EXP_NAME="supproto-heedb-pila"
+PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../supproto-heedb")
 
 if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
 
     python -m protossl.trainer \
         --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
         --seed_everything $SEED \
-        --model.n_prototypes_per_label 28 \
         --pipeline-stage learn-prototype-assignments \
         --assignment-strategy ilp_effect_size \
         --model.n_prototypes 1000 \
         --trainer.logger.save_dir $RUN_DIR \
         --trainer.logger.name $EXP_NAME \
         --data.dataset_path $DATASET_PATH \
-        --model.pretrained_weights $PRETRAIN_RUN/project-prototypes-supervised/latest/proj.ckpt
+        --model.pretrained_weights $PRETRAIN_RUN/learn-prototypes-supervised/latest/best.ckpt
 
     python -m protossl.trainer \
         --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
         --seed_everything $SEED \
-        --model.n_prototypes_per_label 28 \
         --pipeline-stage project-prototypes-supervised \
         --trainer.logger.save_dir $RUN_DIR \
         --trainer.logger.name $EXP_NAME \
@@ -44,7 +42,6 @@ if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
     python -m protossl.trainer \
         --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
         --seed_everything $SEED \
-        --model.n_prototypes_per_label 28 \
         --pipeline-stage compute-embeddings \
         --trainer.logger.save_dir $RUN_DIR \
         --trainer.logger.name $EXP_NAME \
@@ -78,7 +75,6 @@ if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
     python -m protossl.trainer \
         --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
         --seed_everything $SEED \
-        --model.n_prototypes_per_label 28 \
         --pipeline-stage learn-prototypes-supervised \
         --trainer.logger.save_dir $RUN_DIR/ \
         --trainer.logger.name $EXP_NAME \
@@ -88,7 +84,6 @@ if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
     python -m protossl.trainer \
         --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
         --seed_everything $SEED \
-        --model.n_prototypes_per_label 28 \
         --pipeline-stage project-prototypes-supervised \
         --trainer.logger.save_dir $RUN_DIR/ \
         --trainer.logger.name $EXP_NAME \
@@ -98,7 +93,6 @@ if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
     python -m protossl.trainer \
         --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
         --seed_everything $SEED \
-        --model.n_prototypes_per_label 28 \
         --pipeline-stage compute-embeddings \
         --trainer.logger.save_dir $RUN_DIR \
         --trainer.logger.name $EXP_NAME \

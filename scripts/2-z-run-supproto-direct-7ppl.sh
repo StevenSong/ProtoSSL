@@ -14,14 +14,15 @@ echo "Using REPO_ROOT=$REPO_ROOT"
 cd $REPO_ROOT/scripts
 
 # experiment parameters
-EXP_NAME="labsup-proto-direct-28ppl"
+EXP_NAME="supproto-direct-7ppl"
+
 
 if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
 
     python -m protossl.trainer \
         --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
         --seed_everything $SEED \
-        --model.n_prototypes_per_label 28 \
+        --model.n_prototypes_per_label 7 \
         --pipeline-stage learn-prototypes-supervised \
         --trainer.logger.save_dir $RUN_DIR/ \
         --trainer.logger.name $EXP_NAME \
@@ -30,7 +31,7 @@ if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
     python -m protossl.trainer \
         --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
         --seed_everything $SEED \
-        --model.n_prototypes_per_label 28 \
+        --model.n_prototypes_per_label 7 \
         --pipeline-stage project-prototypes-supervised \
         --trainer.logger.save_dir $RUN_DIR/ \
         --trainer.logger.name $EXP_NAME \
@@ -40,7 +41,7 @@ if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
     python -m protossl.trainer \
         --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
         --seed_everything $SEED \
-        --model.n_prototypes_per_label 28 \
+        --model.n_prototypes_per_label 7 \
         --pipeline-stage compute-embeddings \
         --trainer.logger.save_dir $RUN_DIR \
         --trainer.logger.name $EXP_NAME \

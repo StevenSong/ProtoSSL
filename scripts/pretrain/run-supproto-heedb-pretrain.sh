@@ -3,8 +3,8 @@
 set -e
 
 PRETRAIN_DATASET=/opt/gpudata/ecg/heedb
-RUN_DIR=/opt/gpudata/steven/ecg-prototype-fm/outputs
-REPO_ROOT=/opt/gpudata/steven/ecg-prototype-fm
+RUN_DIR=/opt/gpu_working/steven/protossl-ecg-outputs
+REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
 
 # set these env vars prior to executing this script
 : "${PRETRAIN_DATASET:?Env var PRETRAIN_DATASET must be set prior to script execution}"
@@ -19,7 +19,7 @@ cd $REPO_ROOT/scripts
 export HIGH_MEMORY=1
 
 # experiment parameters
-EXP_NAME="prosup-pretrain-heedb"
+EXP_NAME="supproto-heedb"
 BACKBONE=resnet18
 CONV=2D
 

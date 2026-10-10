@@ -12,8 +12,8 @@
 set -e
 
 PRETRAIN_DATASET=/opt/gpudata/ecg/heedb
-RUN_DIR=/home/songs1/protossl-ecg-outputs-rebuttal
-REPO_ROOT=/home/songs1/ProtoSSL
+RUN_DIR=/opt/gpu_working/steven/protossl-ecg-outputs-rebuttal
+REPO_ROOT=/opt/gpu_working/steven/ProtoSSL
 
 # set these env vars prior to executing this script
 : "${PRETRAIN_DATASET:?Env var PRETRAIN_DATASET must be set prior to script execution}"

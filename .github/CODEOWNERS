@@ -69,7 +69,7 @@ scripts/_slurm_wrapper.sh @StevenSong
 scripts/_submit_job.sh @StevenSong
 scripts/0-run-cache-data.sh @StevenSong
 scripts/1-run-blackbox-direct.sh @StevenSong
-scripts/2-run-labsup-proto-direct.sh @StevenSong
+scripts/2-run-supproto-direct.sh @StevenSong
 scripts/2-z-* @StevenSong
 scripts/3-* @StevenSong
 scripts/4-* @StevenSong
