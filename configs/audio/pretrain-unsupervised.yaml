@@ -24,7 +24,7 @@ trainer:
         mode: min
         save_last: True
     - class_path: PredictionWriter
-  max_epochs: 5
+  max_epochs: 1000
   log_every_n_steps: 1
 optimizer:
   class_path: torch.optim.AdamW
@@ -58,6 +58,6 @@ data:
     batch_size: 128
     num_workers: 12
     prefetch_factor: 2
-    data_kwargs: '{"cola_view_seconds": 2}'
+    data_wrapper_kwargs: '{"cola_view_seconds": 2}'
 contrastive_pair_mode: cola+clar
 # pipeline_stage: learn-prototypes|project-prototypes|compute-embeddings|train-classifier

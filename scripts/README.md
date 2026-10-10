@@ -7,6 +7,6 @@ We rarely call individual run scripts directly (with one exception, detailed bel
 The only run scripts we execute directly (or submit manually to slurm) are the pretraining jobs under the `pretrain` subdirectory.
 
 If you're trying to replicate our experiments, we'd suggest the following:
-1. Find and replace paths which start with `/opt/gpudata/steven` - these are the only places which contain hardcoded paths and should only be present within a handful of run scripts
-1. Run `pretrain/run-pass-heedb-pretrain.sh`
+1. Find and replace paths which start with `/opt/gpu_working/steven` (repo and output directories) and `/opt/gpudata` (source datasets) - these are the only places which contain hardcoded paths and should only be present within the run, queue, and pretrain scripts
+1. Run `pretrain/run-protossl-heedb-pretrain.sh`
 1. Run all `queue-*-experiments.sh`

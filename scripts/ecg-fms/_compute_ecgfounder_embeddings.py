@@ -56,7 +56,7 @@ def main(
 
     # based on dataset implementation in ECGFounder/ptbxl_eval.py
     # the only transformation is normalization and resampling
-    # which we do in the pass_pclr dataset implementations
+    # which we do in the protossl dataset implementations
     ds_cls, _, is_audio = infer_dataset_class_from_path(dataset_path)
     assert not is_audio
     train_ds = ds_cls(

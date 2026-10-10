@@ -31,6 +31,7 @@ from .lightning_utils import check_final_link
 from .models import (
     BaseClassifier,
     BlackboxClassifier,
+    BlackboxContraster,
     PrototypeAssigner,
     PrototypeClassifier,
     PrototypeContraster,
@@ -54,6 +55,7 @@ class LitData(LightningDataModule):
         assignment_strategy: ASSIGN_T | None = None,
         contrastive_pair_mode: CONTRASTIVE_T | None = None,
         data_kwargs: dict = dict(),
+        data_wrapper_kwargs: dict = dict(),
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -79,6 +81,7 @@ class LitData(LightningDataModule):
                 split="train",
                 sampling_rate=sampling_rate,
                 label_subset=label_subset,
+                **data_kwargs,
             )
             self.label_weights = self.train_ds.get_label_weights()
             self.label_cooccurrence = self.train_ds.get_label_cooccurrence()
@@ -94,7 +97,8 @@ class LitData(LightningDataModule):
         label_subset: list[str] | None = self.hparams.label_subset  # type: ignore
         contrastive_pair_mode: CONTRASTIVE_T | None = self.hparams.contrastive_pair_mode  # type: ignore
         data_kwargs: dict = self.hparams.data_kwargs  # type: ignore
-        wrap_contrastive = pipeline_stage == "learn-prototypes"
+        data_wrapper_kwargs: dict = self.hparams.data_wrapper_kwargs  # type: ignore
+        wrap_contrastive = pipeline_stage in {"learn-prototypes", "train-contraster"}
 
         if stage == "fit":
             if not hasattr(self, "train_ds"):
@@ -116,11 +120,13 @@ class LitData(LightningDataModule):
                     self.train_ds = AudioSetContrastiveWrapperDataset(
                         self.train_ds,
                         pair_mode=contrastive_pair_mode,
-                        **data_kwargs,
+                        **data_wrapper_kwargs,
                     )
                 else:
                     assert isinstance(self.train_ds, BaseTSDataset)
-                    self.train_ds = PCLRWrapperDataset(self.train_ds, **data_kwargs)
+                    self.train_ds = PCLRWrapperDataset(
+                        self.train_ds, **data_wrapper_kwargs
+                    )
 
         if stage in ["fit", "validate"]:
             self.val_ds = self.ds_cls(
@@ -139,11 +145,11 @@ class LitData(LightningDataModule):
                     self.val_ds = AudioSetContrastiveWrapperDataset(
                         self.val_ds,
                         pair_mode=contrastive_pair_mode,
-                        **data_kwargs,
+                        **data_wrapper_kwargs,
                     )
                 else:
                     assert isinstance(self.val_ds, BaseTSDataset)
-                    self.val_ds = PCLRWrapperDataset(self.val_ds, **data_kwargs)
+                    self.val_ds = PCLRWrapperDataset(self.val_ds, **data_wrapper_kwargs)
 
         if stage in ["test", "predict"]:
             self.test_ds = self.ds_cls(
@@ -315,6 +321,19 @@ class LitModel(LightningModule):
                 partial_overlap=partial_overlap,
                 prototype_h=prototype_h,
                 prototype_w=prototype_w,
+                contrastive_pair_mode=contrastive_pair_mode,
+                **model_kwargs,
+            )
+        elif pipeline_stage == "train-contraster":
+            if contrastive_pair_mode is None:
+                raise ValueError(
+                    "pipeline_stage=train-contraster must specify contrastive_pair_mode"
+                )
+            self.model = BlackboxContraster(
+                backbone_type=backbone_type,
+                conv_type=conv_type,
+                pretrained_weights=pretrained_weights,
+                input_channels=input_channels,
                 contrastive_pair_mode=contrastive_pair_mode,
                 **model_kwargs,
             )
@@ -519,6 +538,30 @@ class LitModel(LightningModule):
                 log=log,
                 sync_dist=sync_dist,
             )
+        elif pipeline_stage == "train-contraster":
+            assert isinstance(self.model, BlackboxContraster)
+            assert contrastive_pair_mode is not None
+            if stage not in ["train", "val"]:
+                raise ValueError(
+                    f"Cannot use _common_step with pipeline_stage=train-contraster and (lightning) stage={stage}"
+                )
+
+            preds = None
+
+            if contrastive_pair_mode == "cola+clar":
+                raise NotImplementedError(
+                    f"BlackboxContraster does not yet support contrastive_pair_mode=cola+clar"
+                )
+            else:
+                loss_terms = self.model(batch["x1"], batch["x2"])
+
+            loss = self._log_and_composite_losses(
+                stage=stage,
+                losses=loss_terms,
+                batch_size=batch_size,
+                log=log,
+                sync_dist=sync_dist,
+            )
         elif pipeline_stage == "learn-prototypes-supervised":
             assert isinstance(self.model, PrototypeSupervisor)
             if stage not in ["train", "val"]:
@@ -538,7 +581,6 @@ class LitModel(LightningModule):
             pipeline_stage == "project-prototypes"
             or pipeline_stage == "project-prototypes-supervised"
         ):
-            print(self._batch_counter, flush=True)
             self._batch_counter += 1
             assert isinstance(self.model, PrototypeProjector)
             if stage != "predict":
@@ -993,7 +1035,7 @@ def run():
             raise ValueError("seed_everything must be 42 or greater")
     if not isinstance(cli.trainer.strategy, (DDPStrategy, SingleDeviceStrategy)):
         # NOTE: to implement support for other distributed startegies, should check
-        # the places noted in this GH issue: https://github.com/StevenSong/ecg-prototype-fm/issues/63
+        # the places noted in this GH issue: https://github.com/StevenSong/ProtoSSL/issues/63
         raise ValueError(
             f"Only single device or DDP training strategies are supported, got: {cli.trainer.strategy}"
         )
@@ -1005,6 +1047,7 @@ def run():
     if (
         pipeline_stage == "learn-prototypes"
         or pipeline_stage == "learn-prototypes-supervised"
+        or pipeline_stage == "train-contraster"
     ):
         cli.trainer.fit(
             model=cli.model,

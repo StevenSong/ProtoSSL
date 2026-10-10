@@ -7,7 +7,7 @@ from pathlib import Path
 
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
-from wandb.util import generate_id
+from wandb.sdk.lib.runid import generate_id
 
 from .defines import STAGE_T
 

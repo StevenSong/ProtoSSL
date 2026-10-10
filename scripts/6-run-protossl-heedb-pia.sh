@@ -15,7 +15,7 @@ cd $REPO_ROOT/scripts
 
 # experiment parameters
 EXP_NAME="protossl-heedb-pia"
-PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb-no-attn"
+PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../protossl-heedb")
 
 python -m protossl.trainer \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \

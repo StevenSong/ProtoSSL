@@ -15,7 +15,7 @@ cd $REPO_ROOT/scripts
 
 # experiment parameters
 EXP_NAME="protossl-heedb-pia-83ppl"
-PRETRAIN_RUN="$RUN_DIR/../pass-pretrain-heedb-no-attn"
+PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../protossl-heedb")
 
 if [ ! -e "$RUN_DIR/$EXP_NAME/metrics-bootstrapped.csv" ]; then
 

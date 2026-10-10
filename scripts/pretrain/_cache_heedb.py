@@ -11,4 +11,5 @@ for split in ["train", "val", "test"]:
         dataset_path=DATASET_PATH,
         sampling_rate=100,
         split=split,
+        heedb_split_type="by-label",
     )
