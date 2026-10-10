@@ -91,6 +91,7 @@ scripts/echonext/run-tabular-logreg.sh @StevenSong
 scripts/pretrain/ @StevenSong
 scripts/prototypes-from-fms @StevenSong
 scripts/queue-experiments.sh @StevenSong
+scripts/queue-pclr-logreg.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105
 user-study/images @StevenSong
 user-study/metadata.csv @StevenSong

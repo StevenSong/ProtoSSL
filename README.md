@@ -4,7 +4,12 @@ This repo contains the source code for **ProtoSSL**, a novel framework for label
 
 ### Citation
 ```
-TODO: bibtex citation
+@article{song2026protossl,
+  title={ProtoSSL: Self-Supervised Pretraining and Downstream Transfer for Projection-Based Prototype Models},
+  author={Song, Steven and Sethi, Sahil and Beaulieu-Jones, Brett and Grossman, Robert L},
+  journal={arXiv preprint arXiv:2605.06943},
+  year={2026}
+}
 ```
 
 ## Contributing

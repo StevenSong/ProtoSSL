@@ -458,8 +458,13 @@ def plot_segment(
     sampling_rate: int,
     lead_layout: list[list[str]] = LEAD_LAYOUT,
     lead_to_idx: dict[str, int] = LEAD_TO_IDX,
+    label_leads: bool = True,
 ) -> None:
-    """Draw a cutout of a (L, T) segment, one subplot per lead of the layout."""
+    """Draw a cutout of a (L, T) segment, one subplot per lead of the layout.
+
+    Pass `label_leads=False` when the caller labels the leads itself, e.g. as
+    column headers of a grid of cutouts.
+    """
     n_rows = len(lead_layout)
     n_cols = len(lead_layout[0])
     assert axs.shape == (n_rows, n_cols)  # to match layout
@@ -478,16 +483,17 @@ def plot_segment(
             )
 
             # draw lead label to the left of the plot
-            ax.text(
-                x=-0.1,
-                y=0.8,
-                s=lead,
-                fontsize=10,
-                fontweight="bold",
-                transform=ax.transAxes,
-                ha="right",
-                va="bottom",
-            )
+            if label_leads:
+                ax.text(
+                    x=-0.1,
+                    y=0.8,
+                    s=lead,
+                    fontsize=10,
+                    fontweight="bold",
+                    transform=ax.transAxes,
+                    ha="right",
+                    va="bottom",
+                )
 
             # ECG grid
             for x in np.arange(t_segment[0], t_segment[-1] + 0.04, 0.04):
