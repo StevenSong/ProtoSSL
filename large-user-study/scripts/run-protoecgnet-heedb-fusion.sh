@@ -12,7 +12,7 @@
 set -e
 
 DATASET_PATH=/opt/gpudata/ecg/heedb
-RUN_DIR=/opt/gpu_working/steven/protoecgnet-heedb-overread
+RUN_DIR=/opt/gpu_working/steven/protoecgnet-heedb-v3
 REPO_ROOT=/opt/gpu_working/steven/ProtoSSL/large-user-study
 
 # set these env vars prior to executing this script

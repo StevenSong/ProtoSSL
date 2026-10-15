@@ -41,7 +41,7 @@ LABEL_SRC_MAPPING = {
 # fmt: on
 LABEL_SRC_T = Literal["original_muse", "original_physician", "new_muse"]
 HEEDB_SPLIT_T = Literal["by-year", "by-label"]
-BY_LABEL_SPLIT_HASH = "373878c0ce8ff856a22b738dbbac4830476568b8c482b5d597ab9624ae3bacaf"  # pragma: allowlist secret
+BY_LABEL_SPLIT_HASH = "543697e39036d4bc2ee97e14b86ae24c7c7cf83def07fe70206ae6dcafd4ed56"  # pragma: allowlist secret
 
 heedb_lead_order = [l.lower() for l in HEEDB_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
@@ -78,12 +78,9 @@ class HeedbECGDataset(BaseTSDataset):
             # so a blank physician overread can't be told apart from a physician
             # deleting every statement. Thus, treat these rows as unlabeled
             # rather than all-negative. filtered after split assignment so splits
-            # are unchanged and ecg_id (sample_id) stays stable
-            if label_src != "original_physician":
-                raise ValueError(
-                    "drop_blank_overread only applies to label_src='original_physician', "
-                    f"got: {label_src}"
-                )
+            # are unchanged and ecg_id (sample_id) stays stable. the mask is always
+            # derived from physician overreads, so the same subset of ECGs can be
+            # labeled with any label_src (e.g. muse labels over the overread subset)
             has_overread = get_heedb_overread_mask(dataset_path, df)
             df = df[has_overread].reset_index(drop=True)
         self.source_ids = torch.as_tensor(df["patient_id"].to_numpy())
@@ -270,18 +267,20 @@ def get_heedb_metadata(
             df.loc[df["year"] == 2022, "split"] = "test"
         elif heedb_split_type == "by-label":
             # law of large numbers, we just generate random splits and it's close enough
-            # to splits which preserve independent label prevalence (need to check about cooccurrence)
-            n = int(len(df) * 0.05)
+            # to splits which preserve independent label prevalence (need to check about cooccurrence).
+            # split by patient so that no patient's ECGs span multiple splits
+            patient_ids = np.sort(df["patient_id"].unique()).astype(np.int64)
+            n = int(len(patient_ids) * 0.05)
             rng = np.random.default_rng(42)
-            val_test_idxs = rng.choice(len(df), size=n * 2, replace=False)
-            digest = hashlib.sha256(val_test_idxs.tobytes()).hexdigest()
+            val_test_patients = rng.choice(patient_ids, size=n * 2, replace=False)
+            digest = hashlib.sha256(val_test_patients.tobytes()).hexdigest()
             if digest != BY_LABEL_SPLIT_HASH:
                 raise ValueError(
                     "Randomly generated split for preserving label prevalence has changed!"
                 )
 
-            df.loc[val_test_idxs[:n], "split"] = "val"
-            df.loc[val_test_idxs[n:], "split"] = "test"
+            df.loc[df["patient_id"].isin(val_test_patients[:n]), "split"] = "val"
+            df.loc[df["patient_id"].isin(val_test_patients[n:]), "split"] = "test"
         else:
             raise ValueError(
                 f"Unknown how to create splits for HEEDB split type: {heedb_split_type}"
