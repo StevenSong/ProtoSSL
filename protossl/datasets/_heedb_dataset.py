@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 from pathlib import Path
 from typing import Literal
@@ -30,6 +31,13 @@ from ._base_dataset import (
     load_cached_data,
     validate_label_subset,
 )
+from ._heedb_label_rules import (
+    CURRENT_BUCKETS,
+    RULES_HASH,
+    VALIDATED_TARGETS,
+    make_code_to_labels,
+    tag_read,
+)
 from .streaming_loaders import StreamingECGWaveforms
 
 # fmt: off
@@ -37,9 +45,13 @@ LABEL_SRC_MAPPING = {
     "original_muse":      ("diagnoses_acquisition.csv", "codes_software"),
     "original_physician": ("diagnoses_acquisition.csv", "codes_physician"),
     "new_muse":           ("diagnoses_v24.csv",         "codes"),
+    # physician codes that may describe the current ECG, see _heedb_label_rules.py
+    "audited_physician":  ("diagnoses_acquisition.csv", "codes_physician"),
 }
 # fmt: on
-LABEL_SRC_T = Literal["original_muse", "original_physician", "new_muse"]
+LABEL_SRC_T = Literal[
+    "original_muse", "original_physician", "new_muse", "audited_physician"
+]
 HEEDB_SPLIT_T = Literal["by-year", "by-label"]
 BY_LABEL_SPLIT_HASH = "543697e39036d4bc2ee97e14b86ae24c7c7cf83def07fe70206ae6dcafd4ed56"  # pragma: allowlist secret
 
@@ -52,9 +64,9 @@ assert all([c == s for c, s in zip(heedb_lead_order, standard_lead_order)])
 HIGH_MEMORY = os.environ.get("HIGH_MEMORY", None) is not None
 
 # global cache variables
-FULL_META = None
-MGB_FNAME_TO_CODE: dict[str, dict[str, str]] = dict()
-EUH_FNAME_TO_CODE: dict[str, dict[str, str]] = dict()
+FULL_META: dict[tuple[str, str], pd.DataFrame] = dict()  # (path, split type) -> meta
+# (path, institution, csv, col) -> fname -> code string
+FNAME_TO_CODE: dict[tuple[str, str, str, str], dict[str, str]] = dict()
 
 
 class HeedbECGDataset(BaseTSDataset):
@@ -189,9 +201,9 @@ def get_heedb_metadata(
     heedb_split_type: HEEDB_SPLIT_T = "by-year",
 ) -> pd.DataFrame:
     _path = Path(heedb_path)
-    global FULL_META
-    if FULL_META is not None:
-        return FULL_META.copy()
+    meta_key = (heedb_path.rstrip(os.sep), heedb_split_type)
+    if meta_key in FULL_META:
+        return FULL_META[meta_key].copy()
 
     print("================get_heedb_metadata=================")
     print(f"using {heedb_split_type} splits")
@@ -301,7 +313,7 @@ def get_heedb_metadata(
         df.to_csv(cache_file, index=False)
         print(f"saved HEEDB metadata to on-disk cache: {cache_file}")
 
-    FULL_META = df.copy()
+    FULL_META[meta_key] = df.copy()
     print("===================================================")
     return df
 
@@ -318,9 +330,15 @@ def get_heedb_labels(
         validate_label_subset(label_subset, list(HEEDB_TARGETS))
         targets = {label: HEEDB_TARGETS[label] for label in label_subset}
 
+    if label_src == "audited_physician":
+        validate_audited_targets(targets)
+
     meta_hash = hash_path_list(meta["fpath"])
-    targets_hash = hashlib.md5("\0".join(targets).encode("utf-8")).hexdigest()[:8]
+    # names and codes, so editing a target's codes doesn't reuse a stale cache
+    targets_hash = hashlib.md5(json.dumps(targets).encode("utf-8")).hexdigest()[:8]
     identifier = f"HEEDB_labels_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_src}_{targets_hash}"
+    if label_src == "audited_physician":
+        identifier += f"_{RULES_HASH}"
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     cache_file = os.path.join(CACHE_DIR, f"{hashed}.npy")
 
@@ -333,44 +351,37 @@ def get_heedb_labels(
         print("replaying below stats from cache:")
     else:
         print(f"reading HEEDB labels from source: {heedb_path}")
-        load_fname_to_code(heedb_path, label_src)  # caches in global vars
-        code_to_label = {c: k for k, cs in targets.items() for c in cs}
-        label_to_idx = {k: i for i, k in enumerate(targets)}
+        mgb_codes, euh_codes = get_fname_to_code(heedb_path, label_src)
+        code_to_labels = make_code_to_labels(targets)
 
         data = np.zeros((len(meta), len(targets)), dtype=np.long)
         count = 0
-        for meta_idx, (fname, institution) in enumerate(
-            zip(
-                tqdm(meta["fpath"], desc="Converting code string to labels"),
-                meta["source"],
+        for meta_idx, codes in enumerate(
+            tqdm(
+                lookup_codes(meta, mgb_codes, euh_codes),
+                total=len(meta),
+                desc="Converting code string to labels",
             )
         ):
-            if institution == "mgb":
-                codes = MGB_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-            elif institution == "emory":
-                codes = EUH_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-            else:
-                raise ValueError(f"Unknown institution: {institution}")
-            if codes == "MISSING":
+            if codes is None:
                 # separate missing vs empty (below)
                 continue
             count += 1
             if isinstance(codes, float) and np.isnan(codes):
                 continue
             assert isinstance(codes, str)
+            if label_src == "audited_physician":
+                buckets, _ = tag_read(codes, code_to_labels, len(targets))
+                data[meta_idx] = np.isin(buckets, CURRENT_BUCKETS)
+                continue
             for code in codes.split(","):
-                # convert 12SL code to label
-                label = code_to_label.get(int(code), -1)
-                if label == -1:
-                    continue
-                # convert label to column idx
-                label_idx = label_to_idx.get(label, -1)  # type: ignore
-                if label_idx == -1:
-                    continue
-                data[meta_idx, label_idx] = 1
+                # convert 12SL code to label column idxs
+                for label_idx in code_to_labels.get(int(code), []):
+                    data[meta_idx, label_idx] = 1
 
         n_ecgs, n_matched = len(meta), count
-        n_annots = len(MGB_FNAME_TO_CODE[label_src]) + len(EUH_FNAME_TO_CODE[label_src])
+        n_annots = len(mgb_codes) + len(euh_codes)
+        os.makedirs(CACHE_DIR, exist_ok=True)
         np.save(
             cache_file,
             {  # type: ignore
@@ -415,17 +426,50 @@ def make_fname_to_code(
     }
 
 
-def load_fname_to_code(heedb_path: str, label_src: LABEL_SRC_T):
-    # populates the global per-institution caches for this label source
-    _label_csv, _label_col = LABEL_SRC_MAPPING[label_src]
-    if label_src not in MGB_FNAME_TO_CODE:
-        MGB_FNAME_TO_CODE[label_src] = make_fname_to_code(
-            heedb_path, "mgb", _label_csv, _label_col
+def get_fname_to_code(
+    heedb_path: str, label_src: LABEL_SRC_T
+) -> tuple[dict[str, str], dict[str, str]]:
+    # (MGB, Emory) fname -> code string maps, cached in a global and shared across label
+    # sources that read the same csv column
+    label_csv, label_col = LABEL_SRC_MAPPING[label_src]
+    maps = []
+    for institution in ("mgb", "emory"):
+        key = (heedb_path.rstrip(os.sep), institution, label_csv, label_col)
+        if key not in FNAME_TO_CODE:
+            FNAME_TO_CODE[key] = make_fname_to_code(
+                heedb_path, institution, label_csv, label_col
+            )
+        maps.append(FNAME_TO_CODE[key])
+    return maps[0], maps[1]
+
+
+def lookup_codes(
+    meta: pd.DataFrame, mgb_codes: dict[str, str], euh_codes: dict[str, str]
+) -> list:
+    # code string per meta row, None if the file isn't in the diagnoses table
+    out = []
+    for fname, institution in zip(meta["fpath"], meta["source"]):
+        if institution == "mgb":
+            out.append(mgb_codes.get(fname))
+        elif institution == "emory":
+            out.append(euh_codes.get(fname))
+        else:
+            raise ValueError(f"Unknown institution: {institution}")
+    return out
+
+
+def validate_audited_targets(targets: dict[str, list[int]]):
+    # the tagging rules were only checked on the 20 HEEDB targets and their codes
+    if os.environ.get("USE_HEEDB_150", False):
+        raise ValueError(
+            "label_src='audited_physician' was only validated on the 20 HEEDB targets, "
+            "unset USE_HEEDB_150 to use it"
         )
-    if label_src not in EUH_FNAME_TO_CODE:
-        EUH_FNAME_TO_CODE[label_src] = make_fname_to_code(
-            heedb_path, "emory", _label_csv, _label_col
-        )
+    for label, codes in targets.items():
+        if VALIDATED_TARGETS.get(label) != codes:
+            raise ValueError(
+                f"label_src='audited_physician' was not validated for {label}: {codes}"
+            )
 
 
 def get_heedb_overread_mask(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
@@ -451,21 +495,17 @@ def get_heedb_overread_mask(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
         print("replaying below stats from cache:")
     else:
         print(f"reading HEEDB physician overreads from source: {heedb_path}")
-        load_fname_to_code(heedb_path, label_src)
+        mgb_codes, euh_codes = get_fname_to_code(heedb_path, label_src)
         mask = np.zeros(len(meta), dtype=bool)
         n_blank, n_missing = 0, 0
-        for meta_idx, (fname, institution) in enumerate(
-            zip(
-                tqdm(meta["fpath"], desc="Checking physician overreads"), meta["source"]
+        for meta_idx, codes in enumerate(
+            tqdm(
+                lookup_codes(meta, mgb_codes, euh_codes),
+                total=len(meta),
+                desc="Checking physician overreads",
             )
         ):
-            if institution == "mgb":
-                codes = MGB_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-            elif institution == "emory":
-                codes = EUH_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-            else:
-                raise ValueError(f"Unknown institution: {institution}")
-            if codes == "MISSING":
+            if codes is None:
                 n_missing += 1
             elif not isinstance(codes, str) or codes.strip() == "":
                 # pandas reads an empty field as NaN
