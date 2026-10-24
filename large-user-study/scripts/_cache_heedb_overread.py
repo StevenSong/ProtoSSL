@@ -14,5 +14,6 @@ for split in ["train", "val", "test"]:
         sampling_rate=100,
         split=split,
         heedb_split_type="by-label",
+        label_src="audited_physician",
         drop_blank_overread=True,
     )

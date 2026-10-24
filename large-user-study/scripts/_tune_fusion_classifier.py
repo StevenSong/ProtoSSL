@@ -40,7 +40,7 @@ from torchmetrics.functional.classification import (
 from tqdm import trange
 
 from protossl.datasets import HeedbECGDataset, infer_dataset_class_from_path
-from protossl.defines import SPLIT_T
+from protossl.defines import SPLIT_T, env_flag
 from protossl.models._protoecgnet import BranchCfg, fusion_prototype_assignment
 
 torch.set_float32_matmul_precision("medium")
@@ -460,7 +460,7 @@ def tag_dropped_branches(study: optuna.Study, drop_branches: list[str], where: s
 
 
 def main():
-    if os.environ.get("HIGH_MEMORY", None) is not None:
+    if env_flag("HIGH_MEMORY"):
         # this stage only needs the cached similarities, so materializing the
         # waveform matrix would cost ~500 GB of RAM for nothing
         raise ValueError("Do not set HIGH_MEMORY for this script")

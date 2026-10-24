@@ -24,11 +24,27 @@ def get_cache_file(
     dataset_path: str,
     split: SPLIT_T,
     sampling_rate: int,
+    key_extra: str | None = None,
 ) -> str:
     # use a short hash of the source dataest path to distinguish different sources (e.g. if using different dataset subsets)
     identifier = f"{dataset_path.rstrip(os.sep)}_{split}_{sampling_rate}"
+    if key_extra is not None:
+        # e.g. a hash of the rows and preprocessing, so changing either can't reuse a stale cache
+        identifier += f"_{key_extra}"
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     return os.path.join(CACHE_DIR, f"{hashed}.pt")
+
+
+def atomic_write(path: str, write_fn: Callable[[str], object]):
+    # write to a temp file in the same dir, then rename, so a concurrent reader never sees a
+    # partial file. the temp name keeps the extension since np.save appends ".npy" otherwise
+    tmp = f"{path}.{os.getpid()}.tmp{os.path.splitext(path)[1]}"
+    try:
+        write_fn(tmp)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
 
 
 def load_cached_data(
@@ -37,11 +53,15 @@ def load_cached_data(
     dataset_path: str,
     split: SPLIT_T,
     sampling_rate: int,
+    key_extra: str | None = None,
 ):
     # loading and processing can be time intensive, so cache transformed data if it doesn't already exist
     os.makedirs(CACHE_DIR, exist_ok=True)
     cache_file = get_cache_file(
-        dataset_path=dataset_path, split=split, sampling_rate=sampling_rate
+        dataset_path=dataset_path,
+        split=split,
+        sampling_rate=sampling_rate,
+        key_extra=key_extra,
     )
 
     print("=================load_cached_data==================")
@@ -54,7 +74,7 @@ def load_cached_data(
         X = X.float()
 
         # cache data
-        torch.save(X, cache_file)
+        atomic_write(cache_file, lambda f: torch.save(X, f))
         print(f"Dataset cached to {cache_file}")
         del X
 

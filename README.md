@@ -95,8 +95,8 @@ See [`scripts/README.md`](scripts/README.md) for more detail. Each run script wr
 |----------|--------|
 | `CACHE_DIR` | Where preprocessed datasets are cached (default `~/.cache/protossl_cache`) |
 | `INVALIDATE_CACHE` | Set to `"yes im sure"` to delete the cache on import |
-| `USE_HEEDB_150` | Use the 150-label HEEDB label set instead of the default (set by the `*-heedb-150-*` pretraining scripts) |
-| `HIGH_MEMORY` | Load all of HEEDB into memory (~500 GB of RAM) rather than streaming it from disk (set by the HEEDB pretraining scripts) |
+| `USE_HEEDB_150` | Set to `1`/`true`/`yes` to use the 150-label HEEDB label set instead of the default (set by the `*-heedb-150-*` pretraining scripts); `0`/`false`/`no` or unset keeps the default |
+| `HIGH_MEMORY` | Set to `1`/`true`/`yes` to load all of HEEDB into memory (~500 GB of RAM) rather than streaming it from disk (set by the HEEDB pretraining scripts) |
 | `US8K_TEST_FOLD`, `IEMOCAP_TEST_FOLD` | Held-out fold for UrbanSound8K and IEMOCAP cross-validation (default `0`) |
 
 The ECGFounder baseline downloads its checkpoint from Hugging Face to `ecgfounder-checkpoint/` under the working directory (`scripts/` for the run scripts) on first use.
