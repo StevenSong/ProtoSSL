@@ -222,3 +222,4 @@ ecgfounder-checkpoint/
 wandb/
 .devcontainer/
 user-study/images-pdf
+build/

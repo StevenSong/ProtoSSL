@@ -1,0 +1,52 @@
+HEEDB CASE SELECTOR - HOW TO USE
+================================
+
+This folder lets you browse ECGs from the HEEDB test set and pick cases for
+the user study. Everything runs on your own computer. Nothing is uploaded
+and no internet connection is needed. The data is covered by the HEEDB DUA,
+so keep the folder on the encrypted drive and do not share it.
+
+GETTING STARTED
+  1. Keep this folder together. index.html, index.js and the "pdf" folder
+     must stay side by side.
+  2. Double-click index.html. It opens in your web browser. Google Chrome
+     or Microsoft Edge work best. If the ECG area stays blank in Safari or
+     Firefox, open index.html in Chrome or Edge instead.
+  3. Click "Help" at the top of the page for a short guide.
+
+FINDING CASES
+  - Age, year, sex and site (top left): type a minimum and/or maximum age
+    or year, or leave a box empty for no limit. Ranges include both ends.
+    Setting an age limit leaves out ECGs with unknown age. Untick a sex or
+    site to leave it out.
+  - Label filter (left side): for each diagnosis label, click "req" to require
+    it or "excl" to exclude it. Choose whether a case needs ALL of the
+    required labels or AT LEAST ONE of them. By default the labels are the
+    physician overreads, and you can switch the label source at the top to
+    the original MUSE statement or the ProtoECGNet fusion model's
+    predictions.
+  - Click "Random match" (or press R) to see a random ECG that matches the
+    filter, or type an ECG ID and press Enter.
+  - Use the Back / Forward buttons (or the left / right arrow keys) to go
+    back through the cases you have viewed.
+  - The right side shows the age, sex, year and site, and all 20 study
+    labels with a dot under each label source that calls it positive. Rows
+    where the sources disagree are highlighted. The model's yes/no comes
+    from its probability and a per-label cutoff chosen on a separate
+    validation set.
+
+SELECTING CASES
+  - Click "Select case" (or press S) to add the ECG to your list. You can
+    then type a note, for example why you picked it. Click the button again
+    to remove the case from your list.
+  - Your list saves automatically in this browser on this computer, and is
+    still there after you close and reopen the browser. It does NOT carry
+    over to a different browser or computer.
+
+SENDING YOUR SELECTIONS BACK
+  - Click "Export CSV" (or "Export JSON"). The browser saves a file to your
+    Downloads folder. Send that file back. It has no ECG tracings, but it
+    does list the ECG and patient IDs with age, sex and year, so send it the
+    way you would send other study data covered by the DUA.
+  - Export every so often as a backup. To restore a list, or to move it to
+    another browser, click "Import..." and choose an exported file.
