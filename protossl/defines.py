@@ -2,6 +2,9 @@ import os
 from typing import Literal
 
 SIM_MAX = 1e6
+# label value for a (sample, label) whose truth can't be determined; excluded from
+# losses and metrics. only some label sources produce it, e.g. HEEDB audited_physician
+UNKNOWN_LABEL = -1
 
 STAGE_T = Literal[
     "learn-prototypes",

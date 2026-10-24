@@ -7,8 +7,10 @@ lowest bucket over the label's occurrences:
     1 main         stated in the main read (before "when compared with ecg of")
     2 hedged       main read, directly preceded by "possible" or "cannot rule out"
     3 cmp_current  only in the serial comparison, as the current finding
-                   ("X has replaced Y", "X is now present"); the comparison is software text
-                   that physicians rarely edit, so it can contradict the main read
+                   ("X has replaced Y", "X is now present"); the comparison starts as MUSE
+                   text and physicians often leave it as is, so it can contradict the main
+                   read (e.g. for VT, 93% verbatim from the machine comparison, while the
+                   machine's own main read never states VT)
     4 prior        only as the prior ECG's finding ("Y has replaced X", "X is no longer present")
     5 cmp_other    only in the comparison section, grammar not parsed
     6 dump         only inside an expansion block: a run of sibling statements that can't all
@@ -20,13 +22,17 @@ Grammar notes, checked against the data:
   - hedges precede the statement they modify ("cannot rule out" 1682 -> "anterior infarct")
 
 The rules were validated only on VALIDATED_TARGETS. Any change to this file changes
-RULES_HASH, which invalidates cached `audited_physician` labels.
+RULES_HASH, which invalidates cached `audited_physician` and `audited_muse` labels.
+`audited_muse` applies the same tagging to MUSE reads (codes_software), whose comparison
+text has the same grammar; it found no expansion blocks there for these targets.
 """
 
 import collections
 import hashlib
 
 import numpy as np
+
+from ..defines import UNKNOWN_LABEL
 
 BUCKETS = {
     1: "main",
@@ -36,8 +42,10 @@ BUCKETS = {
     5: "cmp_other",
     6: "dump",
 }
-# buckets that may describe the current ECG, used for the `audited_physician` label source
-CURRENT_BUCKETS = (1, 2, 3)
+# `audited_physician` label per bucket: main and hedged are positive; absent and prior are
+# negative ("Y has replaced X" says X is gone); the rest can't be told apart, so unknown
+POSITIVE_BUCKETS = (1, 2)
+UNKNOWN_BUCKETS = (3, 5, 6)
 
 # the 20 HEEDB_TARGETS the rules were audited on, frozen so a code change is caught
 VALIDATED_TARGETS = {
@@ -99,6 +107,19 @@ def make_code_to_labels(targets: dict[str, list[int]]) -> dict[int, list[int]]:
         for c in codes:
             code_to_labels[c].append(i)
     return dict(code_to_labels)
+
+
+def audited_labels(buckets: np.ndarray) -> np.ndarray:
+    """Map per-label buckets from `tag_read` to 1 / 0 / UNKNOWN_LABEL."""
+    out = np.isin(buckets, POSITIVE_BUCKETS).astype(np.int64)
+    out[np.isin(buckets, UNKNOWN_BUCKETS)] = UNKNOWN_LABEL
+    return out
+
+
+def audited_predictions(buckets: np.ndarray) -> np.ndarray:
+    """Map per-label buckets from `tag_read` on a MUSE read to hard 1 / 0 predictions:
+    a prediction can't be unknown, so anything outside the main read is 0."""
+    return np.isin(buckets, POSITIVE_BUCKETS).astype(np.int64)
 
 
 def expansion_mask(codes: list[int]) -> tuple[list[bool], set[str]]:

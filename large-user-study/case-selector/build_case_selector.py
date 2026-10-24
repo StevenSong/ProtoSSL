@@ -42,7 +42,7 @@ import torch
 from sklearn.metrics import roc_curve
 from tqdm import tqdm
 
-from protossl.datasets import HeedbECGDataset
+from protossl.datasets import HeedbECGDataset, reject_unknown_labels
 from protossl.datasets._heedb_dataset import get_heedb_labels
 from protossl.defines import HEEDB_TARGETS
 from protossl.plotting import plot_ecg
@@ -108,6 +108,7 @@ def fusion_predictions(fusion_dir: str) -> tuple[np.ndarray, list[float]]:
     )
     ds_val = HeedbECGDataset(**{**DATASET_KWARGS, "split": "val"})  # type: ignore
     y_val = ds_val.labels.numpy()
+    reject_unknown_labels(y_val, "case selector thresholds")
     assert val_probs.shape == y_val.shape, (val_probs.shape, y_val.shape)
 
     thresholds = []
@@ -133,6 +134,8 @@ def load_label_sources(fusion_dir: str) -> tuple[dict[str, np.ndarray], dict]:
         else:
             y = get_heedb_labels(DATASET_PATH, _DS._df, None, key)  # type: ignore
         assert y.shape == (len(_DS), len(HEEDB_TARGETS)), (key, y.shape)
+        # the viewer stores labels as 0/1 bitmasks
+        reject_unknown_labels(y, f"case selector ({key})")
         sources[key] = y
     return sources, fusion_meta
 

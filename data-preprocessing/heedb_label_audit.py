@@ -5,7 +5,8 @@ appears anywhere in `codes_physician`. Many of those codes don't describe the cu
 script tags every occurrence of every HEEDB_TARGETS code, then reduces it to one bucket per
 (ECG, label): main, hedged, cmp_current, prior, cmp_other or dump. The rules live in
 protossl/datasets/_heedb_label_rules.py, which the `audited_physician` label source also uses
-(main + hedged + cmp_current, the "lenient" column below).
+(main + hedged positive, cmp_current + cmp_other + dump unknown, the "audited_*" columns
+below).
 
 If an ECG has several occurrences, the lowest bucket wins, so "main" means at least one
 occurrence was in the main read.
@@ -31,6 +32,8 @@ import pandas as pd
 from protossl.datasets import _heedb_dataset as heedb
 from protossl.datasets._heedb_label_rules import (
     BUCKETS,
+    POSITIVE_BUCKETS,
+    UNKNOWN_BUCKETS,
     WITH_CODES,
     make_code_to_labels,
     tag_read,
@@ -106,8 +109,12 @@ def main():
         row |= {name: int((v == b).sum()) for b, name in BUCKETS.items()}
         rows.append(row)
     counts = pd.DataFrame(rows).set_index("label")
-    counts["strict"] = counts["main"]
-    counts["lenient"] = counts[["main", "hedged", "cmp_current"]].sum(axis=1)
+    counts["audited_positive"] = counts[[BUCKETS[b] for b in POSITIVE_BUCKETS]].sum(
+        axis=1
+    )
+    counts["audited_unknown"] = counts[[BUCKETS[b] for b in UNKNOWN_BUCKETS]].sum(
+        axis=1
+    )
     counts.to_csv(os.path.join(args.out_dir, "summary_counts.csv"))
     pct = counts.drop(columns="positives").div(counts["positives"], axis=0) * 100
     pct.insert(0, "positives", counts["positives"])

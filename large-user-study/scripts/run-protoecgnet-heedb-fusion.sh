@@ -12,7 +12,7 @@
 set -e
 
 DATASET_PATH=/opt/gpudata/ecg/heedb
-RUN_DIR=/opt/gpu_working/steven/protoecgnet-heedb-v3
+RUN_DIR=/opt/gpu_working/steven/protoecgnet-heedb-v4
 REPO_ROOT=/opt/gpu_working/steven/ProtoSSL/large-user-study
 
 # set these env vars prior to executing this script
@@ -36,7 +36,7 @@ python -m protossl.protoecgnet_trainer \
     --trainer.logger.save_dir $RUN_DIR \
     --trainer.logger.name $EXP_NAME \
     --data.dataset_path $DATASET_PATH \
-    --data.data_kwargs '{"heedb_split_type": "by-label", "drop_blank_overread": True}' \
+    --data.data_kwargs '{"heedb_split_type": "by-label", "drop_blank_overread": True, "label_src": "audited_physician"}' \
     --model.branches+=protossl.models._protoecgnet.BranchCfg \
     --model.branches.name=1D-global \
     --model.branches.config=$REPO_ROOT/configs/1D-global.yaml \
@@ -54,7 +54,7 @@ python -m protossl.protoecgnet_trainer \
 
 python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
---data-kwargs '{"heedb_split_type": "by-label", "drop_blank_overread": True}' \
+--data-kwargs '{"heedb_split_type": "by-label", "drop_blank_overread": True, "label_src": "audited_physician"}' \
 --probs-npy $RUN_DIR/$EXP_NAME/train-fusion-classifier/latest/test_probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 

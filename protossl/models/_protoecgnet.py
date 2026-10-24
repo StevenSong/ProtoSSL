@@ -6,9 +6,26 @@ import torch.nn as nn
 import torch.nn.functional as F
 from omegaconf import OmegaConf
 
-from ..defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX, STAGE_T
+from ..defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX, STAGE_T, UNKNOWN_LABEL
 from ._pretrained_utils import PretrainedMixin
 from .encoders import PrototypeEncoder
+
+
+def masked_bce_with_logits(
+    logits: torch.Tensor,  # (B, L)
+    y: torch.Tensor,  # (B, L), 1 / 0 / UNKNOWN_LABEL
+    pos_weight: torch.Tensor | None,  # (L,)
+) -> torch.Tensor:
+    """BCE averaged over the known (sample, label) entries; equals reduction="mean" when
+    nothing is unknown"""
+    known = y != UNKNOWN_LABEL
+    loss = F.binary_cross_entropy_with_logits(
+        logits,
+        (y == 1).float(),
+        pos_weight=pos_weight,
+        reduction="none",
+    )
+    return (loss * known).sum() / known.sum().clamp(min=1)
 
 
 class ProtoECGNet(PretrainedMixin, nn.Module):
@@ -118,11 +135,10 @@ class ProtoECGNet(PretrainedMixin, nn.Module):
         # ProtoECGNet: https://arxiv.org/pdf/2504.08713
         # Appendix E, Stage 3 - NOTE: this is just the comparison to the branch-specific classifier
 
-        cls_loss = F.binary_cross_entropy_with_logits(
+        cls_loss = masked_bce_with_logits(
             logits,  # (B, L)
-            y.float(),  # (B, L)
+            y,  # (B, L)
             pos_weight=self.label_weights,  # type: ignore
-            reduction="mean",
         )
 
         # masked L1 regularization
@@ -143,29 +159,31 @@ class ProtoECGNet(PretrainedMixin, nn.Module):
         # Appendix E, Stage 1
 
         # binary cross entropy loss - no masked l1 penalty
-        cls_loss = F.binary_cross_entropy_with_logits(
+        # NOTE: Eq 3 in ProtoECGNet paper does not show mean reduction over classes but seems like it should be based on their codebase
+        cls_loss = masked_bce_with_logits(
             logits,  # (B, L)
-            y.float(),  # (B, L)
+            y,  # (B, L)
             pos_weight=self.label_weights,  # type: ignore
-            reduction="mean",  # NOTE: Eq 3 in ProtoECGNet paper does not show mean reduction over classes but seems like it should be based on their codebase
         )
 
         # clustering loss
         # use repeat_interleave as all prototypes for a given label should be contiguous
-        pos_mask = y.repeat_interleave(self.n_prototypes_per_label, 1)  # (B, P)
+        # unknown labels are in neither mask, so their prototypes are ignored by both losses
+        ppl = self.n_prototypes_per_label
+        pos_mask = (y == 1).repeat_interleave(ppl, 1)  # (B, P)
         has_pos = pos_mask.any(dim=1)  # (B,)
-        neg_mask = 1 - pos_mask
+        neg_mask = (y == 0).repeat_interleave(ppl, 1)  # (B, P)
         has_neg = neg_mask.any(dim=1)  # (B,)
         # only consider similarity for prototypes assigned to the sample
         # since we take the max of the valid similarities, mask invalid entries
         # with similarities less than all other similarities
-        pos_prot_sims = pos_mask * sims + neg_mask * -SIM_MAX  # (B, P)
+        pos_prot_sims = sims.masked_fill(~pos_mask, -SIM_MAX)  # (B, P)
         per_sample_max_pos_sim, _ = pos_prot_sims.max(1)  # (B,)
         per_sample_max_pos_sim = per_sample_max_pos_sim[has_pos]  # (B_p), B_p <= B
         clst_loss = -per_sample_max_pos_sim.mean()
 
         # separation loss
-        neg_prot_sims = neg_mask * sims + pos_mask * -SIM_MAX  # (B, P)
+        neg_prot_sims = sims.masked_fill(~neg_mask, -SIM_MAX)  # (B, P)
         per_sample_max_neg_sim, _ = neg_prot_sims.max(1)  # (B,)
         per_sample_max_neg_sim = per_sample_max_neg_sim[has_neg]  # (B_n), B_n <= B
         sep_loss = per_sample_max_neg_sim.mean()
@@ -181,7 +199,6 @@ class ProtoECGNet(PretrainedMixin, nn.Module):
 
         # contrastive loss
         cooc: torch.Tensor = self.label_cooccurrence  # type: ignore - (L, L)
-        ppl = self.n_prototypes_per_label
         # use Kronecker product to expand cooccurrence matrix to prototype assignemnts
         cooc_kron = torch.kron(cooc, torch.ones(ppl, ppl, device=cooc.device))  # (P, P)
         # NOTE: cooc normalization not in ProtoECGNet paper but in their codebase
@@ -429,11 +446,10 @@ class ProtoECGNetFusion(PretrainedMixin, nn.Module):
         # ProtoECGNet: https://arxiv.org/pdf/2504.08713
         # Appendix E, Stage 3
 
-        cls_loss = F.binary_cross_entropy_with_logits(
+        cls_loss = masked_bce_with_logits(
             logits,  # (B, L)
-            y.float(),  # (B, L)
+            y,  # (B, L)
             pos_weight=self.label_weights,  # type: ignore
-            reduction="mean",
         )
 
         # masked L1 regularization

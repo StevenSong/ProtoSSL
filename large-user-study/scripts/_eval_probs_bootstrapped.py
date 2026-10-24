@@ -11,7 +11,7 @@ from pqdm.processes import pqdm
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from protossl.datasets import EchoNextECGDataset, infer_dataset_class_from_path
-from protossl.defines import ECHONEXT_COMPOSITE_TARGET
+from protossl.defines import ECHONEXT_COMPOSITE_TARGET, UNKNOWN_LABEL
 
 
 def parse_args():
@@ -117,11 +117,15 @@ def main(
         test_targets.shape == target_probs.shape
     ), f"Mismatched target/predicted shapes: {test_targets.shape} vs {target_probs.shape}"
 
+    # each label is scored only on the ECGs where it is known
+    known = test_targets != UNKNOWN_LABEL
+    for i in np.flatnonzero(~known.all(axis=0)):
+        print(f"{label_names[i]}: excluding {(~known[:, i]).sum()} unknown labels")
     kwargs = [
         {
             # the test targets in this version are already aligned to the label subset order
-            "y_test": test_targets[:, i],
-            "y_prob": target_probs[:, i],
+            "y_test": test_targets[known[:, i], i],
+            "y_prob": target_probs[known[:, i], i],
             "n_bootstraps": n_bootstraps,
         }
         for i in range(len(label_names))

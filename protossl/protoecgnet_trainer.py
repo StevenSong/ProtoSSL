@@ -17,7 +17,7 @@ from torchmetrics.classification import (
 )
 
 from .datasets import infer_dataset_class_from_path, validate_label_subset
-from .defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX, STAGE_T
+from .defines import BACKBONE_T, CONV_T, PROT_T, SIM_MAX, STAGE_T, UNKNOWN_LABEL
 from .lightning_utils import check_final_link
 from .models import PrototypeProjector
 from .models._protoecgnet import BRANCHES_T, ProtoECGNet, ProtoECGNetFusion
@@ -199,20 +199,27 @@ class LitModel(LightningModule):
         self.lr = None
         self.save_hyperparameters()
         n_labels = len(label_names)
+        # unknown labels are left out of each label's metric
         if n_labels == 1:
             metrics = MetricCollection(
                 {
-                    "ap": BinaryAveragePrecision(),
-                    "auroc": BinaryAUROC(),
+                    "ap": BinaryAveragePrecision(ignore_index=UNKNOWN_LABEL),
+                    "auroc": BinaryAUROC(ignore_index=UNKNOWN_LABEL),
                 }
             )
         else:
             metrics = MetricCollection(
                 {
                     "ap": MultilabelAveragePrecision(
-                        num_labels=n_labels, average="macro"
+                        num_labels=n_labels,
+                        average="macro",
+                        ignore_index=UNKNOWN_LABEL,
                     ),
-                    "auroc": MultilabelAUROC(num_labels=n_labels, average="macro"),
+                    "auroc": MultilabelAUROC(
+                        num_labels=n_labels,
+                        average="macro",
+                        ignore_index=UNKNOWN_LABEL,
+                    ),
                 }
             )
         self.val_metrics = metrics.clone(prefix="val_")
@@ -381,12 +388,13 @@ class LitModel(LightningModule):
             # waveform/label keys
             sims = self.model(batch["waveform"])  # (B, n_prototypes)
             if pipeline_stage == "project-prototypes-supervised":
-                # mask out prototypes for which the sample cannot belong to
+                # mask out prototypes for which the sample cannot belong to,
+                # including those of unknown labels
                 _, L = batch["label"].shape  # (B, L)
                 _, P = sims.shape
                 ppl = P // L  # n_prototypes_per_label
-                pos_mask = batch["label"].repeat_interleave(ppl, 1)  # (B, P)
-                sims = pos_mask * sims + (1 - pos_mask) * -SIM_MAX  # (B, P)
+                pos_mask = (batch["label"] == 1).repeat_interleave(ppl, 1)  # (B, P)
+                sims = sims.masked_fill(~pos_mask, -SIM_MAX)  # (B, P)
             (
                 embs,  # (B, chunks, d_emb)
                 chunks,  # (B, n_prototypes) - which chunks resulted in the prototype sims?

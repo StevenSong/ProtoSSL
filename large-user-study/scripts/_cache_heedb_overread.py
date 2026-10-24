@@ -6,8 +6,8 @@ from protossl.datasets import HeedbECGDataset
 
 DATASET_PATH = "/opt/gpudata/ecg/heedb"
 
-# builds the overread mask and waveform caches up front, so the concurrently
-# launched arm jobs only ever read them
+# builds the overread mask, waveform and audited_physician label caches up front, so
+# the concurrently launched arm jobs only ever read them
 for split in ["train", "val", "test"]:
     HeedbECGDataset(
         dataset_path=DATASET_PATH,
