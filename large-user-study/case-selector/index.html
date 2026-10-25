@@ -96,6 +96,7 @@
   #case-labels tr.disagree td { background: var(--warn-bg); }
   #case-labels tr.neg td:first-child { color: var(--muted); }
   #case-labels .neg-mark { color: #c4cad1; }
+  #case-labels .unk-mark { color: var(--muted); font-weight: 600; }
   #case-labels th.filter-src { color: var(--accent); }
   .dot { color: var(--req); font-size: 14px; line-height: 1; }
   #patient-note { margin-top: 8px; font-size: 12px; color: var(--warn); }
@@ -129,7 +130,7 @@
     <li><b>Get a case:</b> type an ECG ID and press Enter, or click <b>Random match</b> (<kbd>R</kbd>) for a random ECG that matches the filter. Use <kbd>&larr;</kbd> / <kbd>&rarr;</kbd> to go back and forward through the cases you have viewed.</li>
     <li><b>Select:</b> click <b>Select case</b> (<kbd>S</kbd>) to add the current ECG to your list, and type an optional note. Click it again to unselect.</li>
     <li><b>Saving:</b> your list is saved automatically in this browser on this computer. It survives closing the browser, but it is not visible from another browser or computer. Use <b>Export CSV</b> to send the list back, and <b>Import</b> to restore a list from an exported file.</li>
-    <li><b>Label sources:</b> the physician overread, the original MUSE statement, and the ProtoECGNet fusion model's prediction. The model's probabilities are turned into yes/no at a per-label cutoff chosen on a separate validation set. Any source can drive the filter.</li>
+    <li><b>Label sources:</b> the physician overread, the MUSE statement, and the ProtoECGNet fusion model's prediction. Both reads only count statements about the current ECG, not the comparison with earlier ECGs. Where the overread is ambiguous for a label it shows <b>?</b> (unknown): a required label must be positive, and an excluded label must be neither positive nor unknown. The model's probabilities are turned into yes/no at a per-label cutoff chosen on a separate validation set. Any source can drive the filter.</li>
     <li>If the ECG does not display, use <b>Open PDF</b> to open it in a new tab. Chrome or Edge works best.</li>
   </ul>
 </div>
@@ -228,6 +229,11 @@
   const SOURCES = IDX.label_sources;
   const SRC_BY_KEY = Object.fromEntries(SOURCES.map((s) => [s.key, s]));
   const MASKS = Object.fromEntries(SOURCES.map((s) => [s.key, Int32Array.from(IDX.masks[s.key])]));
+  // labels the source can't call either way (only the audited overread has any)
+  const UNKNOWN_MASKS = IDX.unknown_masks || {};
+  const UNKNOWN = Object.fromEntries(SOURCES.map((s) => [
+    s.key, s.key in UNKNOWN_MASKS ? Int32Array.from(UNKNOWN_MASKS[s.key]) : new Int32Array(N),
+  ]));
   const ROW_OF = new Map();
   for (let i = 0; i < N; i++) ROW_OF.set(IDX.ecg_id[i], i);
   const MISSING = new Set(IDX.missing || []);
@@ -243,8 +249,8 @@
   function pdfPath(ecgId) {
     return "pdf/" + String(Math.floor(ecgId / SHARD_SIZE)).padStart(3, "0") + "/" + ecgId + ".pdf";
   }
-  function labelsOf(row, srcKey) {
-    const m = MASKS[srcKey][row];
+  function labelsOf(row, srcKey, masks = MASKS) {
+    const m = masks[srcKey][row];
     return LABELS.filter((_, b) => m & (1 << b));
   }
   function caseMeta(row) {
@@ -336,8 +342,9 @@
     for (const n of names) m |= 1 << LABELS.indexOf(n);
     return m;
   }
-  function passes(m) {
-    if (m & exclBits) return false;
+  // required labels must be positive; excluded labels must be neither positive nor unknown
+  function passes(m, u) {
+    if ((m | u) & exclBits) return false;
     if (!reqBits) return true;
     return state.mode === "all" ? (m & reqBits) === reqBits : (m & reqBits) !== 0;
   }
@@ -351,7 +358,7 @@
     return !sexOff.has(IDX.sex[i]) && !siteOff.has(IDX.site[i]);
   }
   function rowMatches(i) {
-    return demoOK(i) && passes(MASKS[state.src][i]);
+    return demoOK(i) && passes(MASKS[state.src][i], UNKNOWN[state.src][i]);
   }
   function rangeDesc(name, lo, hi) {
     if (lo === null && hi === null) return null;
@@ -378,6 +385,7 @@
 
   function recompute() {
     const M = MASKS[state.src];
+    const U = UNKNOWN[state.src];
     reqBits = bitsOf(state.require);
     exclBits = bitsOf(state.exclude);
     sexOff = new Set(state.sexOff);
@@ -387,7 +395,7 @@
     let k = 0;
     for (let i = 0; i < N; i++) {
       const m = M[i];
-      if (!passes(m) || !demoOK(i)) continue;
+      if (!passes(m, U[i]) || !demoOK(i)) continue;
       out[k++] = i;
       for (let b = m; b; b &= b - 1) counts[31 - Math.clz32(b & -b)]++;
     }
@@ -613,15 +621,20 @@
     const tbody = table.createTBody();
     LABELS.forEach((label, b) => {
       const has = SOURCES.map((s) => !!(MASKS[s.key][row] & (1 << b)));
+      const unk = SOURCES.map((s) => !!(UNKNOWN[s.key][row] & (1 << b)));
       const tr = tbody.insertRow();
-      tr.className = !has.some(Boolean) ? "neg" : !has.every(Boolean) ? "disagree" : "";
+      tr.className = !has.some(Boolean) && !unk.some(Boolean) ? "neg" : !has.every(Boolean) ? "disagree" : "";
       tr.insertCell().textContent = label;
-      for (const h of has) tr.insertCell().innerHTML = h ? '<span class="dot">●</span>' : '<span class="neg-mark">·</span>';
+      has.forEach((h, j) => {
+        tr.insertCell().innerHTML = h ? '<span class="dot">●</span>'
+          : unk[j] ? '<span class="unk-mark" title="unknown: the overread is ambiguous for this label">?</span>'
+          : '<span class="neg-mark">·</span>';
+      });
     });
     body.append(table);
     body.append(Object.assign(document.createElement("div"), {
       className: "muted small",
-      textContent: "● positive. Highlighted rows: sources disagree. Blue column: source used by the filter.",
+      textContent: "● positive. ? unknown, the overread is ambiguous for this label. Highlighted rows: sources disagree. Blue column: source used by the filter.",
     }));
 
     const samePatient = Array.from(selections.values())
@@ -694,6 +707,7 @@
         const m = caseMeta(row);
         Object.assign(out, { age: m.age, sex: m.sex, year: m.year, site: m.site });
         for (const s of SOURCES) out["labels_" + s.key] = labelsOf(row, s.key).join("; ");
+        for (const k of Object.keys(UNKNOWN_MASKS)) out["unknown_" + k] = labelsOf(row, k, UNKNOWN).join("; ");
       }
       return out;
     });
@@ -722,7 +736,8 @@
     const stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, "").replace("T", "-");
     if (fmt === "csv") {
       const cols = ["ecg_id", "patient_id", "selected_at", "note", "filter_at_selection",
-                    "age", "sex", "year", "site", ...SOURCES.map((s) => "labels_" + s.key)];
+                    "age", "sex", "year", "site", ...SOURCES.map((s) => "labels_" + s.key),
+                    ...Object.keys(UNKNOWN_MASKS).map((k) => "unknown_" + k)];
       const lines = [cols.join(",")].concat(recs.map((r) => cols.map((c) => csvCell(r[c])).join(",")));
       download("heedb_selected_cases_" + stamp + ".csv", lines.join("\r\n") + "\r\n", "text/csv");
     } else {

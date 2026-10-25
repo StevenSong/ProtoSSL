@@ -8,8 +8,8 @@ server, or network access needed.
 - `build_case_selector.py` pre-renders every ECG with `protossl.plotting.plot_ecg`
   to PDF and writes the label/metadata index the viewer loads.
 - `index.html` is the static viewer. It filters by age, year, sex and site, and by
-  label (require/exclude, all/any, for any label source: physician overread,
-  original MUSE, or ProtoECGNet fusion predictions), draws random matches or looks up an ECG ID, shows the
+  label (require/exclude, all/any, for any label source: audited physician overread,
+  audited MUSE, or ProtoECGNet fusion predictions), draws random matches or looks up an ECG ID, shows the
   printout and labels, and stores selections in `localStorage` with CSV/JSON
   export and import.
 - `HOW_TO_USE.txt` holds the instructions for the collaborator. It is copied into the bundle.
@@ -24,11 +24,17 @@ python build_case_selector.py --out-dir /path/to/bundle-test --limit 3000
 python build_case_selector.py --out-dir /path/to/heedb-case-selector --workers 64
 ```
 
-Fusion predictions come from `--fusion-dir`, which defaults to the patient-level
-split retrain in `protoecgnet-heedb-v3`. The build binarizes `test_probs.npy` at
-per-label Youden's J thresholds fit on `val_probs.npy` against the physician
-overread, the same way `notebooks/muse-accuracy.ipynb` does. The thresholds are
+Fusion predictions come from `--fusion-dir`, which defaults to the audited label
+retrain in `protoecgnet-heedb-v4`. The build binarizes `test_probs.npy` at
+per-label Youden's J thresholds fit on `val_probs.npy` against the audited
+physician overread, the same way `notebooks/muse-accuracy.ipynb` does. The thresholds are
 saved in `index.js` metadata.
+
+The physician labels are `audited_physician` and the MUSE labels `audited_muse`
+(see `protossl/datasets/_heedb_label_rules.py`). Both only count statements about
+the current ECG. Overread labels that can't be called either way are unknown: the
+viewer shows them as **?**, a required label must be positive, and an excluded
+label must be neither positive nor unknown.
 
 `--years` keeps only ECGs acquired in the given years, inclusive, so you can drop
 ECGs whose acquisition-time MUSE labels came from older software. It takes years
@@ -61,6 +67,6 @@ The CSV/JSON export has one row per selected ECG with these fields:
 - `selected_at`, the collaborator's `note`
 - `filter_at_selection`, the filter that was active when the case was picked
 - age, sex, year, site
-- the positive labels under each label source
+- the positive labels under each label source, and the unknown overread labels
 
 The JSON export also carries the bundle's build metadata, including the commit.

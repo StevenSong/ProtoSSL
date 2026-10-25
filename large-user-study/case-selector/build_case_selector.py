@@ -6,7 +6,8 @@ install or server needed:
     OUT_DIR/
       index.html               static viewer (copied from this directory)
       index.js                 ECG IDs, metadata, and label bitmasks for every label source
-                               (physician overread, original MUSE, ProtoECGNet fusion predictions)
+                               (audited physician overread, audited MUSE, ProtoECGNet fusion
+                               predictions), plus bitmasks of unknown overread labels
       HOW_TO_USE.txt           instructions for the person selecting cases
       pdf/<ecg_id // 10000>/<ecg_id>.pdf   clinical printout from `plot_ecg`
 
@@ -42,9 +43,9 @@ import torch
 from sklearn.metrics import roc_curve
 from tqdm import tqdm
 
-from protossl.datasets import HeedbECGDataset, reject_unknown_labels
+from protossl.datasets import HeedbECGDataset
 from protossl.datasets._heedb_dataset import get_heedb_labels
-from protossl.defines import HEEDB_TARGETS
+from protossl.defines import HEEDB_TARGETS, UNKNOWN_LABEL
 from protossl.plotting import plot_ecg
 
 DATASET_PATH = "/opt/gpudata/ecg/heedb"
@@ -55,16 +56,19 @@ DATASET_KWARGS = dict(
     sampling_rate=500,
     heedb_split_type="by-label",
     drop_blank_overread=True,
+    # same ground truth as the v4 models; has unknowns, see _heedb_label_rules.py
+    label_src="audited_physician",
 )
-# first source is the default filter in the viewer
+# first source is the default filter in the viewer. audited_physician is the dataset's
+# own labels; audited_muse only counts codes in MUSE's main read
 LABEL_SOURCES = [
-    ("original_physician", "Physician overread", "Phys."),
-    ("original_muse", "MUSE (original)", "MUSE"),
+    ("audited_physician", "Physician overread (audited)", "Phys."),
+    ("audited_muse", "MUSE (audited)", "MUSE"),
     ("protoecgnet_fusion", "ProtoECGNet fusion (model)", "Fusion"),
 ]
-# patient-level split retrain, see large-user-study/scripts/run-protoecgnet-heedb-fusion.sh
+# audited label retrain, see large-user-study/scripts/run-protoecgnet-heedb-fusion.sh
 FUSION_DIR = (
-    "/opt/gpu_working/steven/protoecgnet-heedb-v3/fusion/train-fusion-classifier/latest"
+    "/opt/gpu_working/steven/protoecgnet-heedb-v4/fusion/train-fusion-classifier/latest"
 )
 SHARD_SIZE = 10_000
 HERE = Path(__file__).resolve().parent
@@ -96,7 +100,8 @@ def parse_years(spec: str) -> list[int]:
 def fusion_predictions(fusion_dir: str) -> tuple[np.ndarray, list[float]]:
     """Binarize fusion test probabilities at per-label Youden's J thresholds from val.
 
-    Same thresholding as large-user-study/notebooks/muse-accuracy.ipynb.
+    Same thresholding as large-user-study/notebooks/muse-accuracy.ipynb, fit only on
+    the val ECGs where each label is known.
     """
     assert _DS is not None
     n_labels = len(HEEDB_TARGETS)
@@ -108,22 +113,23 @@ def fusion_predictions(fusion_dir: str) -> tuple[np.ndarray, list[float]]:
     )
     ds_val = HeedbECGDataset(**{**DATASET_KWARGS, "split": "val"})  # type: ignore
     y_val = ds_val.labels.numpy()
-    reject_unknown_labels(y_val, "case selector thresholds")
     assert val_probs.shape == y_val.shape, (val_probs.shape, y_val.shape)
 
     thresholds = []
     for i in range(n_labels):
-        fpr, tpr, thr = roc_curve(y_val[:, i], val_probs[:, i])
+        known = y_val[:, i] != UNKNOWN_LABEL
+        fpr, tpr, thr = roc_curve(y_val[known, i], val_probs[known, i])
         thresholds.append(float(thr[np.argmax(tpr - fpr)]))
     return (test_probs > np.asarray(thresholds)).astype(np.int64), thresholds
 
 
 def load_label_sources(fusion_dir: str) -> tuple[dict[str, np.ndarray], dict]:
-    """(N, L) 0/1 labels for every label source over the full split, plus fusion provenance."""
+    """(N, L) labels for every label source over the full split, plus fusion provenance.
+    Only audited_physician has unknowns (UNKNOWN_LABEL), the others are 0/1."""
     assert _DS is not None
     sources, fusion_meta = {}, {}
     for key, _, _ in LABEL_SOURCES:
-        if key == "original_physician":
+        if key == DATASET_KWARGS["label_src"]:
             y = _DS.labels.numpy()
         elif key == "protoecgnet_fusion":
             y, thresholds = fusion_predictions(fusion_dir)
@@ -134,8 +140,6 @@ def load_label_sources(fusion_dir: str) -> tuple[dict[str, np.ndarray], dict]:
         else:
             y = get_heedb_labels(DATASET_PATH, _DS._df, None, key)  # type: ignore
         assert y.shape == (len(_DS), len(HEEDB_TARGETS)), (key, y.shape)
-        # the viewer stores labels as 0/1 bitmasks
-        reject_unknown_labels(y, f"case selector ({key})")
         sources[key] = y
     return sources, fusion_meta
 
@@ -217,9 +221,15 @@ def write_index(
     labels = list(HEEDB_TARGETS)
     bits = np.int64(1) << np.arange(len(labels), dtype=np.int64)
 
+    # positives, and separately the unknowns of sources that have any
     masks = {
-        key: (y[rows].astype(np.int64) * bits).sum(1).tolist()
+        key: ((y[rows] == 1).astype(np.int64) * bits).sum(1).tolist()
         for key, y in sources.items()
+    }
+    unknown_masks = {
+        key: ((y[rows] == UNKNOWN_LABEL).astype(np.int64) * bits).sum(1).tolist()
+        for key, y in sources.items()
+        if (y == UNKNOWN_LABEL).any()
     }
 
     missing = [
@@ -263,6 +273,7 @@ def write_index(
         ),
         "site": "".join(df["source"].str[0]),
         "masks": masks,
+        "unknown_masks": unknown_masks,
         "missing": missing,
     }
     path = os.path.join(out_dir, "index.js")

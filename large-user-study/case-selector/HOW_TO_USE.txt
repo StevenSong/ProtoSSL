@@ -23,8 +23,12 @@ FINDING CASES
     it or "excl" to exclude it. Choose whether a case needs ALL of the
     required labels or AT LEAST ONE of them. By default the labels are the
     physician overreads, and you can switch the label source at the top to
-    the original MUSE statement or the ProtoECGNet fusion model's
-    predictions.
+    the MUSE statement or the ProtoECGNet fusion model's predictions. Both
+    reads only count statements about the current ECG, not the comparison
+    with earlier ECGs.
+  - Some overread labels are shown as "?" (unknown): the overread is
+    ambiguous for that label. A required label must be positive, and an
+    excluded label must be neither positive nor unknown.
   - Click "Random match" (or press R) to see a random ECG that matches the
     filter, or type an ECG ID and press Enter.
   - Use the Back / Forward buttons (or the left / right arrow keys) to go
