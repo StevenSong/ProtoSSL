@@ -152,7 +152,8 @@ if __name__ == "__main__":
     if args.label_subset_config is not None:
         c = OmegaConf.load(args.label_subset_config)
         OmegaConf.set_struct(c, True)
-        args.label_subset = c.data.init_args.label_subset
+        # plain list: ListConfig rejects numpy integer indices
+        args.label_subset = OmegaConf.to_container(c.data.init_args.label_subset)
 
     main(
         dataset_path=args.dataset_path,
