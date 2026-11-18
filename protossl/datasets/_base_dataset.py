@@ -1,3 +1,4 @@
+import fcntl
 import hashlib
 import os
 import shutil
@@ -67,17 +68,23 @@ def load_cached_data(
 
     print("=================load_cached_data==================")
     print(f"Dataset parameters: ({dataset_path}, {split}, {sampling_rate}Hz)")
+    # one build per cache file per node: other jobs wait here and then load the finished
+    # file, since parallel builds would each hold the full tensor twice. checked before
+    # locking too, so reading an existing cache needs no write access (e.g. a read-only mount)
     if not os.path.exists(cache_file):
-        print("Cache file not found, loading/transforming from source")
+        with open(f"{cache_file}.lock", "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            if not os.path.exists(cache_file):
+                print("Cache file not found, loading/transforming from source")
 
-        # all params and processing should be wrapped in this loader function
-        X = load_transform_data_fn()
-        X = X.float()
+                # all params and processing should be wrapped in this loader function
+                X = load_transform_data_fn()
+                X = X.float()
 
-        # cache data
-        atomic_write(cache_file, lambda f: torch.save(X, f))
-        print(f"Dataset cached to {cache_file}")
-        del X
+                # cache data
+                atomic_write(cache_file, lambda f: torch.save(X, f))
+                print(f"Dataset cached to {cache_file}")
+                del X
 
     # load cached data
     X = torch.load(cache_file)
