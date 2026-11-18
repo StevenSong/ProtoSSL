@@ -3,10 +3,12 @@
 .gitignore @StevenSong
 .gitmodules @StevenSong
 .pre-commit-config.yaml @StevenSong
+.python-version @StevenSong
 .secrets.baseline @StevenSong
 configs/ @StevenSong
 data-preprocessing/ @StevenSong
 env.yaml @StevenSong
+envs/ @StevenSong
 external/PierreElias-IntroECG @StevenSong
 external/vuno-ST-MEM @StevenSong
 hf-token-plugin.py @StevenSong
@@ -101,3 +103,4 @@ user-study/prepare_samples.ipynb @StevenSong
 user-study/results.csv @StevenSong
 user-study/user_study_analysis.ipynb @sahilsethi0105
 large-user-study/ @StevenSong
+uv.lock @StevenSong
