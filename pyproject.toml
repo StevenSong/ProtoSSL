@@ -41,6 +41,7 @@ dependencies = [
     "scipy",
     "seaborn",
     "statsmodels",
+    "tabulate",  # pandas to_markdown, in the results notebooks
     "tensorboard",
     "timm",
     "torch==2.7.0",
