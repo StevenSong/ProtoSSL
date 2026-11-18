@@ -220,7 +220,6 @@ slurm-logs/
 results/figs/
 ecgfounder-checkpoint/
 wandb/
-.devcontainer/
 user-study/images-pdf
 build/
 review_samples.csv
