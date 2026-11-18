@@ -58,8 +58,6 @@ python _eval_probs_bootstrapped.py \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 
-publish "$EXP_NAME"
-
 # now fine-tune
 PRETRAIN_RUN=$RUN_DIR/$EXP_NAME
 EXP_NAME="$EXP_NAME-ft"
@@ -110,4 +108,6 @@ python _eval_probs_bootstrapped.py \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 
+# publish both at the end, so a failed job leaves nothing published
+publish "${EXP_NAME%-ft}"
 publish "$EXP_NAME"

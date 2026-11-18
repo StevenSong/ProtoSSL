@@ -32,13 +32,18 @@ sha=$(git rev-parse HEAD)
 url=$(git remote get-url origin)
 url=${url/#git@github.com:/https:\/\/github.com\/}
 # Same fetch the nodes will do, into a throwaway repo (never into this clone: a --depth
-# fetch here would make it shallow).
-probe=$(mktemp -d)
-trap 'rm -rf "$probe"' EXIT
-git init -q --template= "$probe"
-if ! GIT_TERMINAL_PROMPT=0 git -C "$probe" fetch -q --depth 1 "$url" "$sha" 2>/dev/null; then
-  echo "refusing to submit: $sha is not on $url (push it first)" >&2
-  exit 1
+# fetch here would make it shallow). Done once per commit: a queue script submits
+# thousands of jobs, and the marker in .git/ remembers that this sha was fetchable.
+marker=$(git rev-parse --absolute-git-dir)/protossl-pushed/$sha
+if [[ ! -e $marker ]]; then
+  probe=$(mktemp -d)
+  trap 'rm -rf "$probe"' EXIT
+  git init -q --template= "$probe"
+  if ! GIT_TERMINAL_PROMPT=0 git -C "$probe" fetch -q --depth 1 "$url" "$sha" 2>/dev/null; then
+    echo "refusing to submit: $sha is not on $url (push it first)" >&2
+    exit 1
+  fi
+  mkdir -p "$(dirname "$marker")" && touch "$marker"
 fi
 
 sbatch --job-name=protossl "${sbatch_args[@]}" slurm/job.sh "$sha" "$url" "$@"

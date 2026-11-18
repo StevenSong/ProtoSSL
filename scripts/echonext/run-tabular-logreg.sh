@@ -16,7 +16,6 @@ python _eval_probs.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME-unweighted/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME-unweighted
-publish "$EXP_NAME-unweighted"
 
 python echonext/_tabular_logreg.py \
 --echonext-data $DATASET_PATH \
@@ -26,4 +25,6 @@ python _eval_probs.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME-weighted/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME-weighted
+
+publish "$EXP_NAME-unweighted"
 publish "$EXP_NAME-weighted"
