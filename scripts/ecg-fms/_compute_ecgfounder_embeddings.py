@@ -3,20 +3,19 @@ import os
 
 import numpy as np
 import torch
-from torch.hub import load_state_dict_from_url
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from protossl.datasets import infer_dataset_class_from_path
 from protossl.models.encoders import Net1D
 
-CHECKPOINT_URL = "https://huggingface.co/PKUDigitalHealth/ECGFounder/resolve/main/12_lead_ECGFounder.pth"
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset-path", required=True)
     parser.add_argument("--output-path", required=True)
+    # 12_lead_ECGFounder.pth from https://huggingface.co/PKUDigitalHealth/ECGFounder
+    parser.add_argument("--ckpt", required=True)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--return-patches", action="store_true")
     args = parser.parse_args()
@@ -27,6 +26,7 @@ def main(
     *,  # enforce kwargs
     dataset_path: str,
     output_path: str,
+    ckpt_path: str,
     batch_size: int = 512,
     return_patches: bool = False,
 ):
@@ -34,9 +34,8 @@ def main(
     encoder = Net1D(return_patches=return_patches)
 
     # load pretrained weights
-    sd = load_state_dict_from_url(
-        url=CHECKPOINT_URL,
-        model_dir="ecgfounder-checkpoint",  # local save to reuse
+    sd = torch.load(
+        ckpt_path,
         map_location="cpu",
         weights_only=False,  # NOTE: this incurs risk of unpickling something malicious
     )["state_dict"]
@@ -92,6 +91,7 @@ if __name__ == "__main__":
     main(
         dataset_path=args.dataset_path,
         output_path=args.output_path,
+        ckpt_path=args.ckpt,
         batch_size=args.batch_size,
         return_patches=args.return_patches,
     )

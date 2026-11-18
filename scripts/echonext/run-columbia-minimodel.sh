@@ -1,36 +1,39 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Columbia's EchoNext minimodel (external/PierreElias-IntroECG), in its own Docker image.
+#   slurm/submit.sh -p h200 --gres=gpu:1 -- scripts/echonext/run-columbia-minimodel.sh <dataset> <run> <seed>
+#   <dataset>: echonext or a subset, e.g. echonext-256 (<seed> only names the output dir)
+set -euo pipefail
+source "$(dirname "$0")/../_common.sh" "$@"
 
-set -e
-
-# set these env vars prior to executing this script
-: "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
-: "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
-: "${REPO_ROOT:?Env var REPO_ROOT must be set prior to script execution}"
-echo "Using DATASET_PATH=$DATASET_PATH"
-echo "Using RUN_DIR=$RUN_DIR"
-echo "Using REPO_ROOT=$REPO_ROOT"
-cd $REPO_ROOT/scripts
-
-# run using docker
+EXP_NAME=columbia-minimodel
 IMAGE_TAG=echonext-minimodel
-: "${CUDA_VISIBLE_DEVICES:?Env var CUDA_VISIBLE_DEVICES must be set prior to script execution}"
-GPU_IDX=$CUDA_VISIBLE_DEVICES
+
+stage "$EXP_NAME"
 
 # docker will create directories under root so premake any
 # directories we need to write into outside of docker container
-mkdir -p $RUN_DIR/columbia-minimodel
+mkdir -p $RUN_DIR/$EXP_NAME
 
 cd "$REPO_ROOT/external/PierreElias-IntroECG/7-EchoNext Minimodel"
+# one build per node at a time: concurrent builds of a tag each retag it, so a job could
+# run the other's image
+exec 8>"$RUN_ROOT/docker-build.lock"
+flock 8
 docker build -t $IMAGE_TAG .
-docker run --rm --gpus device=$GPU_IDX \
+image=$(docker image inspect --format '{{.Id}}' $IMAGE_TAG)
+flock -u 8
+echo "image $image"
+docker run --rm --gpus device=$CUDA_VISIBLE_DEVICES \
 -v $DATASET_PATH:/processed_data \
--v $RUN_DIR/columbia-minimodel:/results \
-$IMAGE_TAG
+-v $RUN_DIR/$EXP_NAME:/results \
+$image
 
 cd "$REPO_ROOT/scripts"
 python _eval_probs.py \
 --dataset-path $DATASET_PATH \
---probs-npy $RUN_DIR/columbia-minimodel/prediction_loop/probs.npy \
---output-path $RUN_DIR/columbia-minimodel
+--probs-npy $RUN_DIR/$EXP_NAME/prediction_loop/probs.npy \
+--output-path $RUN_DIR/$EXP_NAME
 
-cp $RUN_DIR/columbia-minimodel/prediction_loop/probs.npy $RUN_DIR/columbia-minimodel/probs.npy 
+cp $RUN_DIR/$EXP_NAME/prediction_loop/probs.npy $RUN_DIR/$EXP_NAME/probs.npy
+
+publish "$EXP_NAME"

@@ -1,26 +1,20 @@
-#!/bin/bash
-
-set -e
-
-# set these env vars prior to executing this script
-: "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
-: "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
-: "${REPO_ROOT:?Env var REPO_ROOT must be set prior to script execution}"
-: "${SEED:=42}"
-echo "Using SEED=$SEED"
-echo "Using DATASET_PATH=$DATASET_PATH"
-echo "Using RUN_DIR=$RUN_DIR"
-echo "Using REPO_ROOT=$REPO_ROOT"
-cd $REPO_ROOT/scripts
+#!/usr/bin/env bash
+#   slurm/submit.sh --gres=gpu:1 -- scripts/5-2-run-stmem-logreg.sh <dataset> <run> <seed>
+# see scripts/_common.sh for the arguments and where outputs go
+set -euo pipefail
+source "$(dirname "$0")/_common.sh" "$@"
 
 # experiment parameters
 EXP_NAME="stmem-logreg"
 
+stage "$EXP_NAME"
+
+verify_sha256 "$STMEM_CKPT" "$STMEM_SHA256"
 python ecg-fms/_compute_stmem_embeddings.py \
 --dataset-path $DATASET_PATH \
 --output-path $RUN_DIR/$EXP_NAME \
 --stmem-repo $REPO_ROOT/external/vuno-ST-MEM \
---stmem-ckpt $REPO_ROOT/external/vuno-ST-MEM/st_mem_vit_base_encoder.pth
+--stmem-ckpt $STMEM_CKPT
 
 python _linear_probe.py \
 --random-seed $SEED \
@@ -37,3 +31,5 @@ python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
+
+publish "$EXP_NAME"

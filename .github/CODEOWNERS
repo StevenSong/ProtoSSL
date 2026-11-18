@@ -66,11 +66,12 @@ pyproject.toml @StevenSong
 README.md @StevenSong @sahilsethi0105
 requirements.txt @StevenSong
 scripts/_cache_data.py @StevenSong
+scripts/_common.sh @StevenSong
+scripts/_datasets.sh @StevenSong
 scripts/_eval_probs_bootstrapped.py @StevenSong
 scripts/_eval_probs.py @StevenSong
 scripts/_linear_probe.py @StevenSong
-scripts/_slurm_wrapper.sh @StevenSong
-scripts/_submit_job.sh @StevenSong
+scripts/_publish.sh @StevenSong
 scripts/0-run-cache-data.sh @StevenSong
 scripts/1-run-blackbox-direct.sh @StevenSong
 scripts/2-run-supproto-direct.sh @StevenSong
@@ -95,8 +96,8 @@ scripts/echonext/run-tabular-logreg.sh @StevenSong
 scripts/pretrain/ @StevenSong
 scripts/prototypes-from-fms @StevenSong
 scripts/queue-experiments.sh @StevenSong
-scripts/queue-pclr-logreg.sh @StevenSong
 scripts/README.md @StevenSong @sahilsethi0105
+slurm/ @StevenSong
 user-study/images @StevenSong
 user-study/metadata.csv @StevenSong
 user-study/prepare_samples.ipynb @StevenSong
