@@ -5,7 +5,6 @@
   "features": {
     "ghcr.io/devcontainers/features/node:2.1.2": {},
     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
-    "ghcr.io/rocker-org/devcontainer-features/miniforge:2": {},
     "ghcr.io/devcontainers-extra/features/tmux-apt-get:1": {}
   },
   "mounts": [
@@ -14,7 +13,6 @@
     "source=${localEnv:HOME}/.local/bin/uvx,target=${localEnv:HOME}/.local/bin/uvx,type=bind,readonly",
     "source=${localEnv:HOME}/.local/share/uv/python,target=${localEnv:HOME}/.local/share/uv/python,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.cache/uv,target=${localEnv:HOME}/.cache/uv,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/miniforge3/envs,target=${localEnv:HOME}/miniforge3/envs,type=bind,consistency=cached",
     "source=${localEnv:HOME}/protossl-run,target=${localEnv:HOME}/protossl-run,type=bind,consistency=cached,readonly",
     "source=/shared/gpudata/songs1/protossl-shared,target=/shared/gpudata/songs1/protossl-shared,type=bind,consistency=cached,readonly",
     "source=${localEnv:HOME}/protossl-outputs,target=${localEnv:HOME}/protossl-outputs,type=bind,consistency=cached,readonly",
@@ -26,7 +24,6 @@
   "shutdownAction": "none",
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
-    "CONDA_ENVS_PATH": "${localEnv:HOME}/miniforge3/envs",
     "UV_CACHE_DIR": "${localEnv:HOME}/.cache/uv",
     "UV_PYTHON_INSTALL_DIR": "${localEnv:HOME}/.local/share/uv/python",
     "UV_LINK_MODE": "copy",
