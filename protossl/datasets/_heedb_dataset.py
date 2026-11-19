@@ -1,5 +1,10 @@
+import ast
+import collections
 import hashlib
+import inspect
+import json
 import os
+import textwrap
 from pathlib import Path
 from typing import Literal
 
@@ -23,14 +28,16 @@ from ..defines import (
     HEEDB_TARGETS,
     SPLIT_T,
     STANDARD_LEAD_ORDER,
+    env_flag,
 )
 from ._base_dataset import (
     BaseTSDataset,
+    atomic_write,
     get_cache_file,
     load_cached_data,
     validate_label_subset,
 )
-from .streaming_loaders import StreamingECGWaveforms
+from .streaming_loaders import StreamingECGWaveforms, _streaming_ecgs
 
 # fmt: off
 LABEL_SRC_MAPPING = {
@@ -41,20 +48,28 @@ LABEL_SRC_MAPPING = {
 # fmt: on
 LABEL_SRC_T = Literal["original_muse", "original_physician", "new_muse"]
 HEEDB_SPLIT_T = Literal["by-year", "by-label"]
-BY_LABEL_SPLIT_HASH = "373878c0ce8ff856a22b738dbbac4830476568b8c482b5d597ab9624ae3bacaf"  # pragma: allowlist secret
+BY_LABEL_SPLIT_HASH = "543697e39036d4bc2ee97e14b86ae24c7c7cf83def07fe70206ae6dcafd4ed56"  # pragma: allowlist secret
 
 heedb_lead_order = [l.lower() for l in HEEDB_LEAD_ORDER]
 standard_lead_order = [l.lower() for l in STANDARD_LEAD_ORDER]
 assert all([c == s for c, s in zip(heedb_lead_order, standard_lead_order)])
 
+# per-institution normalization, keyed by the `source` column
+STREAM_STATS = {
+    "per_lead_lowerbound": {"mgb": HEEDB_MGB_LOWERS, "emory": HEEDB_EUH_LOWERS},
+    "per_lead_upperbound": {"mgb": HEEDB_MGB_UPPERS, "emory": HEEDB_EUH_UPPERS},
+    "per_lead_mean": {"mgb": HEEDB_MGB_CLIPPED_MEANS, "emory": HEEDB_EUH_CLIPPED_MEANS},
+    "per_lead_std": {"mgb": HEEDB_MGB_CLIPPED_STDS, "emory": HEEDB_EUH_CLIPPED_STDS},
+}
+
 # DANGER: set this to load the entire waveform database into memory
 # DANGER: the initial cache should be done prior to any jobs
-HIGH_MEMORY = os.environ.get("HIGH_MEMORY", None) is not None
+HIGH_MEMORY = env_flag("HIGH_MEMORY")
 
 # global cache variables
-FULL_META = None
-MGB_FNAME_TO_CODE: dict[str, dict[str, str]] = dict()
-EUH_FNAME_TO_CODE: dict[str, dict[str, str]] = dict()
+FULL_META: dict[tuple[str, str], pd.DataFrame] = dict()  # (path, split type) -> meta
+# (path, institution, csv, col) -> fname -> code string
+FNAME_TO_CODE: dict[tuple[str, str, str, str], dict[str, str]] = dict()
 
 
 class HeedbECGDataset(BaseTSDataset):
@@ -71,21 +86,19 @@ class HeedbECGDataset(BaseTSDataset):
     ):
         full_df = get_heedb_metadata(dataset_path, heedb_split_type=heedb_split_type)
 
-        df = full_df[full_df["split"] == split].reset_index(drop=True)
+        split_df = full_df[full_df["split"] == split].reset_index(drop=True)
+        df = split_df
         has_overread = None
         if drop_blank_overread:
             # HEEDB v5 likely has some errors with missing physician overreads,
             # so a blank physician overread can't be told apart from a physician
             # deleting every statement. Thus, treat these rows as unlabeled
             # rather than all-negative. filtered after split assignment so splits
-            # are unchanged and ecg_id (sample_id) stays stable
-            if label_src != "original_physician":
-                raise ValueError(
-                    "drop_blank_overread only applies to label_src='original_physician', "
-                    f"got: {label_src}"
-                )
-            has_overread = get_heedb_overread_mask(dataset_path, df)
-            df = df[has_overread].reset_index(drop=True)
+            # are unchanged and ecg_id (sample_id) stays stable. the mask is always
+            # derived from physician overreads, so the same subset of ECGs can be
+            # labeled with any label_src (e.g. muse labels over the overread subset)
+            has_overread = get_heedb_overread_mask(dataset_path, split_df)
+            df = split_df[has_overread].reset_index(drop=True)
         self.source_ids = torch.as_tensor(df["patient_id"].to_numpy())
         self.sample_ids = torch.as_tensor(df["ecg_id"].to_numpy())
         self.labels = torch.as_tensor(
@@ -96,22 +109,7 @@ class HeedbECGDataset(BaseTSDataset):
         streaming_ecgs = StreamingECGWaveforms(
             wfdb_paths=list(df["full_path"]),
             sampling_rate=sampling_rate,
-            per_lead_lowerbound={
-                "mgb": HEEDB_MGB_LOWERS,
-                "emory": HEEDB_EUH_LOWERS,
-            },
-            per_lead_upperbound={
-                "mgb": HEEDB_MGB_UPPERS,
-                "emory": HEEDB_EUH_UPPERS,
-            },
-            per_lead_mean={
-                "mgb": HEEDB_MGB_CLIPPED_MEANS,
-                "emory": HEEDB_EUH_CLIPPED_MEANS,
-            },
-            per_lead_std={
-                "mgb": HEEDB_MGB_CLIPPED_STDS,
-                "emory": HEEDB_EUH_CLIPPED_STDS,
-            },
+            **STREAM_STATS,
             verbose=not HIGH_MEMORY,
             stat_mapper=list(df["source"]),
             expected_lead_order=heedb_lead_order,
@@ -136,6 +134,7 @@ class HeedbECGDataset(BaseTSDataset):
                 dataset_path=dataset_path,
                 split=base_split,  # type: ignore
                 sampling_rate=sampling_rate,
+                key_extra=waveform_cache_key(split_df),
             )
             cache_split = (
                 base_split
@@ -179,6 +178,7 @@ class HeedbECGDataset(BaseTSDataset):
                 dataset_path=dataset_path,
                 split=cache_split,  # type: ignore
                 sampling_rate=sampling_rate,
+                key_extra=waveform_cache_key(df),
             )
 
         assert self.source_ids.shape[0] == self.waveforms.shape[0]
@@ -192,19 +192,28 @@ def get_heedb_metadata(
     heedb_split_type: HEEDB_SPLIT_T = "by-year",
 ) -> pd.DataFrame:
     _path = Path(heedb_path)
-    global FULL_META
-    if FULL_META is not None:
-        return FULL_META.copy()
+    meta_key = (heedb_path.rstrip(os.sep), heedb_split_type)
+    if meta_key in FULL_META:
+        return FULL_META[meta_key].copy()
 
     print("================get_heedb_metadata=================")
     print(f"using {heedb_split_type} splits")
 
-    identifier = f"HEEDB_{heedb_path.rstrip(os.sep)}_{heedb_split_type}"
+    # the function's own source, so editing filters or split logic rebuilds the cache.
+    # downstream caches are keyed on rows, so they survive a rebuild that keeps the rows
+    code_hash = source_code_hash(get_heedb_metadata)
+    src_hash = source_fingerprint(
+        [_path / "I0001/metadata/metadata.csv", _path / "I0006/metadata/metadata.csv"]
+    )
+    identifier = (
+        f"HEEDB_{heedb_path.rstrip(os.sep)}_{heedb_split_type}_{code_hash}_{src_hash}"
+    )
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     cache_file = os.path.join(CACHE_DIR, f"{hashed}.csv")
     if os.path.exists(cache_file):
         print(f"reading HEEDB metadata from on-disk cache: {cache_file}")
-        df = pd.read_csv(cache_file)
+        # round_trip so ages match a fresh build exactly, the default parser can be 1 ulp off
+        df = pd.read_csv(cache_file, float_precision="round_trip")
     else:
         print(f"reading HEEDB metadata from source: {heedb_path}")
 
@@ -270,18 +279,20 @@ def get_heedb_metadata(
             df.loc[df["year"] == 2022, "split"] = "test"
         elif heedb_split_type == "by-label":
             # law of large numbers, we just generate random splits and it's close enough
-            # to splits which preserve independent label prevalence (need to check about cooccurrence)
-            n = int(len(df) * 0.05)
+            # to splits which preserve independent label prevalence (need to check about cooccurrence).
+            # split by patient so that no patient's ECGs span multiple splits
+            patient_ids = np.sort(df["patient_id"].unique()).astype(np.int64)
+            n = int(len(patient_ids) * 0.05)
             rng = np.random.default_rng(42)
-            val_test_idxs = rng.choice(len(df), size=n * 2, replace=False)
-            digest = hashlib.sha256(val_test_idxs.tobytes()).hexdigest()
+            val_test_patients = rng.choice(patient_ids, size=n * 2, replace=False)
+            digest = hashlib.sha256(val_test_patients.tobytes()).hexdigest()
             if digest != BY_LABEL_SPLIT_HASH:
                 raise ValueError(
                     "Randomly generated split for preserving label prevalence has changed!"
                 )
 
-            df.loc[val_test_idxs[:n], "split"] = "val"
-            df.loc[val_test_idxs[n:], "split"] = "test"
+            df.loc[df["patient_id"].isin(val_test_patients[:n]), "split"] = "val"
+            df.loc[df["patient_id"].isin(val_test_patients[n:]), "split"] = "test"
         else:
             raise ValueError(
                 f"Unknown how to create splits for HEEDB split type: {heedb_split_type}"
@@ -297,12 +308,14 @@ def get_heedb_metadata(
                 p = _path / "I0006" / f
             else:
                 raise ValueError(f"Unknown path structure for institution: {src}")
-            full_paths.append(p)
+            # str, to match what reading the cached csv gives
+            full_paths.append(str(p))
         df["full_path"] = full_paths
-        df.to_csv(cache_file, index=False)
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        atomic_write(cache_file, lambda f: df.to_csv(f, index=False))
         print(f"saved HEEDB metadata to on-disk cache: {cache_file}")
 
-    FULL_META = df.copy()
+    FULL_META[meta_key] = df.copy()
     print("===================================================")
     return df
 
@@ -320,8 +333,10 @@ def get_heedb_labels(
         targets = {label: HEEDB_TARGETS[label] for label in label_subset}
 
     meta_hash = hash_path_list(meta["fpath"])
-    targets_hash = hashlib.md5("\0".join(targets).encode("utf-8")).hexdigest()[:8]
-    identifier = f"HEEDB_labels_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_src}_{targets_hash}"
+    # names and codes, so editing a target's codes doesn't reuse a stale cache
+    targets_hash = hashlib.md5(json.dumps(targets).encode("utf-8")).hexdigest()[:8]
+    src_hash = label_src_fingerprint(heedb_path, label_src)
+    identifier = f"HEEDB_labels_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_src}_{targets_hash}_{src_hash}"
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     cache_file = os.path.join(CACHE_DIR, f"{hashed}.npy")
 
@@ -334,25 +349,19 @@ def get_heedb_labels(
         print("replaying below stats from cache:")
     else:
         print(f"reading HEEDB labels from source: {heedb_path}")
-        load_fname_to_code(heedb_path, label_src)  # caches in global vars
-        code_to_label = {c: k for k, cs in targets.items() for c in cs}
-        label_to_idx = {k: i for i, k in enumerate(targets)}
+        mgb_codes, euh_codes = get_fname_to_code(heedb_path, label_src)
+        code_to_labels = make_code_to_labels(targets)
 
         data = np.zeros((len(meta), len(targets)), dtype=np.long)
         count = 0
-        for meta_idx, (fname, institution) in enumerate(
-            zip(
-                tqdm(meta["fpath"], desc="Converting code string to labels"),
-                meta["source"],
+        for meta_idx, codes in enumerate(
+            tqdm(
+                lookup_codes(meta, mgb_codes, euh_codes),
+                total=len(meta),
+                desc="Converting code string to labels",
             )
         ):
-            if institution == "mgb":
-                codes = MGB_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-            elif institution == "emory":
-                codes = EUH_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-            else:
-                raise ValueError(f"Unknown institution: {institution}")
-            if codes == "MISSING":
+            if codes is None:
                 # separate missing vs empty (below)
                 continue
             count += 1
@@ -360,27 +369,20 @@ def get_heedb_labels(
                 continue
             assert isinstance(codes, str)
             for code in codes.split(","):
-                # convert 12SL code to label
-                label = code_to_label.get(int(code), -1)
-                if label == -1:
-                    continue
-                # convert label to column idx
-                label_idx = label_to_idx.get(label, -1)  # type: ignore
-                if label_idx == -1:
-                    continue
-                data[meta_idx, label_idx] = 1
+                # convert 12SL code to label column idxs
+                for label_idx in code_to_labels.get(int(code), []):
+                    data[meta_idx, label_idx] = 1
 
         n_ecgs, n_matched = len(meta), count
-        n_annots = len(MGB_FNAME_TO_CODE[label_src]) + len(EUH_FNAME_TO_CODE[label_src])
-        np.save(
-            cache_file,
-            {  # type: ignore
-                "data": data,
-                "n_ecgs": n_ecgs,
-                "n_annots": n_annots,
-                "n_matched": n_matched,
-            },
-        )
+        n_annots = len(mgb_codes) + len(euh_codes)
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        saved = {
+            "data": data,
+            "n_ecgs": n_ecgs,
+            "n_annots": n_annots,
+            "n_matched": n_matched,
+        }
+        atomic_write(cache_file, lambda f: np.save(f, saved))  # type: ignore
         print(f"saved HEEDB labels to on-disk cache: {cache_file}")
     print(
         f"Of {n_ecgs} ECGs and {n_annots} annotations, {n_matched} matched "
@@ -388,6 +390,15 @@ def get_heedb_labels(
     )
     print("===================================================")
     return data
+
+
+def make_code_to_labels(targets: dict[str, list[int]]) -> dict[int, list[int]]:
+    """Map each 12SL code to the column indices of the targets that use it."""
+    code_to_labels: dict[int, list[int]] = collections.defaultdict(list)
+    for i, codes in enumerate(targets.values()):
+        for c in codes:
+            code_to_labels[c].append(i)
+    return dict(code_to_labels)
 
 
 def make_fname_to_code(
@@ -407,8 +418,8 @@ def make_fname_to_code(
         fname: code_str
         for fname, code_str in zip(
             tqdm(
-                # v24 file names are prefixed with '.' and suffixed with '.hea\n'
-                df["FileName"].str.strip(".").str.strip(".hea\n"),
+                # MGB v24 file names are prefixed with '.' and suffixed with '.hea\n'
+                df["FileName"].str.removeprefix(".").str.removesuffix(".hea\n"),
                 desc=f"Creating {institution} fname to code mapping",
             ),
             df[label_col],
@@ -416,17 +427,36 @@ def make_fname_to_code(
     }
 
 
-def load_fname_to_code(heedb_path: str, label_src: LABEL_SRC_T):
-    # populates the global per-institution caches for this label source
-    _label_csv, _label_col = LABEL_SRC_MAPPING[label_src]
-    if label_src not in MGB_FNAME_TO_CODE:
-        MGB_FNAME_TO_CODE[label_src] = make_fname_to_code(
-            heedb_path, "mgb", _label_csv, _label_col
-        )
-    if label_src not in EUH_FNAME_TO_CODE:
-        EUH_FNAME_TO_CODE[label_src] = make_fname_to_code(
-            heedb_path, "emory", _label_csv, _label_col
-        )
+def get_fname_to_code(
+    heedb_path: str, label_src: LABEL_SRC_T
+) -> tuple[dict[str, str], dict[str, str]]:
+    # (MGB, Emory) fname -> code string maps, cached in a global and shared across label
+    # sources that read the same csv column
+    label_csv, label_col = LABEL_SRC_MAPPING[label_src]
+    maps = []
+    for institution in ("mgb", "emory"):
+        key = (heedb_path.rstrip(os.sep), institution, label_csv, label_col)
+        if key not in FNAME_TO_CODE:
+            FNAME_TO_CODE[key] = make_fname_to_code(
+                heedb_path, institution, label_csv, label_col
+            )
+        maps.append(FNAME_TO_CODE[key])
+    return maps[0], maps[1]
+
+
+def lookup_codes(
+    meta: pd.DataFrame, mgb_codes: dict[str, str], euh_codes: dict[str, str]
+) -> list:
+    # code string per meta row, None if the file isn't in the diagnoses table
+    out = []
+    for fname, institution in zip(meta["fpath"], meta["source"]):
+        if institution == "mgb":
+            out.append(mgb_codes.get(fname))
+        elif institution == "emory":
+            out.append(euh_codes.get(fname))
+        else:
+            raise ValueError(f"Unknown institution: {institution}")
+    return out
 
 
 def get_heedb_overread_mask(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
@@ -438,9 +468,8 @@ def get_heedb_overread_mask(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
     print("==============get_heedb_overread_mask==============")
     label_src: LABEL_SRC_T = "original_physician"
     meta_hash = hash_path_list(meta["fpath"])
-    identifier = (
-        f"HEEDB_overread_mask_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_src}"
-    )
+    src_hash = label_src_fingerprint(heedb_path, label_src)
+    identifier = f"HEEDB_overread_mask_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_src}_{src_hash}"
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     cache_file = os.path.join(CACHE_DIR, f"{hashed}.npy")
 
@@ -452,21 +481,17 @@ def get_heedb_overread_mask(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
         print("replaying below stats from cache:")
     else:
         print(f"reading HEEDB physician overreads from source: {heedb_path}")
-        load_fname_to_code(heedb_path, label_src)
+        mgb_codes, euh_codes = get_fname_to_code(heedb_path, label_src)
         mask = np.zeros(len(meta), dtype=bool)
         n_blank, n_missing = 0, 0
-        for meta_idx, (fname, institution) in enumerate(
-            zip(
-                tqdm(meta["fpath"], desc="Checking physician overreads"), meta["source"]
+        for meta_idx, codes in enumerate(
+            tqdm(
+                lookup_codes(meta, mgb_codes, euh_codes),
+                total=len(meta),
+                desc="Checking physician overreads",
             )
         ):
-            if institution == "mgb":
-                codes = MGB_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-            elif institution == "emory":
-                codes = EUH_FNAME_TO_CODE[label_src].get(fname, "MISSING")
-            else:
-                raise ValueError(f"Unknown institution: {institution}")
-            if codes == "MISSING":
+            if codes is None:
                 n_missing += 1
             elif not isinstance(codes, str) or codes.strip() == "":
                 # pandas reads an empty field as NaN
@@ -474,10 +499,8 @@ def get_heedb_overread_mask(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:
             else:
                 mask[meta_idx] = True
         os.makedirs(CACHE_DIR, exist_ok=True)
-        np.save(
-            cache_file,
-            {"mask": mask, "n_blank": n_blank, "n_missing": n_missing},  # type: ignore
-        )
+        saved = {"mask": mask, "n_blank": n_blank, "n_missing": n_missing}
+        atomic_write(cache_file, lambda f: np.save(f, saved))  # type: ignore
         print(f"saved HEEDB overread mask to on-disk cache: {cache_file}")
     print(
         f"Of {len(meta)} ECGs, keeping {mask.sum()} with a physician overread, dropping "
@@ -493,3 +516,41 @@ def hash_path_list(paths: pd.Series, chunk=100_000) -> str:
         m.update("\0".join(paths.iloc[i : i + chunk]).encode())
         m.update(b"\0")
     return m.hexdigest()
+
+
+def source_fingerprint(paths: list) -> str:
+    # size and mtime of source files, so a new HEEDB release at the same path isn't served
+    # stale caches
+    parts = []
+    for p in paths:
+        st = os.stat(p)
+        parts.append(f"{p}:{st.st_size}:{st.st_mtime_ns}")
+    return hashlib.md5("\0".join(parts).encode("utf-8")).hexdigest()[:8]
+
+
+def label_src_fingerprint(heedb_path: str, label_src: LABEL_SRC_T) -> str:
+    label_csv, _label_col = LABEL_SRC_MAPPING[label_src]
+    return source_fingerprint(
+        [
+            os.path.join(heedb_path, subdir, "12SL_diagnoses", label_csv)
+            for subdir in ("I0001", "I0006")
+        ]
+    )
+
+
+def waveform_cache_key(df: pd.DataFrame) -> str:
+    # the exact rows in order, their normalization and the loader code, so a metadata,
+    # filtering or preprocessing change can't silently misalign or alter cached waveforms
+    m = hashlib.sha256()
+    m.update(hash_path_list(df["full_path"]).encode())
+    m.update(hash_path_list(df["source"]).encode())
+    m.update(json.dumps([STREAM_STATS, heedb_lead_order]).encode())
+    m.update(source_code_hash(_streaming_ecgs).encode())
+    return m.hexdigest()[:16]
+
+
+def source_code_hash(obj) -> str:
+    # hash of the parsed source of a function or module, so comment and formatting edits
+    # don't invalidate caches (the 500 GB waveform cache in particular)
+    tree = ast.parse(textwrap.dedent(inspect.getsource(obj)))
+    return hashlib.md5(ast.dump(tree).encode("utf-8")).hexdigest()[:8]

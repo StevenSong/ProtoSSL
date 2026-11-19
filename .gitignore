@@ -207,6 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # Custom ignores
+.vscode
 temp.*
 temp-*
 temp_*
@@ -214,11 +215,5 @@ temp/
 
 *.BAK
 
-outputs*/
-OLD/
-slurm-logs/
 results/figs/
-ecgfounder-checkpoint/
-wandb/
-.devcontainer/
 user-study/images-pdf

@@ -1,23 +1,19 @@
-#!/bin/bash
-
-set -e
+#!/usr/bin/env bash
+#   slurm/submit.sh --gres=gpu:1 -- scripts/9-2-run-ecgfounder-clustering.sh <dataset> <run> <seed>
+# see scripts/_common.sh for the arguments and where outputs go
+set -euo pipefail
+source "$(dirname "$0")/_common.sh" "$@"
 
 # align with other experiments
-export PPL=14
-
-# set these env vars prior to executing this script
-: "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
-: "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
-: "${REPO_ROOT:?Env var REPO_ROOT must be set prior to script execution}"
-: "${SEED:=42}"
-echo "Using SEED=$SEED"
-echo "Using DATASET_PATH=$DATASET_PATH"
-echo "Using RUN_DIR=$RUN_DIR"
-echo "Using REPO_ROOT=$REPO_ROOT"
-cd $REPO_ROOT/scripts
+PPL=14
 
 # experiment parameters
 EXP_NAME="ecgfounder-clustering"
+
+stage "$EXP_NAME"
+
+# node-local, shared by 9-1..9-3 on this node
+bash 9-0-run-ecgfounder-patches.sh "$@"
 
 python prototypes-from-fms/SK_OT_prototype_clustering.py \
 --random-seed $SEED \
@@ -41,3 +37,5 @@ python _eval_probs_bootstrapped.py \
 --dataset-path $DATASET_PATH \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
+
+publish "$EXP_NAME"

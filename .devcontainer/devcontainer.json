@@ -1,0 +1,59 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu22.04",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind,consistency=cached",
+  "workspaceFolder": "${localWorkspaceFolder}",
+  "features": {
+    "ghcr.io/devcontainers/features/node:2.1.2": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
+    "ghcr.io/rocker-org/devcontainer-features/miniforge:2": {},
+    "ghcr.io/devcontainers-extra/features/tmux-apt-get:1": {}
+  },
+  "mounts": [
+    "source=claude-code-config-${localEnv:USER}-${localWorkspaceFolderBasename},target=/home/vscode/.claude,type=volume",
+    "source=${localEnv:HOME}/.local/bin/uv,target=${localEnv:HOME}/.local/bin/uv,type=bind,readonly",
+    "source=${localEnv:HOME}/.local/bin/uvx,target=${localEnv:HOME}/.local/bin/uvx,type=bind,readonly",
+    "source=${localEnv:HOME}/.local/share/uv/python,target=${localEnv:HOME}/.local/share/uv/python,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.cache/uv,target=${localEnv:HOME}/.cache/uv,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/miniforge3/envs,target=${localEnv:HOME}/miniforge3/envs,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/protossl-run,target=${localEnv:HOME}/protossl-run,type=bind,consistency=cached,readonly",
+    "source=/shared/gpudata/songs1/protossl-shared,target=/shared/gpudata/songs1/protossl-shared,type=bind,consistency=cached,readonly",
+    "source=${localEnv:HOME}/protossl-outputs,target=${localEnv:HOME}/protossl-outputs,type=bind,consistency=cached,readonly",
+    "source=${localEnv:HOME}/.cache/protossl_cache,target=${localEnv:HOME}/.cache/protossl_cache,type=bind,consistency=cached,readonly",
+    "source=/opt/gpudata/models,target=/opt/gpudata/models,type=bind,consistency=cached,readonly",
+    "source=/opt/gpudata/ecg,target=/opt/gpudata/ecg,type=bind,consistency=cached,readonly"
+  ],
+  "runArgs": ["--gpus", "all"],
+  "shutdownAction": "none",
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
+    "CONDA_ENVS_PATH": "${localEnv:HOME}/miniforge3/envs",
+    "UV_CACHE_DIR": "${localEnv:HOME}/.cache/uv",
+    "UV_PYTHON_INSTALL_DIR": "${localEnv:HOME}/.local/share/uv/python",
+    "UV_LINK_MODE": "copy",
+    "PROTOSSL_RUN_ROOT": "${localEnv:HOME}/protossl-run",
+    "PROTOSSL_OUTPUTS": "${localEnv:HOME}/protossl-outputs",
+    "CACHE_DIR": "${localEnv:HOME}/.cache/protossl_cache"
+  },
+  "remoteEnv": {
+    "PATH": "${localEnv:HOME}/.local/bin:${containerEnv:PATH}"
+  },
+  "initializeCommand": "mkdir -p ~/.cache/uv ~/.local/share/uv/python ~/protossl-run",
+  "postCreateCommand": "sudo chown -R $(id -u):$(id -g) ~/.claude",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.jupyter-renderers",
+        "christian-kohler.path-intellisense",
+        "Anthropic.claude-code"
+      ],
+      "settings": {
+        "workbench.colorTheme": "Dark+"
+      }
+    }
+  }
+}

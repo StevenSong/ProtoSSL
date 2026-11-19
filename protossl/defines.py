@@ -526,7 +526,20 @@ HEEDB_TARGETS = {
     "WITH 1ST DEGREE AV BLOCK": [101],
     "WITH SINUS ARRHYTHMIA": [251],
 }
-if os.environ.get("USE_HEEDB_150", False):
+
+
+def env_flag(name: str) -> bool:
+    # unlike a plain truthiness check, "0" and "false" turn the flag off
+    value = os.environ.get(name, "").strip().lower()
+    if value in ("", "0", "false", "no"):
+        return False
+    if value in ("1", "true", "yes"):
+        return True
+    raise ValueError(f"Unrecognized value for {name}: {value!r}")
+
+
+USE_HEEDB_150 = env_flag("USE_HEEDB_150")
+if USE_HEEDB_150:
     print("====================defines.py=====================")
     print("USING HEEDB 150 LABEL SET")
     print("===================================================")

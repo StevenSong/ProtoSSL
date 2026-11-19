@@ -1,3 +1,4 @@
+import fcntl
 import hashlib
 import os
 import shutil
@@ -24,11 +25,27 @@ def get_cache_file(
     dataset_path: str,
     split: SPLIT_T,
     sampling_rate: int,
+    key_extra: str | None = None,
 ) -> str:
     # use a short hash of the source dataest path to distinguish different sources (e.g. if using different dataset subsets)
     identifier = f"{dataset_path.rstrip(os.sep)}_{split}_{sampling_rate}"
+    if key_extra is not None:
+        # e.g. a hash of the rows and preprocessing, so changing either can't reuse a stale cache
+        identifier += f"_{key_extra}"
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     return os.path.join(CACHE_DIR, f"{hashed}.pt")
+
+
+def atomic_write(path: str, write_fn: Callable[[str], object]):
+    # write to a temp file in the same dir, then rename, so a concurrent reader never sees a
+    # partial file. the temp name keeps the extension since np.save appends ".npy" otherwise
+    tmp = f"{path}.{os.getpid()}.tmp{os.path.splitext(path)[1]}"
+    try:
+        write_fn(tmp)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
 
 
 def load_cached_data(
@@ -37,26 +54,36 @@ def load_cached_data(
     dataset_path: str,
     split: SPLIT_T,
     sampling_rate: int,
+    key_extra: str | None = None,
 ):
     # loading and processing can be time intensive, so cache transformed data if it doesn't already exist
     os.makedirs(CACHE_DIR, exist_ok=True)
     cache_file = get_cache_file(
-        dataset_path=dataset_path, split=split, sampling_rate=sampling_rate
+        dataset_path=dataset_path,
+        split=split,
+        sampling_rate=sampling_rate,
+        key_extra=key_extra,
     )
 
     print("=================load_cached_data==================")
     print(f"Dataset parameters: ({dataset_path}, {split}, {sampling_rate}Hz)")
+    # one build per cache file per node: other jobs wait here and then load the finished
+    # file, since parallel builds would each hold the full tensor twice. checked before
+    # locking too, so reading an existing cache needs no write access (e.g. a read-only mount)
     if not os.path.exists(cache_file):
-        print("Cache file not found, loading/transforming from source")
+        with open(f"{cache_file}.lock", "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            if not os.path.exists(cache_file):
+                print("Cache file not found, loading/transforming from source")
 
-        # all params and processing should be wrapped in this loader function
-        X = load_transform_data_fn()
-        X = X.float()
+                # all params and processing should be wrapped in this loader function
+                X = load_transform_data_fn()
+                X = X.float()
 
-        # cache data
-        torch.save(X, cache_file)
-        print(f"Dataset cached to {cache_file}")
-        del X
+                # cache data
+                atomic_write(cache_file, lambda f: torch.save(X, f))
+                print(f"Dataset cached to {cache_file}")
+                del X
 
     # load cached data
     X = torch.load(cache_file)

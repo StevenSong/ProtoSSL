@@ -39,7 +39,7 @@ class AudioSetDataset(BaseTSDataset):
         the list of valid IDs present in this version of audioset and provide these
         IDs in our repo. These should be placed alongside the rest of the dataset:
         ```
-        cp /path/to/repo/data-preprocessing/hf_audioset_ids/* /path/to/local/audioset/.
+        cp /path/to/repo/archive/audio/data-preprocessing/hf_audioset_ids/* /path/to/local/audioset/.
         ```
         """
 

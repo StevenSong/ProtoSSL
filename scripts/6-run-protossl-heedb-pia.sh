@@ -1,21 +1,14 @@
-#!/bin/bash
-
-set -e
-
-# set these env vars prior to executing this script
-: "${DATASET_PATH:?Env var DATASET_PATH must be set prior to script execution}"
-: "${RUN_DIR:?Env var RUN_DIR must be set prior to script execution}"
-: "${REPO_ROOT:?Env var REPO_ROOT must be set prior to script execution}"
-: "${SEED:=42}"
-echo "Using SEED=$SEED"
-echo "Using DATASET_PATH=$DATASET_PATH"
-echo "Using RUN_DIR=$RUN_DIR"
-echo "Using REPO_ROOT=$REPO_ROOT"
-cd $REPO_ROOT/scripts
+#!/usr/bin/env bash
+#   slurm/submit.sh --gres=gpu:1 -- scripts/6-run-protossl-heedb-pia.sh <dataset> <run> <seed>
+# see scripts/_common.sh for the arguments and where outputs go
+set -euo pipefail
+source "$(dirname "$0")/_common.sh" "$@"
 
 # experiment parameters
 EXP_NAME="protossl-heedb-pia"
-PRETRAIN_RUN=$(realpath -m "$RUN_DIR/../../protossl-heedb")
+PRETRAIN_RUN=$PRETRAIN_DIR/protossl-heedb
+
+stage "$EXP_NAME" "$EXP_NAME-ft"
 
 python -m protossl.trainer \
     --config $REPO_ROOT/configs/target-guided-14ppl.yaml \
@@ -109,3 +102,6 @@ python _eval_probs_bootstrapped.py \
 --probs-npy $RUN_DIR/$EXP_NAME/probs.npy \
 --output-path $RUN_DIR/$EXP_NAME
 
+# publish both at the end, so a failed job leaves nothing published
+publish "${EXP_NAME%-ft}"
+publish "$EXP_NAME"
