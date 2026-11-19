@@ -16,7 +16,7 @@ This repo contains the source code for **ProtoSSL**, a novel framework for pretr
 
 | Path | Contents |
 |------|----------|
-| `protossl/` | The `protossl` package: datasets, models, and the Lightning trainers (`protossl.trainer` for ProtoSSL and baselines, `protossl.protoecgnet_trainer` for multi-arm ProtoECGNet) |
+| `protossl/` | The `protossl` package: datasets, models, and the Lightning trainer (`protossl.trainer`) |
 | `configs/` | Lightning CLI configs for pretraining (`pretrain-*.yaml`) and downstream tasks (`target-*.yaml`) |
 | `scripts/` | Run scripts for every experiment in the paper, plus the slurm queue scripts that submit them. See [`scripts/README.md`](scripts/README.md) |
 | `slurm/` | Job runner: submits a pushed commit, which each node clones and syncs before running a script. See [`scripts/README.md`](scripts/README.md) |

@@ -1,4 +1,5 @@
 import ast
+import collections
 import hashlib
 import inspect
 import json
@@ -27,8 +28,6 @@ from ..defines import (
     HEEDB_TARGETS,
     SPLIT_T,
     STANDARD_LEAD_ORDER,
-    UNKNOWN_LABEL,
-    USE_HEEDB_150,
     env_flag,
 )
 from ._base_dataset import (
@@ -38,14 +37,6 @@ from ._base_dataset import (
     load_cached_data,
     validate_label_subset,
 )
-from ._heedb_label_rules import (
-    RULES_HASH,
-    VALIDATED_TARGETS,
-    audited_labels,
-    audited_predictions,
-    make_code_to_labels,
-    tag_read,
-)
 from .streaming_loaders import StreamingECGWaveforms, _streaming_ecgs
 
 # fmt: off
@@ -53,23 +44,9 @@ LABEL_SRC_MAPPING = {
     "original_muse":      ("diagnoses_acquisition.csv", "codes_software"),
     "original_physician": ("diagnoses_acquisition.csv", "codes_physician"),
     "new_muse":           ("diagnoses_v24.csv",         "codes"),
-    # physician codes tagged by where they sit in the read, see _heedb_label_rules.py;
-    # 1 / 0 / UNKNOWN_LABEL, the only source here that produces unknowns
-    "audited_physician":  ("diagnoses_acquisition.csv", "codes_physician"),
-    # the same tagging on the MUSE read, as hard 1 / 0 predictions: only main-read codes
-    # are positive, since MUSE's comparison text often describes a prior ECG
-    "audited_muse":       ("diagnoses_acquisition.csv", "codes_software"),
 }
 # fmt: on
-LABEL_SRC_T = Literal[
-    "original_muse",
-    "original_physician",
-    "new_muse",
-    "audited_physician",
-    "audited_muse",
-]
-# label sources that tag codes with _heedb_label_rules.py
-AUDITED_LABEL_SRCS = {"audited_physician", "audited_muse"}
+LABEL_SRC_T = Literal["original_muse", "original_physician", "new_muse"]
 HEEDB_SPLIT_T = Literal["by-year", "by-label"]
 BY_LABEL_SPLIT_HASH = "543697e39036d4bc2ee97e14b86ae24c7c7cf83def07fe70206ae6dcafd4ed56"  # pragma: allowlist secret
 
@@ -355,16 +332,11 @@ def get_heedb_labels(
         validate_label_subset(label_subset, list(HEEDB_TARGETS))
         targets = {label: HEEDB_TARGETS[label] for label in label_subset}
 
-    if label_src in AUDITED_LABEL_SRCS:
-        validate_audited_targets(targets, label_src)
-
     meta_hash = hash_path_list(meta["fpath"])
     # names and codes, so editing a target's codes doesn't reuse a stale cache
     targets_hash = hashlib.md5(json.dumps(targets).encode("utf-8")).hexdigest()[:8]
     src_hash = label_src_fingerprint(heedb_path, label_src)
     identifier = f"HEEDB_labels_{heedb_path.rstrip(os.sep)}_{meta_hash}_{label_src}_{targets_hash}_{src_hash}"
-    if label_src in AUDITED_LABEL_SRCS:
-        identifier += f"_{RULES_HASH}"
     hashed = hashlib.md5(identifier.encode("utf-8")).hexdigest()[:8]
     cache_file = os.path.join(CACHE_DIR, f"{hashed}.npy")
 
@@ -396,13 +368,6 @@ def get_heedb_labels(
             if isinstance(codes, float) and np.isnan(codes):
                 continue
             assert isinstance(codes, str)
-            if label_src in AUDITED_LABEL_SRCS:
-                buckets, _ = tag_read(codes, code_to_labels, len(targets))
-                if label_src == "audited_physician":
-                    data[meta_idx] = audited_labels(buckets)
-                else:
-                    data[meta_idx] = audited_predictions(buckets)
-                continue
             for code in codes.split(","):
                 # convert 12SL code to label column idxs
                 for label_idx in code_to_labels.get(int(code), []):
@@ -423,13 +388,17 @@ def get_heedb_labels(
         f"Of {n_ecgs} ECGs and {n_annots} annotations, {n_matched} matched "
         f"({n_ecgs-n_matched} ECG annotations were missing and filled with 0s)"
     )
-    n_unknown = (data == UNKNOWN_LABEL).sum(axis=0)
-    if n_unknown.any():
-        print("unknown (excluded from losses and metrics) per label:")
-        for label, n in zip(targets, n_unknown):
-            print(f"  {label}: {n}")
     print("===================================================")
     return data
+
+
+def make_code_to_labels(targets: dict[str, list[int]]) -> dict[int, list[int]]:
+    """Map each 12SL code to the column indices of the targets that use it."""
+    code_to_labels: dict[int, list[int]] = collections.defaultdict(list)
+    for i, codes in enumerate(targets.values()):
+        for c in codes:
+            code_to_labels[c].append(i)
+    return dict(code_to_labels)
 
 
 def make_fname_to_code(
@@ -488,20 +457,6 @@ def lookup_codes(
         else:
             raise ValueError(f"Unknown institution: {institution}")
     return out
-
-
-def validate_audited_targets(targets: dict[str, list[int]], label_src: str):
-    # the tagging rules were only checked on the 20 HEEDB targets and their codes
-    if USE_HEEDB_150:
-        raise ValueError(
-            f"label_src='{label_src}' was only validated on the 20 HEEDB targets, "
-            "unset USE_HEEDB_150 to use it"
-        )
-    for label, codes in targets.items():
-        if VALIDATED_TARGETS.get(label) != codes:
-            raise ValueError(
-                f"label_src='{label_src}' was not validated for {label}: {codes}"
-            )
 
 
 def get_heedb_overread_mask(heedb_path: str, meta: pd.DataFrame) -> np.ndarray:

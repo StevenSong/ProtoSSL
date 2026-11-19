@@ -16,7 +16,6 @@ from .datasets import (
     BaseTSDataset,
     PCLRWrapperDataset,
     infer_dataset_class_from_path,
-    reject_unknown_labels,
     validate_label_subset,
 )
 from .defines import (
@@ -84,7 +83,6 @@ class LitData(LightningDataModule):
                 label_subset=label_subset,
                 **data_kwargs,
             )
-            reject_unknown_labels(self.train_ds.labels, "protossl.trainer")
             self.label_weights = self.train_ds.get_label_weights()
             self.label_cooccurrence = self.train_ds.get_label_cooccurrence()
         else:
@@ -111,7 +109,6 @@ class LitData(LightningDataModule):
                     label_subset=label_subset,
                     **data_kwargs,
                 )
-                reject_unknown_labels(self.train_ds.labels, "protossl.trainer")
             else:
                 assert self.train_ds is not None, "Not sure how train_ds is None"
             if wrap_contrastive:
@@ -139,7 +136,6 @@ class LitData(LightningDataModule):
                 label_subset=label_subset,
                 **data_kwargs,
             )
-            reject_unknown_labels(self.val_ds.labels, "protossl.trainer")
             if wrap_contrastive:
                 if self.is_audio:
                     assert isinstance(self.val_ds, AudioSetDataset)
@@ -163,7 +159,6 @@ class LitData(LightningDataModule):
                 label_subset=label_subset,
                 **data_kwargs,
             )
-            reject_unknown_labels(self.test_ds.labels, "protossl.trainer")
             if wrap_contrastive:
                 raise ValueError(
                     "Should not use contrastive wrapper dataset with test/predict stage"

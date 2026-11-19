@@ -5,11 +5,10 @@ import shutil
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 
-import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from ..defines import CACHE_DIR, SPLIT_T, UNKNOWN_LABEL
+from ..defines import CACHE_DIR, SPLIT_T
 from .streaming_loaders import StreamingWaveformsBase
 
 INVALIDATE_CACHE = os.environ.get("INVALIDATE_CACHE") == "yes im sure"
@@ -103,16 +102,6 @@ def validate_label_subset(
             raise ValueError(f"'{label}' is not in the current label set")
 
 
-def reject_unknown_labels(labels: torch.Tensor | np.ndarray | None, consumer: str):
-    """Raise if `labels` has UNKNOWN_LABEL entries, for code that would otherwise
-    silently treat them as a class (e.g. sklearn fits, `.bool()` masks, BCE targets)."""
-    if labels is not None and (labels == UNKNOWN_LABEL).any():
-        raise ValueError(
-            f"{consumer} does not support unknown labels ({UNKNOWN_LABEL}), "
-            "e.g. from HEEDB label_src='audited_physician'; use a different label_src"
-        )
-
-
 class BaseTSDataset(Dataset, ABC):
     source_ids: torch.Tensor  # (N,), N = n_samples
     sample_ids: torch.Tensor  # (N,), N = n_samples
@@ -157,10 +146,8 @@ class BaseTSDataset(Dataset, ABC):
         # jaccard similarity
         if self.labels is None:
             raise ValueError("This dataset does not have any labels!")
-        # unknown labels count as not positive
-        pos = (self.labels == 1).long()  # (N, L)
-        cooc_counts = pos.T @ pos  # (L, L)
-        per_label_count = pos.sum(dim=0)  # (L,)
+        cooc_counts = self.labels.T @ self.labels  # (L, L)
+        per_label_count = self.labels.sum(dim=0)  # (L,)
         union = (
             per_label_count.unsqueeze(1)  # (L, 1)
             + per_label_count.unsqueeze(0)  # (1, L)
@@ -172,7 +159,7 @@ class BaseTSDataset(Dataset, ABC):
         if self.labels is None:
             raise ValueError("This dataset does not have any labels!")
 
-        # labels should always be one-hot encoded, unknown labels don't count
-        n_known = (self.labels != UNKNOWN_LABEL).sum(dim=0)
-        per_label_count = (self.labels == 1).sum(dim=0)
-        return (n_known - per_label_count) / per_label_count
+        # labels should always be one-hot encoded
+        n_samples = self.labels.shape[0]
+        per_label_count = self.labels.sum(dim=0)
+        return (n_samples - per_label_count) / per_label_count

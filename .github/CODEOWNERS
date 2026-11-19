@@ -24,7 +24,6 @@ protossl/datasets/_cinc_dataset.py @StevenSong
 protossl/datasets/_code15_dataset.py @StevenSong
 protossl/datasets/_echonext_dataset.py @StevenSong
 protossl/datasets/_heedb_dataset.py @StevenSong
-protossl/datasets/_heedb_label_rules.py @StevenSong
 protossl/datasets/_iemocap_dataset.py @StevenSong
 protossl/datasets/_mimic_dataset.py @StevenSong
 protossl/datasets/_pclr_wrapper_dataset.py @StevenSong
@@ -41,7 +40,6 @@ protossl/models/_base_classifier.py @StevenSong
 protossl/models/_blackbox_classifier.py @StevenSong
 protossl/models/_blackbox_contraster.py @StevenSong
 protossl/models/_pretrained_utils.py @StevenSong
-protossl/models/_protoecgnet.py @StevenSong
 protossl/models/_prototype_assigner.py @StevenSong
 protossl/models/_prototype_classifier.py @StevenSong
 protossl/models/_prototype_contraster.py @StevenSong
@@ -62,7 +60,6 @@ protossl/models/layers/_multi_input_linear.py @StevenSong
 protossl/models/layers/_panns_backbones.py @StevenSong
 protossl/plotting.py @StevenSong
 protossl/trainer.py @StevenSong
-protossl/protoecgnet_trainer.py @StevenSong
 pyproject.toml @StevenSong
 README.md @StevenSong @sahilsethi0105
 requirements.txt @StevenSong
