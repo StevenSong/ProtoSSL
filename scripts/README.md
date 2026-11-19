@@ -51,6 +51,7 @@ Downstream experiments read pretrained models from their own run; set `PROTOSSL_
 ## Caches and dependencies between jobs
 
 * Datasets are preprocessed once per node into `$CACHE_DIR` (default `~/.cache/protossl_cache`). The first job on a node that needs a cache builds it and the others wait for it, so no job has to run first. [`0-run-cache-data.sh <dataset>`](0-run-cache-data.sh) warms a node without holding a GPU.
+* [`8-run-protossl-heedb-pila-from-ptbxl.sh`](8-run-protossl-heedb-pila-from-ptbxl.sh) reads a dataset through PTB-XL's `protossl-heedb-pila` model and linear probe, imputing PTB-XL's statements (e.g. on EchoNext, which has none). Like a pretrained model, it reads that PTB-XL experiment from the pretrain run, at `<shared>/runs/<pretrain-run>/protossl-outputs-seed<seed>/runs-ptbxl/protossl-heedb-pila`, so the experiment has to be published (or seeded) there first.
 * `9-1`..`9-3` each start by running [`9-0-run-ecgfounder-patches.sh`](9-0-run-ecgfounder-patches.sh), which builds the ECGFounder patch embeddings once per node and keeps them in the node-local stage. They are several GB for the full datasets, so they are never published.
 
 ## Foundation model weights
