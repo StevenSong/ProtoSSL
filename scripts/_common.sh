@@ -23,13 +23,14 @@ resolve_dataset "$DATASET"
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 RUN_ROOT=${PROTOSSL_RUN_ROOT:-$HOME/protossl-run}
-SHARED_ROOT=${PROTOSSL_SHARED_ROOT:-/opt/gpu_working/steven/protossl-shared}
+SHARED_ROOT=${PROTOSSL_SHARED_ROOT:-/shared/gpudata/songs1/protossl-shared}
 seed_dir=$RUN/protossl-outputs-seed$SEED/runs-$DATASET
 RUN_DIR=$RUN_ROOT/outputs/$seed_dir
 DEST_DIR=$SHARED_ROOT/runs/$seed_dir
 PRETRAIN_DIR=$SHARED_ROOT/runs/${PROTOSSL_PRETRAIN_RUN:-$RUN}
 
-# foundation-model weights, pre-pulled on every node; jobs never download
+# foundation-model weights, pre-pulled on the ECG node (nvl01, the only node with the ECG
+# data); jobs never download
 ECGFOUNDER_CKPT=/opt/gpudata/models/PKUDigitalHealth/ECGFounder/12_lead_ECGFounder.pth
 ECGFOUNDER_SHA256=ee199f3781f4ae1f732973267f003da0a759ea12bddb0dd28a77faa60aca7997
 STMEM_CKPT=/opt/gpudata/models/st-mem/st_mem_vit_base_encoder.pth

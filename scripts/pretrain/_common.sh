@@ -9,7 +9,7 @@ PRETRAIN_DATASET=/opt/gpudata/ecg/heedb
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 RUN_ROOT=${PROTOSSL_RUN_ROOT:-$HOME/protossl-run}
-SHARED_ROOT=${PROTOSSL_SHARED_ROOT:-/opt/gpu_working/steven/protossl-shared}
+SHARED_ROOT=${PROTOSSL_SHARED_ROOT:-/shared/gpudata/songs1/protossl-shared}
 RUN_DIR=$RUN_ROOT/outputs/$RUN
 DEST_DIR=$SHARED_ROOT/runs/$RUN
 source "$REPO_ROOT/scripts/_publish.sh"

@@ -39,7 +39,7 @@ Experiments are staged on node-local disk and copied to shared storage when they
 | | Path |
 |---|---|
 | Run root (node-local) | `$PROTOSSL_RUN_ROOT`, default `~/protossl-run`: commit clones, uv cache, logs, staged outputs |
-| Shared root | `$PROTOSSL_SHARED_ROOT`, default `/opt/gpu_working/steven/protossl-shared` |
+| Shared root | `$PROTOSSL_SHARED_ROOT`, default `/shared/gpudata/songs1/protossl-shared` |
 | Pretrained models | `<shared>/runs/<run>/<pretrain-exp>`, e.g. `runs/v1/protossl-heedb` |
 | Downstream experiments | `<shared>/runs/<run>/protossl-outputs-seed<seed>/runs-<dataset>/<exp>` |
 | Job logs | `<shared>/logs/<job-id>.out` |
