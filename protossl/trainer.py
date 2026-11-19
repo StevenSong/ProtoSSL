@@ -1,5 +1,5 @@
 import os
-from typing import get_args
+from typing import Literal, get_args
 
 import numpy as np
 import pandas as pd
@@ -931,6 +931,12 @@ class LitCLI(LightningCLI):
             required=True,
         )
         parser.add_argument("--resume-from-checkpoint")
+        # splits written by pipeline_stage=compute-embeddings, as <split>_embeds.npy
+        parser.add_argument(
+            "--embedding-splits",
+            type=list[Literal["train", "val", "test"]],
+            default=["train", "test"],
+        )
         parser.link_arguments(
             "resume_from_checkpoint", "trainer.logger.init_args.resume_from_checkpoint"
         )
@@ -1067,19 +1073,18 @@ def run():
         ckpt_path = os.path.join(cli.trainer.log_dir, "proj.ckpt")  # type: ignore
         cli.trainer.save_checkpoint(ckpt_path, weights_only=False)
     elif pipeline_stage == "compute-embeddings":
-        # hack to pass split name to prediction writer, not used anywhere else
-        cli.model.prediction_split = "train"
-        cli.datamodule.setup("fit")
-        cli.trainer.predict(
-            model=cli.model,
-            dataloaders=cli.datamodule.train_dataloader(),
-        )
-        cli.model.prediction_split = "test"
-        cli.datamodule.setup("test")
-        cli.trainer.predict(
-            model=cli.model,
-            dataloaders=cli.datamodule.test_dataloader(),
-        )
+        # datamodule setup stage and dataloader per split, none of them shuffled
+        split_loaders = {
+            "train": ("fit", cli.datamodule.train_dataloader),
+            "val": ("validate", cli.datamodule.val_dataloader),
+            "test": ("test", cli.datamodule.test_dataloader),
+        }
+        for split in cli.config.embedding_splits:
+            setup_stage, dataloader = split_loaders[split]
+            # hack to pass split name to prediction writer, not used anywhere else
+            cli.model.prediction_split = split
+            cli.datamodule.setup(setup_stage)
+            cli.trainer.predict(model=cli.model, dataloaders=dataloader())
     elif pipeline_stage == "train-classifier":
         cli.trainer.fit(
             model=cli.model,

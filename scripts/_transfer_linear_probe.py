@@ -9,8 +9,8 @@ imputes e.g. PTB-XL's statements on EchoNext.
 Before applying anything to the target, the rebuilt scaler and the probe must
 reproduce the source's own test predictions (`probs.npy`).
 
-Writes `<split>_probs.npy` (N, n_source_labels) for the train and test splits, and
-`label_names.json` with the source labels in column order.
+Writes `<split>_probs.npy` (N, n_source_labels) for each of `--splits` (default train
+and test), and `label_names.json` with the source labels in column order.
 """
 
 import json
@@ -31,6 +31,12 @@ def parse_args():
     parser.add_argument("--source-dataset-path", required=True)
     parser.add_argument("--embeddings", required=True)
     parser.add_argument("--output-path", required=True)
+    parser.add_argument(
+        "--splits",
+        nargs="+",
+        choices=["train", "val", "test"],
+        default=["train", "test"],
+    )
     return parser.parse_args()
 
 
@@ -45,6 +51,7 @@ def main(
     source_dataset_path: str,
     embeddings: str,
     output_path: str,
+    splits: list[str],
 ):
     source = Path(source_experiment)
     source_embeds = source / "compute-embeddings/latest"
@@ -69,7 +76,7 @@ def main(
     print(f"rebuilt probe reproduces source test probs (max abs diff {max_diff:.2e})")
 
     out = Path(output_path)
-    for split in ["train", "test"]:
+    for split in splits:
         X = np.load(Path(embeddings) / f"{split}_embeds.npy")
         assert X.shape[1] == n_features, (split, X.shape, n_features)
         probs = predict(model, scaler.transform(X))
@@ -89,4 +96,5 @@ if __name__ == "__main__":
         source_dataset_path=args.source_dataset_path,
         embeddings=args.embeddings,
         output_path=args.output_path,
+        splits=args.splits,
     )
