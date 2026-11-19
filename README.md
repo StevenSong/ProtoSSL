@@ -17,13 +17,14 @@ This repo contains the source code for **ProtoSSL**, a novel framework for pretr
 | Path | Contents |
 |------|----------|
 | `protossl/` | The `protossl` package: datasets, models, and the Lightning trainers (`protossl.trainer` for ProtoSSL and baselines, `protossl.protoecgnet_trainer` for multi-arm ProtoECGNet) |
-| `configs/` | Lightning CLI configs for pretraining (`pretrain-*.yaml`) and downstream tasks (`target-*.yaml`), with audio configs under `configs/audio/` |
+| `configs/` | Lightning CLI configs for pretraining (`pretrain-*.yaml`) and downstream tasks (`target-*.yaml`) |
 | `scripts/` | Run scripts for every experiment in the paper, plus the slurm queue scripts that submit them. See [`scripts/README.md`](scripts/README.md) |
 | `slurm/` | Job runner: submits a pushed commit, which each node clones and syncs before running a script. See [`scripts/README.md`](scripts/README.md) |
 | `envs/` | `install-uv.sh`, which installs the pinned uv release |
 | `user-study/` | Sample preparation and analysis for the user study (`user-study/images` is a submodule of the de-identified study images) |
 | `results/` | Notebooks that produce the figures and tables in the paper from the experiment outputs |
 | `data-preprocessing/` | Notebooks that create the train/val/test splits and nested training subsets, plus precomputed HEEDB normalization statistics. See [`data-preprocessing/README.md`](data-preprocessing/README.md) |
+| `archive/audio/` | The audio experiments' scripts, configs, results notebook and AudioSet ID lists, kept for the record; they predate the job runner and hardcode our old paths. See [`archive/README.md`](archive/README.md) |
 | `external/` | Submodules for baselines: [ST-MEM](https://github.com/vuno/ST-MEM) and our fork of [IntroECG](https://github.com/PierreElias/IntroECG) (EchoNext minimodel) |
 
 ## Setup
@@ -42,7 +43,7 @@ source .venv/bin/activate
 pre-commit install
 ```
 
-`env.yaml` and `requirements.txt` are the conda env the paper's experiments ran in, which `uv.lock` reproduces. The uv env has no ffmpeg, which torchcodec needs to decode audio, so the audio experiments still need the conda env:
+`env.yaml` and `requirements.txt` are the conda env the paper's experiments ran in, which `uv.lock` reproduces. The uv env has no ffmpeg, which torchcodec needs to decode audio, so the audio experiments (`archive/audio/`) still need the conda env:
 
 ```bash
 conda env create -f env.yaml
@@ -89,7 +90,7 @@ The `data-preprocessing/` notebooks create the splits and nested training subset
 1. Submit the downstream experiments via slurm: [`scripts/queue-experiments.sh`](scripts/queue-experiments.sh)
 1. Produce figures and tables with the `results/` notebooks, pointed at the run's outputs
 
-See [`scripts/README.md`](scripts/README.md) for the job runner, the paths it assumes (`/opt/gpudata` for datasets and model weights, plus a node-local run root and a shared output root) and the output layout. The audio scripts in `scripts/audio/` predate the runner and still hardcode our old paths. Each experiment writes to `<experiment-name>`, named `<model>-<pretraining data>-<transfer method>[-suffixes]`:
+See [`scripts/README.md`](scripts/README.md) for the job runner, the paths it assumes (`/opt/gpudata` for datasets and model weights, plus a node-local run root and a shared output root) and the output layout. Each experiment writes to `<experiment-name>`, named `<model>-<pretraining data>-<transfer method>[-suffixes]`:
 
 * **Models:** `protossl`, `supproto` (supervised prototypes), `blackbox`, and linear probes over foundation model embeddings (`ecgfounder-logreg`, `stmem-logreg`, `pclr-logreg`)
 * **Transfer methods:** `pila` (project in linear assignment), `rila` (reproject in linear assignment), `pia` (project in assignment, using ProtoPool-based assignment), `pit` (project in transfer dataset without assignment or label supervision), `pip` (project in pretraining dataset without assignment or label supervision), `latent` (no projection), `direct` (trained only on the target dataset)

@@ -11,7 +11,7 @@ scripts/pretrain/run-<model>-pretrain.sh <run>           # HEEDB pretraining
 * `<run>`: a name for one full set of results, e.g. `v1`.
 * `<seed>`: random seed. The paper uses 42, 67, 70, 73 and 99.
 
-The audio scripts in `audio/` predate this layout and still hardcode our old paths.
+The audio scripts are archived in [`archive/audio/`](../archive/README.md); they predate this layout and hardcode our old paths.
 
 ## Running jobs
 
@@ -44,7 +44,7 @@ Experiments are staged on node-local disk and copied to shared storage when they
 | Downstream experiments | `<shared>/runs/<run>/protossl-outputs-seed<seed>/runs-<dataset>/<exp>` |
 | Job logs | `<shared>/logs/<job-id>.out` |
 
-The downstream layout matches our archived results, so the `results/` notebooks can read a new run by changing their results root. Each published experiment has a `COMMIT` file. A script refuses to start if its experiment is already published to that run.
+The downstream layout matches our archived results, so the `results/` notebooks can read a new run by changing their results root. `wandb/` dirs aren't published, so `meta-results.ipynb`'s runtime comparison, which reads them, works only on the archive. Each published experiment has a `COMMIT` file. A script refuses to start if its experiment is already published to that run.
 
 Downstream experiments read pretrained models from their own run; set `PROTOSSL_PRETRAIN_RUN=<other-run>` (passed through by `sbatch`) to use another run's.
 
