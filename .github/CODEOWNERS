@@ -8,7 +8,6 @@ archive/ @StevenSong
 .secrets.baseline @StevenSong
 configs/ @StevenSong
 data-preprocessing/ @StevenSong
-env.yaml @StevenSong
 envs/ @StevenSong
 external/PierreElias-IntroECG @StevenSong
 external/vuno-ST-MEM @StevenSong
@@ -62,7 +61,6 @@ protossl/plotting.py @StevenSong
 protossl/trainer.py @StevenSong
 pyproject.toml @StevenSong
 README.md @StevenSong @sahilsethi0105
-requirements.txt @StevenSong
 scripts/_cache_data.py @StevenSong
 scripts/_common.sh @StevenSong
 scripts/_datasets.sh @StevenSong

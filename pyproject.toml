@@ -17,8 +17,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
-# Exact versions are in uv.lock, constrained below to the paper env. requirements.txt and
-# env.yaml are the conda/pip record of that env.
+# Exact versions are in uv.lock, constrained below to the paper env.
 dependencies = [
     "cachetools",
     "datasets[audio]==4.0.0",
@@ -287,7 +286,6 @@ constraint-dependencies = [
     "tomli==2.4.1",
     "torch==2.7.0",
     "torchaudio==2.7.0",
-    "torchcodec==0.4.0",  # from datasets[audio]; direct so it comes from the cu128 index
     "torchcodec==0.4.0",
     "torchlibrosa==0.1.0",
     "torchmetrics==1.9.0",

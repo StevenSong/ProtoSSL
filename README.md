@@ -43,34 +43,7 @@ source .venv/bin/activate
 pre-commit install
 ```
 
-`env.yaml` and `requirements.txt` are the conda env the paper's experiments ran in, which `uv.lock` reproduces. The uv env has no ffmpeg, which torchcodec needs to decode audio, so the audio experiments (`archive/audio/`) still need the conda env:
-
-```bash
-conda env create -f env.yaml
-conda activate protossl
-pip install -e .
-```
-
-<details>
-<summary><b>Troubleshooting torchcodec</b></summary>
-
-torchcodec is a bit fragile with dependencies. We've pinned `torch==2.7.0` which is compatible with `torchcodec==0.4.0`, both compiled against CUDA 12.8 (which we use on our machines). This torchcodec version is only compatible with `datasets==4.0.0`. If you see errors relating to torchcodec (you can diagnose this by just importing torchcodec), make sure the dependencies are compatible not just relative to versioning, but also relating to the CUDA versions. We also use `ffmpeg=5.*` installed via conda. If you see an error relating to not being able to find `libnppicc.so.12`, it might be that the linker can't find the binaries (which we ensure are available by installing `nvidia-npp-cu12`). To fix this, you can try setting the `LD_LIBRARY_PATH` environment variable:
-```bash
-export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/python3.10/site-packages/nvidia/npp/lib:$LD_LIBRARY_PATH
-# test by importing torchcodec in a python runtime
-```
-If this works, you can consider making the fix automatic via the following conda activate scripts:
-```bash
-mkdir -p $CONDA_PREFIX/etc/conda/activate.d
-mkdir -p $CONDA_PREFIX/etc/conda/deactivate.d
-
-# Set on activate
-echo 'export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/python3.10/site-packages/nvidia/npp/lib:$LD_LIBRARY_PATH' > $CONDA_PREFIX/etc/conda/activate.d/npp_lib.sh
-
-# Unset on deactivate
-echo 'export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | sed "s|$CONDA_PREFIX/lib/python3.10/site-packages/nvidia/npp/lib:||g")' > $CONDA_PREFIX/etc/conda/deactivate.d/npp_lib.sh
-```
-</details>
+The uv env has no ffmpeg, which torchcodec needs to decode audio, so the archived audio experiments don't run in it; see [`archive/README.md`](archive/README.md).
 
 ## Data
 
