@@ -17,9 +17,7 @@
     "source=${localEnv:HOME}/miniforge3/envs,target=${localEnv:HOME}/miniforge3/envs,type=bind,consistency=cached",
     "source=${localEnv:HOME}/protossl-run,target=${localEnv:HOME}/protossl-run,type=bind,consistency=cached,readonly",
     "source=/shared/gpudata/songs1/protossl-shared,target=/shared/gpudata/songs1/protossl-shared,type=bind,consistency=cached,readonly",
-    "source=${localEnv:HOME}/slurm-logs,target=${localEnv:HOME}/slurm-logs,type=bind,consistency=cached,readonly",
     "source=${localEnv:HOME}/protossl-outputs,target=${localEnv:HOME}/protossl-outputs,type=bind,consistency=cached,readonly",
-    "source=${localEnv:HOME}/protoecgnet-heedb,target=${localEnv:HOME}/protoecgnet-heedb,type=bind,consistency=cached,readonly",
     "source=${localEnv:HOME}/.cache/protossl_cache,target=${localEnv:HOME}/.cache/protossl_cache,type=bind,consistency=cached,readonly",
     "source=/opt/gpudata/models,target=/opt/gpudata/models,type=bind,consistency=cached,readonly",
     "source=/opt/gpudata/ecg,target=/opt/gpudata/ecg,type=bind,consistency=cached,readonly"
