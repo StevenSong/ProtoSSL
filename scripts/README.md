@@ -28,6 +28,8 @@ slurm/submit.sh --gres=gpu:1 --mem-per-gpu=500G -- scripts/pretrain/run-protossl
 scripts/queue-experiments.sh v1
 ```
 
+The ECG data is only on kg35-nvl01, so pin ECG jobs there with `-w kg35-nvl01` (a job scheduled elsewhere stops at its dataset check without staging or publishing anything).
+
 `slurm/submit.sh` refuses to submit from a dirty tree or a commit that isn't on GitHub. On each node, `slurm/job.sh` makes a shallow clone of that commit under `~/protossl-run/commits/<sha>/`, runs `uv sync --locked`, and then runs the script there. Clones are never modified, so jobs at different commits can't interfere. Thread pools are capped at `--cpus-per-task` (default 72, a GPU's share of a node).
 
 The scripts call `python` directly; outside the runner, activate the uv env (`.venv`) first.
