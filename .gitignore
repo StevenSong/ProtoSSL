@@ -215,11 +215,5 @@ temp/
 
 *.BAK
 
-outputs*/
-OLD/
-slurm-logs/
 results/figs/
-ecgfounder-checkpoint/
-wandb/
 user-study/images-pdf
-build/
