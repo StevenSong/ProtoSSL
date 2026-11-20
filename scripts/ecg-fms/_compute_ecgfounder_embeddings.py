@@ -18,6 +18,12 @@ def parse_args():
     parser.add_argument("--ckpt", required=True)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--return-patches", action="store_true")
+    parser.add_argument(
+        "--splits",
+        nargs="+",
+        choices=["train", "val", "test"],
+        default=["train", "test"],
+    )
     args = parser.parse_args()
     return args
 
@@ -29,6 +35,7 @@ def main(
     ckpt_path: str,
     batch_size: int = 512,
     return_patches: bool = False,
+    splits: tuple[str, ...] = ("train", "test"),
 ):
     # init parameters taken from ECGFounder/ptbxl_eval.py
     encoder = Net1D(return_patches=return_patches)
@@ -58,32 +65,21 @@ def main(
     # which we do in the protossl dataset implementations
     ds_cls, _, is_audio = infer_dataset_class_from_path(dataset_path)
     assert not is_audio
-    train_ds = ds_cls(
-        dataset_path=dataset_path,
-        split="train",
-        sampling_rate=500,  # ECGFounder expects 500 Hz inputs
-    )
-    test_ds = ds_cls(
-        dataset_path=dataset_path,
-        split="test",
-        sampling_rate=500,
-    )
-    train_dl = DataLoader(train_ds, batch_size=batch_size)
-    test_dl = DataLoader(test_ds, batch_size=batch_size)
-
-    train_embs, test_embs = [], []
-    with torch.inference_mode():
-        for dl, embs in [(train_dl, train_embs), (test_dl, test_embs)]:
-            for batch in tqdm(dl):
-                x = batch["waveform"].to(device)
-                batch_embs = encoder(x).detach().to("cpu").numpy()
-                embs.append(batch_embs)
-    train_embs = np.concatenate(train_embs)
-    test_embs = np.concatenate(test_embs)
-
     os.makedirs(output_path, exist_ok=True)
-    np.save(os.path.join(output_path, "train_embeds.npy"), train_embs)
-    np.save(os.path.join(output_path, "test_embeds.npy"), test_embs)
+    with torch.inference_mode():
+        for split in splits:
+            ds = ds_cls(
+                dataset_path=dataset_path,
+                split=split,
+                sampling_rate=500,  # ECGFounder expects 500 Hz inputs
+            )
+            embs = []
+            for batch in tqdm(DataLoader(ds, batch_size=batch_size)):
+                x = batch["waveform"].to(device)
+                embs.append(encoder(x).detach().to("cpu").numpy())
+            np.save(
+                os.path.join(output_path, f"{split}_embeds.npy"), np.concatenate(embs)
+            )
 
 
 if __name__ == "__main__":
@@ -94,4 +90,5 @@ if __name__ == "__main__":
         ckpt_path=args.ckpt,
         batch_size=args.batch_size,
         return_patches=args.return_patches,
+        splits=args.splits,
     )
