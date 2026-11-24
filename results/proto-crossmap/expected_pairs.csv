@@ -1,0 +1,624 @@
+echonext,ptbxl,sign,level,basis
+LVEF Lo,NDT,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,NST_,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,DIG,+,plausible,digoxin is used in HFrEF and its AF
+LVEF Lo,LNGQT,+,plausible,"acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+LVEF Lo,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+LVEF Lo,IMI,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,ASMI,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,LVH,+,plausible,hypertensive heart disease progressing to HFrEF
+LVEF Lo,LAFB,+,plausible,conduction system disease co-occurring with cardiomyopathy
+LVEF Lo,ISC_,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,IRBBB,+,plausible,conduction system disease co-occurring with cardiomyopathy
+LVEF Lo,1AVB,+,plausible,conduction system disease co-occurring with cardiomyopathy
+LVEF Lo,IVCD,+,expected,LV conduction delay in cardiomyopathy
+LVEF Lo,ISCAL,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,CRBBB,+,plausible,conduction system disease co-occurring with cardiomyopathy
+LVEF Lo,CLBBB,+,expected,LV conduction delay in cardiomyopathy
+LVEF Lo,ILMI,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,LAO/LAE,+,expected,"HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+LVEF Lo,AMI,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,ALMI,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,ISCIN,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,INJAS,+,plausible,"acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+LVEF Lo,LMI,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,ISCIL,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,LPFB,+,plausible,conduction system disease co-occurring with cardiomyopathy
+LVEF Lo,ISCAS,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,INJAL,+,plausible,"acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+LVEF Lo,ISCLA,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,RVH,+,plausible,atrial arrhythmia; biventricular failure
+LVEF Lo,ANEUR,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,RAO/RAE,+,plausible,atrial arrhythmia; biventricular failure
+LVEF Lo,EL,+,plausible,"acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+LVEF Lo,ILBBB,+,expected,LV conduction delay in cardiomyopathy
+LVEF Lo,IPLMI,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,ISCAN,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,IPMI,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,INJIN,+,plausible,"acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+LVEF Lo,INJLA,+,plausible,"acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+LVEF Lo,PMI,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,3AVB,+,plausible,conduction system disease co-occurring with cardiomyopathy
+LVEF Lo,INJIL,+,plausible,"acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+LVEF Lo,2AVB,+,plausible,conduction system disease co-occurring with cardiomyopathy
+LVEF Lo,ABQRS,+,expected,LV conduction delay in cardiomyopathy
+LVEF Lo,PVC,+,expected,"HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+LVEF Lo,STD_,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,VCLVH,+,plausible,hypertensive heart disease progressing to HFrEF
+LVEF Lo,QWAVE,+,expected,"ischemic cardiomyopathy: prior infarction, aneurysm"
+LVEF Lo,LOWT,+,plausible,low voltage in dilated cardiomyopathy or edema
+LVEF Lo,NT_,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,PAC,+,plausible,atrial arrhythmia; biventricular failure
+LVEF Lo,LPR,+,plausible,conduction system disease co-occurring with cardiomyopathy
+LVEF Lo,INVT,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,LVOLT,+,plausible,low voltage in dilated cardiomyopathy or edema
+LVEF Lo,HVOLT,+,plausible,hypertensive heart disease progressing to HFrEF
+LVEF Lo,TAB_,+,expected,repolarization abnormality in cardiomyopathy and ischemia
+LVEF Lo,STE_,+,plausible,"acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+LVEF Lo,PRC(S),+,expected,"HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+LVEF Lo,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+LVEF Lo,AFIB,+,expected,"HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+LVEF Lo,STACH,+,expected,"HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+LVEF Lo,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+LVEF Lo,SBRAD,+,plausible,beta-blockade and conduction disease in HFrEF
+LVEF Lo,PACE,+,expected,"HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+LVEF Lo,SVARR,+,plausible,atrial arrhythmia; biventricular failure
+LVEF Lo,BIGU,+,expected,"HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+LVEF Lo,AFLT,+,expected,"HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+LVEF Lo,SVTAC,+,plausible,atrial arrhythmia; biventricular failure
+LVEF Lo,PSVT,+,plausible,atrial arrhythmia; biventricular failure
+LVEF Lo,TRIGU,+,expected,"HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+LVWT Hi,NDT,+,expected,LV strain repolarization pattern
+LVWT Hi,NST_,+,expected,LV strain repolarization pattern
+LVWT Hi,LNGQT,+,plausible,QT prolongation in hypertrophy
+LVWT Hi,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+LVWT Hi,IMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,ASMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,LVH,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+LVWT Hi,LAFB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,ISC_,+,expected,LV strain repolarization pattern
+LVWT Hi,1AVB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,IVCD,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,ISCAL,+,expected,LV strain repolarization pattern
+LVWT Hi,CLBBB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,ILMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,LAO/LAE,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+LVWT Hi,AMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,ALMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,ISCIN,+,plausible,strain pattern in other leads
+LVWT Hi,LMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,ISCIL,+,plausible,strain pattern in other leads
+LVWT Hi,ISCAS,+,plausible,strain pattern in other leads
+LVWT Hi,ISCLA,+,expected,LV strain repolarization pattern
+LVWT Hi,EL,+,plausible,renal disease: hypertrophy plus electrolyte changes
+LVWT Hi,WPW,+,plausible,"pre-excitation in infiltrative/storage cardiomyopathies (PRKAG2, Danon)"
+LVWT Hi,ILBBB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,IPLMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,ISCAN,+,plausible,strain pattern in other leads
+LVWT Hi,IPMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,SEHYP,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+LVWT Hi,PMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,3AVB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,2AVB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,ABQRS,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,PVC,+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+LVWT Hi,STD_,+,expected,LV strain repolarization pattern
+LVWT Hi,VCLVH,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+LVWT Hi,QWAVE,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+LVWT Hi,LOWT,+,plausible,amyloid: thick walls with low voltage
+LVWT Hi,NT_,+,expected,LV strain repolarization pattern
+LVWT Hi,PAC,+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+LVWT Hi,LPR,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,INVT,+,expected,LV strain repolarization pattern
+LVWT Hi,LVOLT,+,plausible,amyloid: thick walls with low voltage
+LVWT Hi,HVOLT,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+LVWT Hi,TAB_,+,expected,LV strain repolarization pattern
+LVWT Hi,PRC(S),+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+LVWT Hi,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+LVWT Hi,AFIB,+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+LVWT Hi,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+LVWT Hi,PACE,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+LVWT Hi,AFLT,+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+AS,NDT,+,expected,LV strain repolarization pattern
+AS,NST_,+,expected,LV strain repolarization pattern
+AS,LNGQT,+,plausible,QT prolongation in hypertrophy
+AS,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+AS,IMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,ASMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,LVH,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+AS,LAFB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,ISC_,+,expected,LV strain repolarization pattern
+AS,IRBBB,+,plausible,conduction system degeneration with calcific valve disease
+AS,1AVB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,IVCD,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,ISCAL,+,expected,LV strain repolarization pattern
+AS,CRBBB,+,plausible,conduction system degeneration with calcific valve disease
+AS,CLBBB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,ILMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,LAO/LAE,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+AS,AMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,ALMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,ISCIN,+,plausible,strain pattern in other leads
+AS,LMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,ISCIL,+,plausible,strain pattern in other leads
+AS,ISCAS,+,plausible,strain pattern in other leads
+AS,ISCLA,+,expected,LV strain repolarization pattern
+AS,ILBBB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,IPLMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,ISCAN,+,plausible,strain pattern in other leads
+AS,IPMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,SEHYP,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+AS,PMI,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,3AVB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,2AVB,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,ABQRS,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,PVC,+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+AS,STD_,+,expected,LV strain repolarization pattern
+AS,VCLVH,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+AS,QWAVE,+,plausible,"pseudo-infarct pattern (HCM, amyloid) or coexisting CAD in older patients"
+AS,NT_,+,expected,LV strain repolarization pattern
+AS,PAC,+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+AS,LPR,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,INVT,+,expected,LV strain repolarization pattern
+AS,HVOLT,+,expected,"pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+AS,TAB_,+,expected,LV strain repolarization pattern
+AS,PRC(S),+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+AS,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+AS,AFIB,+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+AS,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+AS,SBRAD,+,plausible,conduction system degeneration with calcific valve disease
+AS,PACE,+,plausible,"conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+AS,AFLT,+,plausible,atrial and ventricular ectopy with LA enlargement and hypertrophy
+AR,NDT,+,plausible,"LV overload, LA load, strain"
+AR,NST_,+,plausible,"LV overload, LA load, strain"
+AR,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+AR,IMI,+,plausible,coexisting CAD in older patients
+AR,ASMI,+,plausible,coexisting CAD in older patients
+AR,LVH,+,expected,volume overload LV hypertrophy and voltage
+AR,LAFB,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,ISC_,+,plausible,"LV overload, LA load, strain"
+AR,1AVB,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,IVCD,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,ISCAL,+,plausible,"LV overload, LA load, strain"
+AR,CLBBB,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,ILMI,+,plausible,coexisting CAD in older patients
+AR,LAO/LAE,+,plausible,"LV overload, LA load, strain"
+AR,AMI,+,plausible,coexisting CAD in older patients
+AR,ALMI,+,plausible,coexisting CAD in older patients
+AR,LMI,+,plausible,coexisting CAD in older patients
+AR,ISCLA,+,plausible,"LV overload, LA load, strain"
+AR,ILBBB,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,IPLMI,+,plausible,coexisting CAD in older patients
+AR,IPMI,+,plausible,coexisting CAD in older patients
+AR,SEHYP,+,plausible,"LV overload, LA load, strain"
+AR,PMI,+,plausible,coexisting CAD in older patients
+AR,3AVB,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,2AVB,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,ABQRS,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,PVC,+,plausible,ectopy and AF with LV/LA enlargement
+AR,STD_,+,plausible,"LV overload, LA load, strain"
+AR,VCLVH,+,expected,volume overload LV hypertrophy and voltage
+AR,QWAVE,+,plausible,coexisting CAD in older patients
+AR,NT_,+,plausible,"LV overload, LA load, strain"
+AR,PAC,+,plausible,ectopy and AF with LV/LA enlargement
+AR,LPR,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,INVT,+,plausible,"LV overload, LA load, strain"
+AR,HVOLT,+,expected,volume overload LV hypertrophy and voltage
+AR,TAB_,+,plausible,"LV overload, LA load, strain"
+AR,PRC(S),+,plausible,ectopy and AF with LV/LA enlargement
+AR,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+AR,AFIB,+,plausible,ectopy and AF with LV/LA enlargement
+AR,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+AR,PACE,+,plausible,"conduction disease with aortic root/valve disease, pacing after valve surgery"
+AR,AFLT,+,plausible,ectopy and AF with LV/LA enlargement
+MR,NDT,+,plausible,repolarization abnormality with LV disease
+MR,NST_,+,plausible,repolarization abnormality with LV disease
+MR,DIG,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+MR,IMI,+,plausible,ischemic MR after infarction
+MR,ASMI,+,plausible,ischemic MR after infarction
+MR,LVH,+,plausible,LV remodeling and conduction delay in functional MR
+MR,LAFB,+,plausible,LV remodeling and conduction delay in functional MR
+MR,ISC_,+,plausible,repolarization abnormality with LV disease
+MR,1AVB,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,IVCD,+,plausible,LV remodeling and conduction delay in functional MR
+MR,ISCAL,+,plausible,repolarization abnormality with LV disease
+MR,CLBBB,+,plausible,LV remodeling and conduction delay in functional MR
+MR,ILMI,+,plausible,ischemic MR after infarction
+MR,LAO/LAE,+,expected,LA volume overload and AF
+MR,AMI,+,plausible,ischemic MR after infarction
+MR,ALMI,+,plausible,ischemic MR after infarction
+MR,ISCIN,+,plausible,repolarization abnormality with LV disease
+MR,LMI,+,plausible,ischemic MR after infarction
+MR,ISCIL,+,plausible,repolarization abnormality with LV disease
+MR,ISCAS,+,plausible,repolarization abnormality with LV disease
+MR,ISCLA,+,plausible,repolarization abnormality with LV disease
+MR,RVH,+,plausible,secondary pulmonary hypertension
+MR,ANEUR,+,plausible,ischemic MR after infarction
+MR,RAO/RAE,+,plausible,secondary pulmonary hypertension
+MR,ILBBB,+,plausible,LV remodeling and conduction delay in functional MR
+MR,IPLMI,+,plausible,ischemic MR after infarction
+MR,ISCAN,+,plausible,repolarization abnormality with LV disease
+MR,IPMI,+,plausible,ischemic MR after infarction
+MR,PMI,+,plausible,ischemic MR after infarction
+MR,ABQRS,+,plausible,LV remodeling and conduction delay in functional MR
+MR,PVC,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,STD_,+,plausible,repolarization abnormality with LV disease
+MR,VCLVH,+,plausible,LV remodeling and conduction delay in functional MR
+MR,QWAVE,+,plausible,ischemic MR after infarction
+MR,NT_,+,plausible,repolarization abnormality with LV disease
+MR,PAC,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,LPR,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,INVT,+,plausible,repolarization abnormality with LV disease
+MR,HVOLT,+,plausible,LV remodeling and conduction delay in functional MR
+MR,TAB_,+,plausible,repolarization abnormality with LV disease
+MR,PRC(S),+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+MR,AFIB,+,expected,LA volume overload and AF
+MR,STACH,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+MR,PACE,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,SVARR,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,AFLT,+,expected,LA volume overload and AF
+MR,SVTAC,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+MR,PSVT,+,plausible,"atrial ectopy and arrhythmia, rate control, devices"
+TR,NDT,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+TR,NST_,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+TR,DIG,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+TR,IMI,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,ASMI,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,IRBBB,+,expected,RV/RA volume or pressure overload; RBBB after congenital repair (TOF) for PR
+TR,1AVB,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,IVCD,+,plausible,right-axis and conduction delay with RV disease
+TR,CRBBB,+,expected,RV/RA volume or pressure overload; RBBB after congenital repair (TOF) for PR
+TR,CLBBB,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,ILMI,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,LAO/LAE,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+TR,AMI,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,ALMI,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,LMI,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,LPFB,+,plausible,right-axis and conduction delay with RV disease
+TR,RVH,+,expected,RV/RA volume or pressure overload; RBBB after congenital repair (TOF) for PR
+TR,RAO/RAE,+,expected,RV/RA volume or pressure overload; RBBB after congenital repair (TOF) for PR
+TR,WPW,+,plausible,Ebstein anomaly with accessory pathways
+TR,ILBBB,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,IPLMI,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,IPMI,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,PMI,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,3AVB,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,2AVB,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,ABQRS,+,plausible,right-axis and conduction delay with RV disease
+TR,PVC,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,STD_,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+TR,LOWT,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+TR,NT_,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+TR,PAC,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,LPR,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,INVT,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+TR,LVOLT,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+TR,TAB_,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+TR,PRC(S),+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+TR,AFIB,+,expected,transvenous lead TR and atrial fibrillation
+TR,STACH,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+TR,SBRAD,+,plausible,TR secondary to left heart disease; sick sinus with pacing
+TR,PACE,+,expected,transvenous lead TR and atrial fibrillation
+TR,SVARR,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,AFLT,+,expected,transvenous lead TR and atrial fibrillation
+TR,SVTAC,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+TR,PSVT,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,NDT,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+PR,NST_,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+PR,DIG,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+PR,IRBBB,+,expected,RV/RA volume or pressure overload; RBBB after congenital repair (TOF) for PR
+PR,1AVB,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,IVCD,+,plausible,right-axis and conduction delay with RV disease
+PR,CRBBB,+,expected,RV/RA volume or pressure overload; RBBB after congenital repair (TOF) for PR
+PR,LAO/LAE,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+PR,LPFB,+,plausible,right-axis and conduction delay with RV disease
+PR,RVH,+,expected,RV/RA volume or pressure overload; RBBB after congenital repair (TOF) for PR
+PR,RAO/RAE,+,expected,RV/RA volume or pressure overload; RBBB after congenital repair (TOF) for PR
+PR,3AVB,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,2AVB,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,ABQRS,+,plausible,right-axis and conduction delay with RV disease
+PR,PVC,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,STD_,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+PR,LOWT,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+PR,NT_,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+PR,PAC,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,LPR,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,INVT,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+PR,LVOLT,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+PR,TAB_,+,plausible,left heart disease causing secondary TR/PH; low voltage with effusion or right failure
+PR,PRC(S),+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+PR,AFIB,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,STACH,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+PR,PACE,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,SVARR,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,AFLT,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,SVTAC,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+PR,PSVT,+,plausible,"arrhythmia, rate control, pacing (lead-related TR)"
+RVD,NDT,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,NST_,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,DIG,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,LNGQT,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+RVD,IMI,+,plausible,RV infarction with inferior MI
+RVD,ASMI,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,LAFB,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,ISC_,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,IRBBB,+,expected,"RV pressure overload, atrial arrhythmia, tachycardia, devices"
+RVD,1AVB,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,IVCD,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,ISCAL,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,CRBBB,+,expected,"RV pressure overload, atrial arrhythmia, tachycardia, devices"
+RVD,CLBBB,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,ILMI,+,plausible,RV infarction with inferior MI
+RVD,LAO/LAE,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,AMI,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,ALMI,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,ISCIN,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,LMI,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,ISCIL,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,LPFB,+,expected,"RV pressure overload, atrial arrhythmia, tachycardia, devices"
+RVD,ISCAS,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,ISCLA,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,RVH,+,expected,"RV pressure overload, atrial arrhythmia, tachycardia, devices"
+RVD,ANEUR,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,RAO/RAE,+,expected,"RV pressure overload, atrial arrhythmia, tachycardia, devices"
+RVD,EL,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,ILBBB,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,IPLMI,+,plausible,RV infarction with inferior MI
+RVD,ISCAN,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,IPMI,+,plausible,RV infarction with inferior MI
+RVD,PMI,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,ABQRS,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,PVC,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,STD_,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,QWAVE,+,plausible,biventricular failure in ischemic or dilated cardiomyopathy
+RVD,LOWT,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,NT_,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,PAC,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,LPR,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,INVT,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,LVOLT,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,TAB_,+,plausible,"repolarization abnormality, RV strain, low voltage"
+RVD,PRC(S),+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+RVD,AFIB,+,expected,"RV pressure overload, atrial arrhythmia, tachycardia, devices"
+RVD,STACH,+,expected,"RV pressure overload, atrial arrhythmia, tachycardia, devices"
+RVD,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+RVD,PACE,+,expected,"RV pressure overload, atrial arrhythmia, tachycardia, devices"
+RVD,SVARR,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,BIGU,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,AFLT,+,expected,"RV pressure overload, atrial arrhythmia, tachycardia, devices"
+RVD,SVTAC,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,PSVT,+,plausible,"arrhythmia, rate control, left heart disease"
+RVD,TRIGU,+,plausible,"arrhythmia, rate control, left heart disease"
+PEff,NDT,+,plausible,pericarditic or nonspecific repolarization changes
+PEff,NST_,+,plausible,pericarditic or nonspecific repolarization changes
+PEff,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+PEff,IMI,+,plausible,post-infarction pericarditis
+PEff,ASMI,+,plausible,post-infarction pericarditis
+PEff,ISC_,+,plausible,pericarditic or nonspecific repolarization changes
+PEff,CRBBB,+,plausible,"atrial arrhythmia, post-cardiac-surgery effusion"
+PEff,ILMI,+,plausible,post-infarction pericarditis
+PEff,AMI,+,plausible,post-infarction pericarditis
+PEff,ALMI,+,plausible,post-infarction pericarditis
+PEff,LMI,+,plausible,post-infarction pericarditis
+PEff,EL,+,plausible,uremic effusion with electrolyte changes
+PEff,IPLMI,+,plausible,post-infarction pericarditis
+PEff,IPMI,+,plausible,post-infarction pericarditis
+PEff,PMI,+,plausible,post-infarction pericarditis
+PEff,LOWT,+,expected,"low voltage, tachycardia, pericarditic ST elevation"
+PEff,NT_,+,plausible,pericarditic or nonspecific repolarization changes
+PEff,PAC,+,plausible,"atrial arrhythmia, post-cardiac-surgery effusion"
+PEff,INVT,+,plausible,pericarditic or nonspecific repolarization changes
+PEff,LVOLT,+,expected,"low voltage, tachycardia, pericarditic ST elevation"
+PEff,TAB_,+,plausible,pericarditic or nonspecific repolarization changes
+PEff,STE_,+,expected,"low voltage, tachycardia, pericarditic ST elevation"
+PEff,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+PEff,AFIB,+,plausible,"atrial arrhythmia, post-cardiac-surgery effusion"
+PEff,STACH,+,expected,"low voltage, tachycardia, pericarditic ST elevation"
+PEff,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+PEff,PACE,+,plausible,"atrial arrhythmia, post-cardiac-surgery effusion"
+PEff,SVARR,+,plausible,"atrial arrhythmia, post-cardiac-surgery effusion"
+PEff,AFLT,+,plausible,"atrial arrhythmia, post-cardiac-surgery effusion"
+PEff,SVTAC,+,plausible,"atrial arrhythmia, post-cardiac-surgery effusion"
+PEff,PSVT,+,plausible,"atrial arrhythmia, post-cardiac-surgery effusion"
+PASP Hi,NDT,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,NST_,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,DIG,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,LNGQT,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+PASP Hi,IMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,ASMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,LVH,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,LAFB,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,ISC_,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,IRBBB,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+PASP Hi,1AVB,+,plausible,arrhythmia with atrial enlargement
+PASP Hi,IVCD,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,ISCAL,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,CRBBB,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+PASP Hi,CLBBB,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,ILMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,LAO/LAE,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+PASP Hi,AMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,ALMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,ISCIN,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,LMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,ISCIL,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,LPFB,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+PASP Hi,ISCAS,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,ISCLA,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,RVH,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+PASP Hi,ANEUR,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,RAO/RAE,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+PASP Hi,EL,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,ILBBB,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,IPLMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,ISCAN,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,IPMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,PMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,ABQRS,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,PVC,+,plausible,arrhythmia with atrial enlargement
+PASP Hi,STD_,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,VCLVH,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,QWAVE,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,LOWT,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,NT_,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,PAC,+,plausible,arrhythmia with atrial enlargement
+PASP Hi,LPR,+,plausible,arrhythmia with atrial enlargement
+PASP Hi,INVT,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,LVOLT,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,HVOLT,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,TAB_,+,plausible,RV strain and nonspecific repolarization
+PASP Hi,PRC(S),+,plausible,arrhythmia with atrial enlargement
+PASP Hi,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+PASP Hi,AFIB,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+PASP Hi,STACH,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+PASP Hi,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+PASP Hi,PACE,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+PASP Hi,SVARR,+,plausible,arrhythmia with atrial enlargement
+PASP Hi,BIGU,+,plausible,arrhythmia with atrial enlargement
+PASP Hi,AFLT,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+PASP Hi,SVTAC,+,plausible,arrhythmia with atrial enlargement
+PASP Hi,PSVT,+,plausible,arrhythmia with atrial enlargement
+PASP Hi,TRIGU,+,plausible,arrhythmia with atrial enlargement
+TRV Hi,NDT,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,NST_,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,DIG,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,LNGQT,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,NORM,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+TRV Hi,IMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,ASMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,LVH,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,LAFB,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,ISC_,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,IRBBB,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+TRV Hi,1AVB,+,plausible,arrhythmia with atrial enlargement
+TRV Hi,IVCD,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,ISCAL,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,CRBBB,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+TRV Hi,CLBBB,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,ILMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,LAO/LAE,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+TRV Hi,AMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,ALMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,ISCIN,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,LMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,ISCIL,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,LPFB,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+TRV Hi,ISCAS,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,ISCLA,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,RVH,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+TRV Hi,ANEUR,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,RAO/RAE,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+TRV Hi,EL,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,ILBBB,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,IPLMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,ISCAN,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,IPMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,PMI,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,ABQRS,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,PVC,+,plausible,arrhythmia with atrial enlargement
+TRV Hi,STD_,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,VCLVH,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,QWAVE,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,LOWT,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,NT_,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,PAC,+,plausible,arrhythmia with atrial enlargement
+TRV Hi,LPR,+,plausible,arrhythmia with atrial enlargement
+TRV Hi,INVT,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,LVOLT,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,HVOLT,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,TAB_,+,plausible,RV strain and nonspecific repolarization
+TRV Hi,PRC(S),+,plausible,arrhythmia with atrial enlargement
+TRV Hi,SR,-,expected,any structural disease lowers the chance of a normal ECG in sinus rhythm
+TRV Hi,AFIB,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+TRV Hi,STACH,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+TRV Hi,SARRH,-,plausible,"sinus arrhythmia marks young, healthy hearts"
+TRV Hi,PACE,+,plausible,"PH from left heart disease (HFrEF, HFpEF, valve disease)"
+TRV Hi,SVARR,+,plausible,arrhythmia with atrial enlargement
+TRV Hi,BIGU,+,plausible,arrhythmia with atrial enlargement
+TRV Hi,AFLT,+,expected,"pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+TRV Hi,SVTAC,+,plausible,arrhythmia with atrial enlargement
+TRV Hi,PSVT,+,plausible,arrhythmia with atrial enlargement
+TRV Hi,TRIGU,+,plausible,arrhythmia with atrial enlargement
+SHD,NDT,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,NST_,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,DIG,+,plausible,"composite: SHD - atrial ectopy and arrhythmia, rate control, devices"
+SHD,LNGQT,+,plausible,composite: SHD - RV strain and nonspecific repolarization
+SHD,NORM,-,expected,composite: SHD - any structural disease lowers the chance of a normal ECG in sinus rhythm
+SHD,IMI,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,ASMI,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,LVH,+,expected,"composite: SHD - pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+SHD,LAFB,+,plausible,"composite: SHD - PH from left heart disease (HFrEF, HFpEF, valve disease)"
+SHD,ISC_,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,IRBBB,+,expected,"composite: SHD - pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+SHD,1AVB,+,plausible,"composite: SHD - conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+SHD,IVCD,+,expected,composite: SHD - LV conduction delay in cardiomyopathy
+SHD,ISCAL,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,CRBBB,+,expected,"composite: SHD - pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+SHD,CLBBB,+,expected,composite: SHD - LV conduction delay in cardiomyopathy
+SHD,ILMI,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,LAO/LAE,+,expected,"composite: SHD - HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+SHD,AMI,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,ALMI,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,ISCIN,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,INJAS,+,plausible,"composite: SHD - acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+SHD,LMI,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,ISCIL,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,LPFB,+,expected,"composite: SHD - pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+SHD,ISCAS,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,INJAL,+,plausible,"composite: SHD - acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+SHD,ISCLA,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,RVH,+,expected,"composite: SHD - pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+SHD,ANEUR,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,RAO/RAE,+,expected,"composite: SHD - pulmonary hypertension: RV/RA load, right axis, AF and LA load in left-heart PH"
+SHD,EL,+,plausible,composite: SHD - RV strain and nonspecific repolarization
+SHD,WPW,+,plausible,"composite: SHD - pre-excitation in infiltrative/storage cardiomyopathies (PRKAG2, Danon)"
+SHD,ILBBB,+,expected,composite: SHD - LV conduction delay in cardiomyopathy
+SHD,IPLMI,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,ISCAN,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,IPMI,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,SEHYP,+,expected,"composite: SHD - pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+SHD,INJIN,+,plausible,"composite: SHD - acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+SHD,INJLA,+,plausible,"composite: SHD - acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+SHD,PMI,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,3AVB,+,plausible,"composite: SHD - conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+SHD,INJIL,+,plausible,"composite: SHD - acute ischemia, aneurysmal ST elevation, QT prolongation, electrolyte/drug effects in HF"
+SHD,2AVB,+,plausible,"composite: SHD - conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+SHD,ABQRS,+,expected,composite: SHD - LV conduction delay in cardiomyopathy
+SHD,PVC,+,expected,"composite: SHD - HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+SHD,STD_,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,VCLVH,+,expected,"composite: SHD - pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+SHD,QWAVE,+,expected,"composite: SHD - ischemic cardiomyopathy: prior infarction, aneurysm"
+SHD,LOWT,+,expected,"composite: SHD - low voltage, tachycardia, pericarditic ST elevation"
+SHD,NT_,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,PAC,+,plausible,composite: SHD - arrhythmia with atrial enlargement
+SHD,LPR,+,plausible,"composite: SHD - conduction disease (septal hypertrophy, calcified annulus), pacing after TAVR/myectomy"
+SHD,INVT,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,LVOLT,+,expected,"composite: SHD - low voltage, tachycardia, pericarditic ST elevation"
+SHD,HVOLT,+,expected,"composite: SHD - pressure overload or hypertrophy: voltage, septal hypertrophy, LA load"
+SHD,TAB_,+,expected,composite: SHD - repolarization abnormality in cardiomyopathy and ischemia
+SHD,STE_,+,expected,"composite: SHD - low voltage, tachycardia, pericarditic ST elevation"
+SHD,PRC(S),+,expected,"composite: SHD - HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+SHD,SR,-,expected,composite: SHD - any structural disease lowers the chance of a normal ECG in sinus rhythm
+SHD,AFIB,+,expected,"composite: SHD - HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+SHD,STACH,+,expected,"composite: SHD - HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+SHD,SARRH,-,plausible,"composite: SHD - sinus arrhythmia marks young, healthy hearts"
+SHD,SBRAD,+,plausible,composite: SHD - conduction system degeneration with calcific valve disease
+SHD,PACE,+,expected,"composite: SHD - HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+SHD,SVARR,+,plausible,"composite: SHD - atrial ectopy and arrhythmia, rate control, devices"
+SHD,BIGU,+,expected,"composite: SHD - HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+SHD,AFLT,+,expected,"composite: SHD - HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
+SHD,SVTAC,+,plausible,"composite: SHD - atrial ectopy and arrhythmia, rate control, devices"
+SHD,PSVT,+,plausible,"composite: SHD - atrial ectopy and arrhythmia, rate control, devices"
+SHD,TRIGU,+,expected,"composite: SHD - HFrEF arrhythmia, compensatory tachycardia, devices (ICD/CRT), LA load"
