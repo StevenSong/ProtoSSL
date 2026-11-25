@@ -81,6 +81,7 @@ scripts/5-3-run-pclr-logreg.sh @StevenSong
 scripts/6-run-protossl-heedb-pia.sh @StevenSong
 scripts/6-z-* @StevenSong
 scripts/7-* @StevenSong
+scripts/8-run-protossl-heedb-150-pila-from-ptbxl.sh @StevenSong
 scripts/8-run-protossl-heedb-pila-from-ptbxl.sh @StevenSong
 scripts/8-z-run-protossl-heedb-pila-val.sh @StevenSong
 scripts/8-y-run-ecgfounder-val.sh @StevenSong
